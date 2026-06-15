@@ -1,0 +1,162 @@
+import 'package:flutter/material.dart';
+
+// Import Screens from their new locations
+import 'loginscreen.dart';
+import 'signupscreen.dart';
+import 'otp_screen.dart';
+import 'auth_screen.dart';
+import 'admin/Community_Admin_Dashboard.dart';
+import 'admin/profile_screen.dart' as admin;
+import 'admin/admin_profile_screen.dart';
+import 'admin/manage_items_screen.dart';
+import 'admin/membership_builder_screen.dart';
+import 'admin/membership_plans_screen.dart';
+import 'admin/platform_settings_screen.dart';
+import 'admin/seller_dashboard_screen.dart';
+import 'admin/seller_management_screen.dart';
+import 'admin/taxonomy_manager_screen.dart';
+import 'admin/seller_orders_screen.dart';
+import 'admin/order_details_screen.dart';
+import 'admin/wallet_admin_screen.dart';
+import 'admin/marketplace_modules_screen.dart';
+import 'admin/module_details_screen.dart';
+import 'admin/module_manager_screen.dart';
+import 'admin/module_integration_screen.dart';
+import 'admin/opportunity_detail_screen.dart';
+import 'screens/opportunity_action_hub_screen.dart';
+import 'screens/manage_opportunities_screen.dart';
+import 'screens/create_opportunity_screen.dart';
+import 'screens/product_management_screen.dart';
+import 'screens/trading_marketplace_screen.dart';
+import 'screens/selected_items_screen.dart';
+import 'screens/affiliate_orders_screen.dart';
+import 'screens/manage_team_screen.dart';
+import 'screens/manage_tasks_screen.dart';
+import 'screens/explore_partners_screen.dart';
+import 'screens/explore_talent_screen.dart';
+import 'screens/rewards_recognition_screen.dart';
+import 'common/payment_screen.dart';
+import 'user/profile_screen.dart' as user;
+import 'user/seller_bank_accounts_screen.dart';
+import 'user/wallet_screen.dart';
+import 'user/membership_plan.dart';
+import 'common/community_inbox_screen.dart';
+import 'common/notification_screen.dart';
+import 'common/setting_screen.dart';
+import 'common/splash_screen.dart';
+import 'common/shell.dart';
+import 'common/offers_screen.dart';
+import 'common/terms_conditions_screen.dart';
+
+/// AppRoutes provides route names and route builders for the application.
+class AppRoutes {
+  // Route Name Constants
+  static const String splash = '/';
+  static const String login = '/login';
+  static const String signup = '/signup';
+  static const String otp = '/otp';
+  static const String auth = '/auth';
+  static const String adminDashboard = '/admin/dashboard';
+  static const String adminProfile = '/admin/profile';
+  static const String userProfile = '/user/profile';
+  static const String sellerBankAccounts = '/user/bank-accounts';
+  static const String wallet = '/user/wallet';
+  static const String membership = '/user/membership';
+  static const String chat = '/common/chat';
+  static const String notification = '/common/notification';
+  static const String setting = '/common/setting';
+  static const String shell = '/shell';
+
+  // New Admin Routes
+  static const String walletAdmin = '/wallet';
+  static const String sellerDashboard = '/seller';
+  static const String communityAdmin = '/community_admin';
+  static const String sellerManagement = '/seller_management';
+  static const String taxonomyManager = '/taxonomy';
+  static const String adminProfileScreen = '/admin_profile';
+  static const String manageItems = '/manage_items';
+  static const String platformSettings = '/platform_settings';
+  static const String membershipPlans = '/membership_plans';
+  static const String membershipBuilder = '/membership_builder';
+  static const String marketplaceModules = '/marketplace_modules';
+  static const String moduleDetails = '/module_details';
+  static const String moduleManager = '/module_manager';
+  static const String moduleIntegration = '/module_integration';
+  static const String opportunityDetail = '/opportunity_detail';
+  static const String opportunityActionHub = '/opportunity_action_hub';
+  static const String manageOpportunities = '/manage_opportunities';
+  static const String createOpportunity = '/create_opportunity';
+  static const String productManagement = '/product_management';
+  static const String tradingMarketplace = '/trading_marketplace';
+  static const String selectedItems = '/selected_items';
+  static const String affiliateOrders = '/affiliate_orders';
+  static const String payment = '/payment';
+  static const String sellerOrders = '/admin/seller_orders';
+  static const String orderDetails = '/admin/order_details';
+  static const String offers = '/common/offers';
+  static const String terms = '/common/terms';
+  static const String manageTeam = '/manage_team';
+  static const String manageTasks = '/manage_tasks';
+  static const String explorePartners = '/explore_partners';
+  static const String exploreTalent = '/explore_talent';
+  static const String rewardsRecognition = '/rewards_recognition';
+
+  /// Named routes mapping for MaterialApp
+  static Map<String, WidgetBuilder> get routes => {
+    splash: (context) => const WelcomeSplashScreen(),
+    login: (context) => const LoginScreen(),
+    signup: (context) => const SignupScreen(),
+    otp: (context) {
+      final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+      return OtpScreen(
+        email: args['email'] as String,
+        isRecruiter: args['isRecruiter'] as bool,
+      );
+    },
+    auth: (context) => const AuthProduction(),
+    adminDashboard: (context) => const CommunityAdminDashboard(),
+    adminProfile: (context) => const admin.ProfileScreen(),
+    userProfile: (context) => const user.ProfileScreen(),
+    sellerBankAccounts: (context) => const SellerBankAccountsScreen(),
+    wallet: (context) => const WalletScreen(),
+    membership: (context) => const MembershipScreen(),
+    chat: (context) => const CommunityInboxScreen(),
+    notification: (context) => const NotificationsScreen(),
+    setting: (context) => const SettingsScreen(),
+    shell: (context) => const AppShell(),
+
+    // New Admin Route Builders
+    walletAdmin: (context) => const WalletAdminScreen(),
+    sellerDashboard: (context) => const SellerDashboardScreen(),
+    communityAdmin: (context) => const CommunityAdminDashboard(),
+    sellerManagement: (context) => const SellerManagementScreen(),
+    taxonomyManager: (context) => const TaxonomyManagerScreen(),
+    adminProfileScreen: (context) => const AdminProfileScreen(),
+    manageItems: (context) => const ManageItemsScreen(),
+    platformSettings: (context) => const PlatformSettingsScreen(),
+    membershipPlans: (context) => const MembershipPlansScreen(),
+    membershipBuilder: (context) => const MembershipBuilderScreen(),
+    marketplaceModules: (context) => const MarketplaceModulesScreen(),
+    moduleDetails: (context) => const ModuleDetailsScreen(),
+    moduleManager: (context) => const ModuleManagerScreen(),
+    moduleIntegration: (context) => const ModuleIntegrationScreen(),
+    opportunityDetail: (context) => const OpportunityDetailScreen(),
+    opportunityActionHub: (context) => const OpportunityActionHubScreen(),
+    manageOpportunities: (context) => const ManageOpportunitiesScreen(),
+    createOpportunity: (context) => const OpportunityFormScreen(),
+    productManagement: (context) => const ProductManagementScreen(),
+    tradingMarketplace: (context) => const TradingMarketplaceScreen(),
+    selectedItems: (context) => const SelectedItemsScreen(),
+    affiliateOrders: (context) => const AffiliateOrdersScreen(),
+    payment: (context) => const PaymentScreen(),
+    sellerOrders: (context) => const SellerOrderScreen(),
+    orderDetails: (context) => const OrderDetailsScreen(),
+    offers: (context) => const OffersScreen(),
+    terms: (context) => const TermsConditionsScreen(),
+    manageTeam: (context) => const ManageTeamScreen(),
+    manageTasks: (context) => const ManageTasksScreen(),
+    explorePartners: (context) => const ExplorePartnersScreen(),
+    exploreTalent: (context) => const ExploreTalentScreen(),
+    rewardsRecognition: (context) => const RewardsRecognitionScreen(),
+  };
+}
