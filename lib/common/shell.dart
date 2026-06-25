@@ -5,7 +5,7 @@ import 'feed_screen.dart';
 import 'notification_screen.dart';
 import 'chat_screen.dart';
 import 'community_inbox_screen.dart';
-import '../user/profile_screen.dart';
+import '../screens/seller_profile_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -297,7 +297,7 @@ class _AppShellState extends State<AppShell> {
         currentScreen = const FeedScreen();
         break;
       case 4:
-        currentScreen = ProfileScreen();
+        currentScreen = const SellerProfileScreen();
         break;
       default:
         currentScreen = const FeedScreen();

@@ -54,6 +54,9 @@ class SelectedItemsScreen extends StatefulWidget {
 }
 
 class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
+  static const Color themeColor = Color(0xFF006565); // Teal Primary
+  static const Color themeAccent = Color(0xFFD4E6E5); // Light Teal Container
+
   int currentIndex = 1;
   bool isLoading = false;
   List<SelectedProduct> products = [];
@@ -308,7 +311,7 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
                         else
                           ...websites.map((website) {
                             return CheckboxListTile(
-                              activeColor: Colors.deepPurple,
+                              activeColor: themeColor,
                               value: website.selected,
                               title: Text(website.name, style: const TextStyle(fontWeight: FontWeight.w600)),
                               subtitle: Text(website.description),
@@ -335,7 +338,7 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
                     _confirmPlacement(product);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
+                    backgroundColor: themeColor,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: const Text("Confirm", style: TextStyle(color: Colors.white)),
@@ -385,7 +388,7 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
+                backgroundColor: themeColor,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: const Text("Upgrade", style: TextStyle(color: Colors.white)),
@@ -459,7 +462,7 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
                           payNow(product);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.deepPurple,
+                          backgroundColor: themeColor,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
                         icon: const Icon(Icons.payments, color: Colors.white),
@@ -507,7 +510,7 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
                     children: [
                       CircleAvatar(
                         radius: 28,
-                        backgroundColor: selected ? Colors.deepPurple : Colors.grey.shade300,
+                        backgroundColor: selected ? themeColor : Colors.grey.shade300,
                         child: Text(
                           client.substring(0, 1),
                           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -687,7 +690,7 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
           value,
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: isTotal ? Colors.deepPurple : null,
+            color: isTotal ? themeColor : null,
             fontSize: isTotal ? 18 : 14,
           ),
         ),
@@ -707,7 +710,7 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
         product: product,
         quantity: quantity,
         totalRawPrice: finalTotal,
-        themeColor: Colors.deepPurple,
+        themeColor: themeColor,
         clientName: clientNameController.text.isNotEmpty ? clientNameController.text : selectedClient,
         clientPhone: phoneController.text,
       ),
@@ -796,7 +799,7 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
                               Text(
                                 "₹${product.commission.toStringAsFixed(0)}",
                                 style: const TextStyle(
-                                  color: Colors.deepPurple,
+                                  color: themeColor,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 18,
                                 ),
@@ -809,16 +812,16 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                               decoration: BoxDecoration(
-                                color: const Color(0xffE8DEF9),
+                                color: themeAccent,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Row(
                                 children: [
-                                  Icon(Icons.trending_up, size: 16, color: Colors.deepPurple),
+                                  Icon(Icons.trending_up, size: 16, color: themeColor),
                                   SizedBox(width: 4),
                                   Text(
                                     "Upgrade",
-                                    style: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.w600),
+                                    style: TextStyle(color: themeColor, fontWeight: FontWeight.w600),
                                   ),
                                 ],
                               ),
@@ -841,10 +844,10 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
                 Expanded(
                   child: TextButton.icon(
                     onPressed: () => openWebsiteDialog(product),
-                    icon: const Icon(Icons.public, color: Colors.deepPurple),
+                    icon: const Icon(Icons.public, color: themeColor),
                     label: const Text(
                       "Place in Website",
-                      style: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: themeColor, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
@@ -856,10 +859,10 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
                 Expanded(
                   child: TextButton.icon(
                     onPressed: () => openClientSheet(product),
-                    icon: const Icon(Icons.shopping_cart, color: Colors.deepPurple),
+                    icon: const Icon(Icons.shopping_cart, color: themeColor),
                     label: const Text(
                       "Buy for Client",
-                      style: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: themeColor, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
@@ -886,7 +889,7 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
           Navigator.pushReplacementNamed(context, AppRoutes.adminProfileScreen);
         }
       },
-      selectedItemColor: Colors.deepPurple,
+      selectedItemColor: themeColor,
       unselectedItemColor: Colors.grey,
       items: const [
         BottomNavigationBarItem(
@@ -933,7 +936,7 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
               ],
             ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.deepPurple))
+          ? const Center(child: CircularProgressIndicator(color: themeColor))
           : products.isEmpty
               ? const Center(child: Text("No selected items found"))
               : ListView.builder(

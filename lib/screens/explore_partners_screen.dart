@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../Database/Database.dart';
 
 class ExplorePartnersScreen extends StatefulWidget {
-  const ExplorePartnersScreen({super.key});
+  final bool isEmbedded;
+  const ExplorePartnersScreen({super.key, this.isEmbedded = false});
 
   @override
   State<ExplorePartnersScreen> createState() => _ExplorePartnersScreenState();
@@ -106,9 +107,9 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
       if (mounted) {
         if (response['success'] == true) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Invitation sent successfully!"),
-              backgroundColor: Colors.teal,
+            SnackBar(
+              content: const Text("Invitation sent successfully!"),
+              backgroundColor: const Color(0xFF006565),
             ),
           );
         } else {
@@ -129,38 +130,40 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xffF6F8FB),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text(
-          "Explore Partners",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
-        iconTheme: const IconThemeData(color: Colors.black),
-        actions: [
-          IconButton(
-            icon: Icon(_isGridView ? Icons.list : Icons.grid_view, color: Colors.teal),
-            onPressed: () {
-              setState(() {
-                _isGridView = !_isGridView;
-              });
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.mail_outline, color: Colors.teal),
-            onPressed: () => _showBulkInviteDialog(),
-          ),
-        ],
-      ),
+      appBar: widget.isEmbedded
+          ? null
+          : AppBar(
+              elevation: 0,
+              backgroundColor: Colors.white,
+              title: const Text(
+                "Explore Partners",
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              ),
+              iconTheme: const IconThemeData(color: Colors.black),
+              actions: [
+                IconButton(
+                  icon: Icon(_isGridView ? Icons.list : Icons.grid_view, color: Color(0xFF006565)),
+                  onPressed: () {
+                    setState(() {
+                      _isGridView = !_isGridView;
+                    });
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.mail_outline, color: Color(0xFF006565)),
+                  onPressed: () => _showBulkInviteDialog(),
+                ),
+              ],
+            ),
       body: RefreshIndicator(
         onRefresh: _fetchPartners,
-        color: Colors.teal,
+        color: const Color(0xFF006565),
         child: Column(
           children: [
             _buildSearchAndFilterHeader(),
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator(color: Colors.teal))
+                  ? const Center(child: CircularProgressIndicator(color: Color(0xFF006565)))
                   : _filteredPartners.isEmpty
                       ? _buildEmptyState()
                       : _buildPartnersList(),
@@ -208,10 +211,10 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
                   height: 45,
                   width: 45,
                   decoration: BoxDecoration(
-                    color: Colors.teal.shade50,
+                    color: const Color(0xFF006565).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.tune, color: Colors.teal),
+                  child: const Icon(Icons.tune, color: Color(0xFF006565)),
                 ),
               )
             ],
@@ -256,7 +259,8 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
             });
           }
         },
-        selectedColor: Colors.teal,
+        selectedColor: const Color(0xFF006565),
+        side: BorderSide.none,
         labelStyle: TextStyle(
           color: isSelected ? Colors.white : Colors.black87,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -278,9 +282,10 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
             _fetchPartners();
           });
         },
-        selectedColor: Colors.teal.shade700,
+        selectedColor: const Color(0xFF006565).withOpacity(0.85),
+        side: BorderSide.none,
         labelStyle: TextStyle(
-          color: isSelected ? Colors.white : Colors.teal.shade800,
+          color: isSelected ? Colors.white : const Color(0xFF006565),
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
@@ -310,7 +315,7 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF006565)),
                 onPressed: () {
                   setState(() {
                     _searchQuery = "";
@@ -382,18 +387,18 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
                   CircleAvatar(
                     radius: 24,
                     backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
-                    backgroundColor: Colors.teal.shade100,
-                    child: avatar.isEmpty ? const Icon(Icons.business, color: Colors.teal) : null,
+                    backgroundColor: const Color(0xFF006565).withOpacity(0.15),
+                    child: avatar.isEmpty ? const Icon(Icons.business, color: const Color(0xFF006565)) : null,
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.teal.shade50,
+                      color: const Color(0xFF006565).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       label,
-                      style: TextStyle(color: Colors.teal.shade800, fontSize: 10, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: const Color(0xFF006565), fontSize: 12, fontWeight: FontWeight.bold),
                     ),
                   )
                 ],
@@ -401,7 +406,7 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
               const SizedBox(height: 12),
               Text(
                 name,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -413,7 +418,7 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
                   Expanded(
                     child: Text(
                       location,
-                      style: const TextStyle(color: Colors.grey, fontSize: 11),
+                      style: const TextStyle(color: Colors.grey, fontSize: 13),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -435,7 +440,7 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
                             ),
                             child: Text(
                               s,
-                              style: const TextStyle(fontSize: 10, color: Colors.black87),
+                              style: const TextStyle(fontSize: 12, color: Colors.black87),
                             ),
                           ))
                       .toList(),
@@ -447,12 +452,12 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
                 height: 32,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
+                    backgroundColor: const Color(0xFF006565),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     padding: EdgeInsets.zero,
                   ),
                   onPressed: () => _showInviteDialog(partner),
-                  child: const Text("Invite", style: TextStyle(color: Colors.white, fontSize: 12)),
+                  child: const Text("Invite", style: TextStyle(color: Colors.white, fontSize: 14)),
                 ),
               )
             ],
@@ -481,26 +486,26 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
         leading: CircleAvatar(
           radius: 28,
           backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
-          backgroundColor: Colors.teal.shade100,
-          child: avatar.isEmpty ? const Icon(Icons.business, color: Colors.teal) : null,
+          backgroundColor: const Color(0xFF006565).withOpacity(0.15),
+          child: avatar.isEmpty ? const Icon(Icons.business, color: const Color(0xFF006565)) : null,
         ),
         title: Row(
           children: [
             Expanded(
               child: Text(
                 name,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.teal.shade50,
+                color: const Color(0xFF006565).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 label,
-                style: TextStyle(color: Colors.teal.shade800, fontSize: 11, fontWeight: FontWeight.bold),
+                style: TextStyle(color: const Color(0xFF006565), fontSize: 12, fontWeight: FontWeight.bold),
               ),
             )
           ],
@@ -513,7 +518,7 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
               children: [
                 const Icon(Icons.location_on, size: 14, color: Colors.grey),
                 const SizedBox(width: 4),
-                Text(location, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(location, style: const TextStyle(color: Colors.grey, fontSize: 14)),
               ],
             ),
             const SizedBox(height: 8),
@@ -527,7 +532,7 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
                           color: Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: Text(s, style: const TextStyle(fontSize: 11)),
+                        child: Text(s, style: const TextStyle(fontSize: 12)),
                       ))
                   .toList(),
             )
@@ -535,7 +540,7 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
         ),
         trailing: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.teal,
+            backgroundColor: const Color(0xFF006565),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
           onPressed: () => _showInviteDialog(partner),
@@ -595,7 +600,7 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF006565)),
                           onPressed: () {
                             Navigator.pop(context);
                             _fetchPartners();
@@ -656,8 +661,8 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
                       CircleAvatar(
                         radius: 40,
                         backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
-                        backgroundColor: Colors.teal.shade100,
-                        child: avatar.isEmpty ? const Icon(Icons.business, size: 40, color: Colors.teal) : null,
+                        backgroundColor: const Color(0xFF006565).withOpacity(0.15),
+                        child: avatar.isEmpty ? const Icon(Icons.business, size: 40, color: const Color(0xFF006565)) : null,
                       ),
                       const SizedBox(width: 20),
                       Expanded(
@@ -669,12 +674,12 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.teal.shade50,
+                                color: const Color(0xFF006565).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 label,
-                                style: TextStyle(color: Colors.teal.shade800, fontWeight: FontWeight.bold, fontSize: 12),
+                                style: TextStyle(color: const Color(0xFF006565), fontWeight: FontWeight.bold, fontSize: 12),
                               ),
                             )
                           ],
@@ -692,13 +697,13 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
                   const SizedBox(height: 20),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.location_on, color: Colors.teal),
+                    leading: const Icon(Icons.location_on, color: Color(0xFF006565)),
                     title: const Text("Location"),
                     subtitle: Text(location),
                   ),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.currency_rupee, color: Colors.teal),
+                    leading: const Icon(Icons.currency_rupee, color: Color(0xFF006565)),
                     title: const Text("Expected Engagement Rate"),
                     subtitle: Text("₹$rate / hr"),
                   ),
@@ -710,7 +715,8 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
                     runSpacing: 8,
                     children: rawSkills.split(',').map((s) => Chip(
                       label: Text(s.trim()),
-                      backgroundColor: Colors.teal.shade50,
+                      backgroundColor: const Color(0xFF006565).withOpacity(0.1),
+                      side: BorderSide.none,
                     )).toList(),
                   ),
                   const SizedBox(height: 32),
@@ -718,7 +724,7 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
                     width: double.infinity,
                     height: 48,
                     child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF006565)),
                       onPressed: () {
                         Navigator.pop(context);
                         _showInviteDialog(partner);
@@ -830,7 +836,7 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
                   child: const Text("Cancel"),
                 ),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF006565)),
                   onPressed: () {
                     final message = messageController.text.trim();
                     if (message.isEmpty) {
@@ -899,7 +905,7 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
               child: const Text("Cancel"),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF006565)),
               onPressed: () {
                 final emailsStr = emailsController.text.trim();
                 final message = messageController.text.trim();
@@ -915,7 +921,7 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text("Bulk invitation sent to ${emailsStr.split(',').length} addresses!"),
-                    backgroundColor: Colors.teal,
+                    backgroundColor: const Color(0xFF006565),
                   ),
                 );
               },

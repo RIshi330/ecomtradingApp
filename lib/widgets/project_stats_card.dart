@@ -18,7 +18,7 @@ class ProjectStatsCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F2FF),
+        color: const Color(0xffe5f7f7),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -75,7 +75,7 @@ class ProjectStatsCard extends StatelessWidget {
         Text(
           value,
           style: const TextStyle(
-            color: Color(0xFF474DC5),
+            color: Color(0xFF006565),
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),

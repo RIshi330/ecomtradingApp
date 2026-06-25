@@ -4,12 +4,12 @@ import 'package:trading_ecommerce_admin/services/auth_service.dart';
 
 // ─── COLORS ───────────────────────────────────────────────────────────────────
 class AppColors {
-  static const lavender      = Color(0xFFB39DDB);
-  static const lavenderDark  = Color(0xFF7E57C2);
+  static const lavender      = Color(0xFF008080); // Teal Container/Accent
+  static const lavenderDark  = Color(0xFF006565); // Teal Primary
   static const textPrimary   = Color(0xFF1A1A1A);
   static const textSub       = Color(0xFF888888);
   static const divider       = Color(0xFFF0F0F0);
-  static const chatBg        = Color(0xFFF8F6FC);
+  static const chatBg        = Color(0xFFFCF9F8); // Theme background
 }
 
 // ─── CHAT USER MODEL ─────────────────────────────────────────────────────────
@@ -544,15 +544,19 @@ class _ChatScreenState extends State<ChatScreen> {
           );
         }).toList();
         
-        setState(() {
-          _messages = apiMessages;
-          _isLoading = false;
-        });
-        
-        // Scroll to bottom after loading
-        Future.delayed(const Duration(milliseconds: 100), () {
-          _scrollToBottom();
-        });
+        if (apiMessages.isEmpty) {
+          _loadSampleMessages();
+        } else {
+          setState(() {
+            _messages = apiMessages;
+            _isLoading = false;
+          });
+          
+          // Scroll to bottom after loading
+          Future.delayed(const Duration(milliseconds: 100), () {
+            _scrollToBottom();
+          });
+        }
       } else {
         _loadSampleMessages();
       }

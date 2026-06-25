@@ -124,7 +124,7 @@ class OpportunityCard extends StatelessWidget {
               // Footer: Stats & Date
               Row(
                 children: [
-                  const Icon(Icons.visibility_outlined, size: 16, color: Color(0xFF474DC5)),
+                  const Icon(Icons.visibility_outlined, size: 16, color: Color(0xff006565)),
                   const SizedBox(width: 4),
                   Text(
                     "${opportunity.views}",
@@ -135,7 +135,7 @@ class OpportunityCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  const Icon(Icons.chat_bubble_outline, size: 16, color: Color(0xFF474DC5)),
+                  const Icon(Icons.chat_bubble_outline, size: 16, color: Color(0xff006565)),
                   const SizedBox(width: 4),
                   Text(
                     "${opportunity.responses}",

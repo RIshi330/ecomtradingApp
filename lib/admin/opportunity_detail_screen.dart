@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
-import 'package:trading_ecommerce_admin/screens/enroll_payment_screen.dart';
 
 class OpportunityDetailScreen extends StatefulWidget {
   const OpportunityDetailScreen({super.key});
@@ -27,6 +26,89 @@ class _OpportunityDetailScreenState
           ? (_getArguments!['vendor'] as Map<String, dynamic>? ?? {})
           : {};
 
+  void showSuccessOverlay(String title, String subtitle) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (_) => Center(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 32),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xff006565).withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              )
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Color(0xffe5f7f7),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: Color(0xff006565),
+                  size: 48,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1C1B1B),
+                  decoration: TextDecoration.none,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.normal,
+                  decoration: TextDecoration.none,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xff006565),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    elevation: 0,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    "Great, thanks!",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> submitApplication(String oppId, String name, String email, String phone, String notes) async {
     final response = await Database().getData({
       "action": "apply",
@@ -39,8 +121,9 @@ class _OpportunityDetailScreenState
     
     if (response['success'] == true) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Application submitted successfully!"), backgroundColor: Colors.green),
+        showSuccessOverlay(
+          "Application Submitted!",
+          "Your application has been successfully sent to the recruiter. We'll notify you of updates.",
         );
       }
     } else {
@@ -65,8 +148,9 @@ class _OpportunityDetailScreenState
     
     if (response['success'] == true) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Enrollment completed successfully!"), backgroundColor: Colors.green),
+        showSuccessOverlay(
+          "Enrollment Successful!",
+          "You have successfully enrolled in this program. Check your profile for program schedules.",
         );
       }
     } else {
@@ -93,8 +177,9 @@ class _OpportunityDetailScreenState
     
     if (response['success'] == true) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Investment offer submitted!"), backgroundColor: Colors.green),
+        showSuccessOverlay(
+          "Investment Offer Sent!",
+          "Your investment proposal has been submitted. The business representative will review it shortly.",
         );
       }
     } else {
@@ -118,8 +203,9 @@ class _OpportunityDetailScreenState
     
     if (response['success'] == true) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Donation recorded. Thank you for your support!"), backgroundColor: Colors.green),
+        showSuccessOverlay(
+          "Donation Received!",
+          "Thank you for your generous support! Your contribution makes a massive difference.",
         );
       }
     } else {
@@ -145,8 +231,9 @@ class _OpportunityDetailScreenState
     
     if (response['success'] == true) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Sponsorship submitted!"), backgroundColor: Colors.green),
+        showSuccessOverlay(
+          "Sponsorship Proposal Sent!",
+          "Your sponsorship details have been successfully submitted for review.",
         );
       }
     } else {
@@ -171,8 +258,9 @@ class _OpportunityDetailScreenState
     
     if (response['success'] == true) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Message sent successfully!"), backgroundColor: Colors.green),
+        showSuccessOverlay(
+          "Message Sent!",
+          "Your message has been delivered to $recruiterName. You'll receive a response in your inbox.",
         );
       }
     } else {
@@ -199,8 +287,9 @@ class _OpportunityDetailScreenState
     
     if (response['success'] == true) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Quotation request submitted!"), backgroundColor: Colors.green),
+        showSuccessOverlay(
+          "Quotation Requested!",
+          "Your quotation request has been sent. The seller will prepare an estimate shortly.",
         );
       }
     } else {
@@ -223,44 +312,72 @@ class _OpportunityDetailScreenState
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text("Contact $recruiterName", style: const TextStyle(fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: CircleAvatar(
-                backgroundImage: (recruiterPic != null && recruiterPic.isNotEmpty)
-                    ? NetworkImage(recruiterPic)
-                    : null,
-                child: (recruiterPic == null || recruiterPic.isEmpty)
-                    ? const Icon(Icons.person)
-                    : null,
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: ClipOval(
+                    child: (recruiterPic != null && recruiterPic.isNotEmpty)
+                        ? Image.network(
+                            recruiterPic,
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              color: const Color(0xffe5f7f7),
+                              child: const Icon(Icons.person, color: Color(0xff006565)),
+                            ),
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                color: const Color(0xffe5f7f7),
+                                child: const Center(
+                                  child: SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 1.5, color: Color(0xff006565)),
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : Container(
+                            color: const Color(0xffe5f7f7),
+                            child: const Icon(Icons.person, color: Color(0xff006565)),
+                          ),
+                  ),
+                ),
+                title: Text(recruiterName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text("Online Now", style: TextStyle(color: Colors.green, fontSize: 12)),
               ),
-              title: Text(recruiterName, style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: const Text("Online Now", style: TextStyle(color: Colors.green, fontSize: 12)),
-            ),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F2FF),
-                borderRadius: BorderRadius.circular(12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFe5f7f7),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  "Typical response time: ~4 hours",
+                  style: TextStyle(color: Color(0xff006565), fontWeight: FontWeight.w500, fontSize: 13),
+                ),
               ),
-              child: const Text(
-                "Typical response time: ~4 hours",
-                style: TextStyle(color: Color(0xff474DC5), fontWeight: FontWeight.w500, fontSize: 13),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  hintText: "Hi $recruiterName, I'm interested in the Lead UX role...",
+                  border: const OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              maxLines: 4,
-              decoration: InputDecoration(
-                hintText: "Hi $recruiterName, I'm interested in the Lead UX role...",
-                border: const OutlineInputBorder(),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -271,7 +388,7 @@ class _OpportunityDetailScreenState
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff474DC5),
+              backgroundColor: const Color(0xff006565),
               foregroundColor: Colors.white,
             ),
             onPressed: () {
@@ -319,20 +436,20 @@ class _OpportunityDetailScreenState
                       width: double.infinity,
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: const Color(0xff474DC5),
+                          color: const Color(0xff006565),
                           style: BorderStyle.solid,
                         ),
                         borderRadius: BorderRadius.circular(12),
-                        color: const Color(0xffF9F9FF),
+                        color: const Color(0xffFCF9F8),
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.upload_file, size: 36, color: Color(0xff474DC5)),
+                          const Icon(Icons.upload_file, size: 36, color: Color(0xff006565)),
                           const SizedBox(height: 8),
                           Text(
                             uploadedCvName != null ? "Change Resume" : "Upload Resume",
-                            style: const TextStyle(color: Color(0xff474DC5), fontWeight: FontWeight.bold),
+                            style: const TextStyle(color: Color(0xff006565), fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -343,38 +460,53 @@ class _OpportunityDetailScreenState
                     RadioListTile<String>(
                       value: uploadedCvName!,
                       groupValue: selectedCv,
-                      activeColor: const Color(0xff474DC5),
+                      activeColor: const Color(0xff006565),
                       onChanged: (value) {
                         setModalState(() {
                           selectedCv = value!;
                         });
                       },
-                      title: Text(uploadedCvName!, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                      title: Text(
+                        uploadedCvName!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 13),
+                      ),
                       subtitle: const Text("Uploaded just now", style: TextStyle(color: Colors.green)),
                     ),
                   ],
                   RadioListTile<String>(
                     value: "Sarah_UX_2024.pdf",
                     groupValue: selectedCv,
-                    activeColor: const Color(0xff474DC5),
+                    activeColor: const Color(0xff006565),
                     onChanged: (value) {
                       setModalState(() {
                         selectedCv = value!;
                       });
                     },
-                    title: const Text("Sarah_UX_2024.pdf"),
+                    title: const Text(
+                      "Sarah_UX_2024.pdf",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 13),
+                    ),
                     subtitle: const Text("Updated 2 days ago"),
                   ),
                   RadioListTile<String>(
                     value: "Product_Design_Lead.pdf",
                     groupValue: selectedCv,
-                    activeColor: const Color(0xff474DC5),
+                    activeColor: const Color(0xff006565),
                     onChanged: (value) {
                       setModalState(() {
                         selectedCv = value!;
                       });
                     },
-                    title: const Text("Product_Design_Lead.pdf"),
+                    title: const Text(
+                      "Product_Design_Lead.pdf",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 13),
+                    ),
                     subtitle: const Text("Updated 1 month ago"),
                   ),
                 ],
@@ -389,7 +521,7 @@ class _OpportunityDetailScreenState
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff474DC5),
+                  backgroundColor: const Color(0xff006565),
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () {
@@ -504,7 +636,7 @@ class _OpportunityDetailScreenState
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff474DC5),
+                  backgroundColor: const Color(0xff006565),
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () {
@@ -526,115 +658,194 @@ class _OpportunityDetailScreenState
     final compensation = args?['compensation'] as Map<String, dynamic>? ?? {};
     
     final title = opp['title']?.toString() ?? 'Lead UX Designer Certification';
-    final desc = opp['short_description']?.toString() ?? 'Master advanced UX methodologies and financial product design.';
-    final duration = opp['program_duration']?.toString() ?? '8 Weeks Duration';
-    final price = compensation['payout_amount']?.toString() ?? opp['payout_amount']?.toString() ?? '₹2,499';
+    final desc = opp['short_description']?.toString() ?? opp['full_description']?.toString() ?? 'Master advanced UX methodologies, financial regulations, and accessible design patterns in this comprehensive 8-week program.';
+    final duration = opp['program_duration']?.toString() ?? '8 Weeks';
+    final price = compensation['payout_amount']?.toString() ?? opp['payout_amount']?.toString() ?? '2,499';
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (_) => Dialog(
         backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Enrollment Details", style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F2FF),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Color(0xff474DC5),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title and Close Button Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Enrollment Details",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1C1B1B),
+                      ),
                     ),
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(Icons.close, color: Colors.grey),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Course Info Card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xffe5f7f7),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    desc,
-                    style: const TextStyle(fontSize: 13, height: 1.4, color: Colors.black87),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const CircleAvatar(
-                backgroundColor: Color(0xffF1F2FF),
-                child: Icon(Icons.calendar_today, color: Color(0xff474DC5)),
-              ),
-              title: Text(duration.contains('Duration') ? duration : "$duration Duration"),
-            ),
-            const ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: CircleAvatar(
-                backgroundColor: Color(0xffF1F2FF),
-                child: Icon(Icons.workspace_premium, color: Color(0xff474DC5)),
-              ),
-              title: Text("Industry Certificate"),
-            ),
-            const ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: CircleAvatar(
-                backgroundColor: Color(0xffF1F2FF),
-                child: Icon(Icons.group, color: Color(0xff474DC5)),
-              ),
-              title: Text("1-on-1 Mentorship"),
-            ),
-            const Divider(),
-            const SizedBox(height: 8),
-            Text(
-              price.startsWith('₹') ? price : "₹$price",
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Color(0xff474DC5),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff474DC5),
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              // Navigate to payment screen with enrollment data
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const EnrollPaymentScreen(),
-                  settings: RouteSettings(
-                    arguments: {
-                      'title': title,
-                      'batch': 'Online Batch',
-                      'price': price.replaceAll(RegExp(r'[^\d.]'), ''),
-                      'marketplace_id': _oppId,
-                      'request_id': '0',
-                    },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "COURSE",
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xff006565),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        desc,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              );
-            },
-            child: const Text("Proceed to Payment"),
+                const SizedBox(height: 20),
+                // TRAINING DETAILS Header
+                const Text(
+                  "TRAINING DETAILS",
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Training details List items
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today_outlined, size: 16, color: Color(0xff006565)),
+                    const SizedBox(width: 10),
+                    Text(
+                      duration.contains('Duration') || duration.contains('Week') ? duration : "$duration Duration",
+                      style: const TextStyle(fontSize: 13, color: Colors.black87),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Row(
+                  children: [
+                    Icon(Icons.workspace_premium_outlined, size: 16, color: Color(0xff006565)),
+                    const SizedBox(width: 10),
+                    Text(
+                      "Industry Certificate",
+                      style: TextStyle(fontSize: 13, color: Colors.black87),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Row(
+                  children: [
+                    Icon(Icons.people_outline, size: 16, color: Color(0xff006565)),
+                    const SizedBox(width: 10),
+                    Text(
+                      "1-on-1 Mentorship",
+                      style: TextStyle(fontSize: 13, color: Colors.black87),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Divider(height: 1),
+                const SizedBox(height: 16),
+                // Price Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Price",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    Text(
+                      price.startsWith('₹') ? price : "₹$price",
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xff006565),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                // Enroll Now Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xff006565),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      final studentName = vendor['name']?.toString() ?? "Student";
+                      final studentEmail = vendor['email']?.toString() ?? "";
+                      final studentPhone = vendor['phone']?.toString() ?? "";
+                      submitEnrollment(
+                        _oppId,
+                        studentName,
+                        studentEmail,
+                        studentPhone,
+                        "Online Batch",
+                        "Completed enrollment from details screen modal",
+                      );
+                    },
+                    child: const Text(
+                      "Enroll Now",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -658,27 +869,57 @@ class _OpportunityDetailScreenState
             children: [
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(labelText: "Investor Name"),
+                style: const TextStyle(fontSize: 13),
+                decoration: const InputDecoration(
+                  labelText: "Investor Name",
+                  labelStyle: TextStyle(fontSize: 13),
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: emailController,
-                decoration: const InputDecoration(labelText: "Email"),
+                style: const TextStyle(fontSize: 13),
+                decoration: const InputDecoration(
+                  labelText: "Email",
+                  labelStyle: TextStyle(fontSize: 13),
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: phoneController,
-                decoration: const InputDecoration(labelText: "Phone"),
+                style: const TextStyle(fontSize: 13),
+                decoration: const InputDecoration(
+                  labelText: "Phone",
+                  labelStyle: TextStyle(fontSize: 13),
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: amountController,
-                decoration: const InputDecoration(labelText: "Investment Amount (₹)"),
+                style: const TextStyle(fontSize: 13),
+                decoration: const InputDecoration(
+                  labelText: "Investment Amount (₹)",
+                  labelStyle: TextStyle(fontSize: 13),
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: termsController,
-                decoration: const InputDecoration(labelText: "Proposed Terms"),
+                style: const TextStyle(fontSize: 13),
+                decoration: const InputDecoration(
+                  labelText: "Proposed Terms",
+                  labelStyle: TextStyle(fontSize: 13),
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
               ),
             ],
           ),
@@ -692,7 +933,7 @@ class _OpportunityDetailScreenState
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff474DC5),
+              backgroundColor: const Color(0xff006565),
               foregroundColor: Colors.white,
             ),
             onPressed: () {
@@ -707,68 +948,241 @@ class _OpportunityDetailScreenState
   }
 
   void showDonateDialog() {
-    final nameController = TextEditingController();
-    final emailController = TextEditingController();
-    final phoneController = TextEditingController();
-    final amountController = TextEditingController();
-    final notesController = TextEditingController();
+    final amountController = TextEditingController(text: "1000");
+    bool donateAnonymously = false;
+    String selectedQuickAmount = "1000";
+
+    final args = _getArguments;
+    final opp = args?['opportunity'] as Map<String, dynamic>? ?? {};
+    final projectName = opp['title']?.toString() ?? 'Eco-Restore Initiative';
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (_) => Dialog(
         backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Donate", style: TextStyle(fontWeight: FontWeight.bold)),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: "Donor Name"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: StatefulBuilder(
+          builder: (context, setModalState) {
+            return SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title and Close Button Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Donate",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1C1B1B),
+                          ),
+                        ),
+                        IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: const Icon(Icons.close, color: Colors.grey),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // Current Project card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xffe5f7f7),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "CURRENT PROJECT",
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xff006565),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            projectName,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Select Amount label
+                    const Text(
+                      "Select Amount",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    // Quick select buttons Row
+                    Row(
+                      children: ["500", "1000", "5000"].map((amountStr) {
+                        final isSelected = selectedQuickAmount == amountStr;
+                        return Expanded(
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isSelected ? const Color(0xff006565) : Colors.white,
+                                foregroundColor: isSelected ? Colors.white : const Color(0xff006565),
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: const BorderSide(
+                                    color: Color(0xff006565),
+                                    width: 1.2,
+                                  ),
+                                ),
+                              ),
+                              onPressed: () {
+                                setModalState(() {
+                                  selectedQuickAmount = amountStr;
+                                  amountController.text = amountStr;
+                                });
+                              },
+                              child: Text(
+                                "₹$amountStr",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    // Custom Amount Text Field
+                    TextField(
+                      controller: amountController,
+                      keyboardType: TextInputType.number,
+                      onChanged: (val) {
+                        setModalState(() {
+                          if (["500", "1000", "5000"].contains(val)) {
+                            selectedQuickAmount = val;
+                          } else {
+                            selectedQuickAmount = "";
+                          }
+                        });
+                      },
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(
+                          Icons.currency_rupee,
+                          size: 18,
+                          color: Colors.grey,
+                        ),
+                        hintText: "Custom Amount",
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xff006565)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Donate Anonymously Checkbox Row
+                    InkWell(
+                      onTap: () {
+                        setModalState(() {
+                          donateAnonymously = !donateAnonymously;
+                        });
+                      },
+                      child: Row(
+                        children: [
+                          Checkbox(
+                            value: donateAnonymously,
+                            activeColor: const Color(0xff006565),
+                            onChanged: (val) {
+                              setModalState(() {
+                                donateAnonymously = val ?? false;
+                              });
+                            },
+                          ),
+                          const Text(
+                            "Donate Anonymously",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Complete Donation Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xff006565),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed: () {
+                          final enteredAmount = amountController.text.trim();
+                          if (enteredAmount.isEmpty || double.tryParse(enteredAmount) == null || double.parse(enteredAmount) <= 0) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Please enter a valid amount")),
+                            );
+                            return;
+                          }
+                          Navigator.pop(context);
+                          final donorName = donateAnonymously ? "Anonymous" : (vendor['name']?.toString() ?? "Donor");
+                          final donorEmail = donateAnonymously ? "" : (vendor['email']?.toString() ?? "");
+                          final donorPhone = donateAnonymously ? "" : (vendor['phone']?.toString() ?? "");
+                          submitDonation(
+                            donorName,
+                            donorEmail,
+                            donorPhone,
+                            enteredAmount,
+                            donateAnonymously ? "Anonymous Donation" : "Eco Donation",
+                          );
+                        },
+                        child: const Text(
+                          "Complete Donation",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: emailController,
-                decoration: const InputDecoration(labelText: "Email"),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: phoneController,
-                decoration: const InputDecoration(labelText: "Phone"),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: amountController,
-                decoration: const InputDecoration(labelText: "Custom Amount (₹)"),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: notesController,
-                decoration: const InputDecoration(labelText: "Notes"),
-              ),
-            ],
-          ),
+            );
+          },
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff474DC5),
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              submitDonation(nameController.text, emailController.text, phoneController.text, amountController.text, notesController.text);
-            },
-            child: const Text("Donate"),
-          ),
-        ],
       ),
     );
   }
@@ -826,7 +1240,7 @@ class _OpportunityDetailScreenState
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff474DC5),
+              backgroundColor: const Color(0xff006565),
               foregroundColor: Colors.white,
             ),
             onPressed: () {
@@ -846,7 +1260,13 @@ class _OpportunityDetailScreenState
     if (args == null) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text("Opportunity Details"),
+          title: const Text(
+            "Opportunity Details",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
         body: const Center(
           child: Text("No data available"),
@@ -865,30 +1285,66 @@ class _OpportunityDetailScreenState
     final chips = <Widget>[];
     if (opp['type'] != null && opp['type'].toString().isNotEmpty) {
       chips.add(Chip(
-        label: Text(opp['type'].toString(), style: const TextStyle(fontSize: 12)),
-        backgroundColor: const Color(0xffFFF3CD),
-        side: BorderSide.none,
+        label: Text(
+          opp['type'].toString(),
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xff006565)),
+        ),
+        backgroundColor: const Color(0xffe5f7f7),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: const BorderSide(color: Color(0xff006565), width: 0.8),
+        ),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        labelPadding: EdgeInsets.zero,
       ));
     }
     if (opp['location'] != null && opp['location'].toString().isNotEmpty) {
       chips.add(Chip(
-        label: Text(opp['location'].toString(), style: const TextStyle(fontSize: 12)),
-        backgroundColor: const Color(0xffE6F6F6),
-        side: BorderSide.none,
+        label: Text(
+          opp['location'].toString(),
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xff006565)),
+        ),
+        backgroundColor: const Color(0xffe5f7f7),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: const BorderSide(color: Color(0xff006565), width: 0.8),
+        ),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        labelPadding: EdgeInsets.zero,
       ));
     }
     if (opp['industry'] != null && opp['industry'].toString().isNotEmpty) {
       chips.add(Chip(
-        label: Text(opp['industry'].toString(), style: const TextStyle(fontSize: 12)),
-        backgroundColor: const Color(0xffF1F2FF),
-        side: BorderSide.none,
+        label: Text(
+          opp['industry'].toString(),
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xff006565)),
+        ),
+        backgroundColor: const Color(0xffe5f7f7),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: const BorderSide(color: Color(0xff006565), width: 0.8),
+        ),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        labelPadding: EdgeInsets.zero,
       ));
     }
     if (opp['opportunity_for'] != null && opp['opportunity_for'].toString().isNotEmpty) {
       chips.add(Chip(
-        label: Text(opp['opportunity_for'].toString(), style: const TextStyle(fontSize: 12)),
-        backgroundColor: const Color(0xffE2F9F3),
-        side: BorderSide.none,
+        label: Text(
+          opp['opportunity_for'].toString(),
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xff006565)),
+        ),
+        backgroundColor: const Color(0xffe5f7f7),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: const BorderSide(color: Color(0xff006565), width: 0.8),
+        ),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        labelPadding: EdgeInsets.zero,
       ));
     }
     if (opp['tags'] != null && opp['tags'].toString().isNotEmpty) {
@@ -896,18 +1352,36 @@ class _OpportunityDetailScreenState
         tag = tag.trim();
         if (tag.isNotEmpty) {
           chips.add(Chip(
-            label: Text(tag, style: const TextStyle(fontSize: 12)),
+            label: Text(
+              tag,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Colors.black87),
+            ),
             backgroundColor: const Color(0xffF5F5F5),
-            side: BorderSide.none,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: const BorderSide(color: Color(0xffE0E0E0), width: 0.8),
+            ),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            labelPadding: EdgeInsets.zero,
           ));
         }
       }
     }
     if (chips.isEmpty) {
-      chips.add(const Chip(
-        label: Text("Featured", style: TextStyle(fontSize: 12)),
-        backgroundColor: Color(0xffF1F2FF),
-        side: BorderSide.none,
+      chips.add(Chip(
+        label: const Text(
+          "Featured",
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xff006565)),
+        ),
+        backgroundColor: const Color(0xffe5f7f7),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: const BorderSide(color: Color(0xff006565), width: 0.8),
+        ),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        labelPadding: EdgeInsets.zero,
       ));
     }
 
@@ -1004,16 +1478,20 @@ class _OpportunityDetailScreenState
         (oppType.contains('sponsor') || oppType.contains('sponsorship') || oppType.contains('partner') || oppFor.contains('sponsor'));
 
     return Scaffold(
-      backgroundColor: const Color(0xffF9F9FF),
+      backgroundColor: const Color(0xffFCF9F8),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         title: const Text(
           "Opportunity Details",
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xff474DC5)),
+          icon: const Icon(Icons.arrow_back, color: Color(0xff006565)),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -1022,7 +1500,7 @@ class _OpportunityDetailScreenState
           IconButton(
             icon: Icon(
               bookmarked ? Icons.bookmark : Icons.bookmark_border,
-              color: const Color(0xff474DC5),
+              color: const Color(0xff006565),
             ),
             onPressed: () {
               setState(() {
@@ -1031,7 +1509,7 @@ class _OpportunityDetailScreenState
             },
           ),
           IconButton(
-            icon: const Icon(Icons.share, color: Color(0xff474DC5)),
+            icon: const Icon(Icons.share, color: Color(0xff006565)),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("Share Link Copied!")),
@@ -1041,8 +1519,6 @@ class _OpportunityDetailScreenState
         ],
       ),
       bottomNavigationBar: Container(
-        height: 80,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: const BoxDecoration(
           color: Colors.white,
           boxShadow: [
@@ -1053,404 +1529,483 @@ class _OpportunityDetailScreenState
             )
           ],
         ),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              if (showApply) ...[
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff474DC5),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  if (showApply) ...[
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xff006565),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(0, 36),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: showApplyDialog,
+                      icon: const Icon(Icons.send, size: 18),
+                      label: const Text("Apply Now"),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (showEnroll) ...[
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xff006565),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(0, 36),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: showEnrollDialog,
+                      icon: const Icon(Icons.school, size: 18),
+                      label: const Text("Enroll Now"),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (showInvest) ...[
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xff006565),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(0, 36),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: showInvestDialog,
+                      icon: const Icon(Icons.trending_up, size: 18),
+                      label: const Text("Invest Now"),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (showDonate) ...[
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xff006565),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(0, 36),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: showDonateDialog,
+                      icon: const Icon(Icons.favorite, size: 18),
+                      label: const Text("Donate Now"),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (showSponsor) ...[
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xff006565),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(0, 36),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: showSponsorDialog,
+                      icon: const Icon(Icons.handshake, size: 18),
+                      label: const Text("Sponsor"),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xff006565),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(0, 36),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onPressed: showQuotationDialog,
+                    icon: const Icon(Icons.request_quote, size: 18),
+                    label: const Text("Quotation"),
                   ),
-                  onPressed: showApplyDialog,
-                  icon: const Icon(Icons.send, size: 18),
-                  label: const Text("Apply Now"),
-                ),
-                const SizedBox(width: 8),
-              ],
-              if (showEnroll) ...[
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff474DC5),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: showEnrollDialog,
-                  icon: const Icon(Icons.school, size: 18),
-                  label: const Text("Enroll Now"),
-                ),
-                const SizedBox(width: 8),
-              ],
-              if (showInvest) ...[
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff474DC5),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: showInvestDialog,
-                  icon: const Icon(Icons.trending_up, size: 18),
-                  label: const Text("Invest Now"),
-                ),
-                const SizedBox(width: 8),
-              ],
-              if (showDonate) ...[
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff474DC5),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: showDonateDialog,
-                  icon: const Icon(Icons.favorite, size: 18),
-                  label: const Text("Donate Now"),
-                ),
-                const SizedBox(width: 8),
-              ],
-              if (showSponsor) ...[
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff474DC5),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: showSponsorDialog,
-                  icon: const Icon(Icons.handshake, size: 18),
-                  label: const Text("Sponsor"),
-                ),
-                const SizedBox(width: 8),
-              ],
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff474DC5),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                onPressed: showQuotationDialog,
-                icon: const Icon(Icons.request_quote, size: 18),
-                label: const Text("Quotation"),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            Container(
-              height: 260,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: const Color(0xffDCE2F3),
-                image: (coverImage != null && coverImage.isNotEmpty)
-                    ? DecorationImage(
-                        image: NetworkImage(coverImage),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
-              ),
-              child: (coverImage != null && coverImage.isNotEmpty)
-                  ? null
-                  : const Center(
-                      child: Icon(
-                        Icons.business,
-                        size: 120,
-                        color: Color(0xff474DC5),
-                      ),
-                    ),
-            ),
-            Transform.translate(
-              offset: const Offset(0, -40),
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(5),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    )
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 32,
-                          backgroundColor: const Color(0xffF1F2FF),
-                          backgroundImage: (companyLogo != null && companyLogo.isNotEmpty)
-                              ? NetworkImage(companyLogo)
-                              : null,
-                          child: (companyLogo == null || companyLogo.isEmpty)
-                              ? const Icon(Icons.person, size: 36, color: Color(0xff474DC5))
-                              : null,
+            Stack(
+              children: [
+                Container(
+                  height: 260,
+                  width: double.infinity,
+                  color: const Color(0xffd4e6e5),
+                  child: (coverImage != null && coverImage.isNotEmpty)
+                      ? Image.network(
+                          coverImage,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => const Center(
+                            child: Icon(
+                              Icons.business,
+                              size: 120,
+                              color: Color(0xff006565),
+                            ),
+                          ),
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Center(
+                              child: CircularProgressIndicator(color: Color(0xff006565)),
+                            );
+                          },
+                        )
+                      : const Center(
+                          child: Icon(
+                            Icons.business,
+                            size: 120,
+                            color: Color(0xff006565),
+                          ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                title,
+                ),
+                Column(
+                  children: [
+                    const SizedBox(height: 220),
+                    Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        )
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 64,
+                              height: 64,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Color(0xffe5f7f7),
+                              ),
+                              child: ClipOval(
+                                child: (companyLogo != null && companyLogo.isNotEmpty)
+                                    ? Image.network(
+                                        companyLogo,
+                                        width: 64,
+                                        height: 64,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) => const Icon(
+                                          Icons.person,
+                                          size: 36,
+                                          color: Color(0xff006565),
+                                        ),
+                                        loadingBuilder: (context, child, loadingProgress) {
+                                          if (loadingProgress == null) return child;
+                                          return const Center(
+                                            child: SizedBox(
+                                              width: 24,
+                                              height: 24,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Color(0xff006565),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      )
+                                    : const Icon(
+                                        Icons.person,
+                                        size: 36,
+                                        color: Color(0xff006565),
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    title,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      height: 1.2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "$orgName • Posted $postedDate",
+                                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 6,
+                                    runSpacing: 6,
+                                    children: chips,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Color(0xffe5f7f7),
+                              ),
+                              child: Text(
+                                matchScore,
                                 style: const TextStyle(
-                                  fontSize: 22,
+                                  color: Color(0xff006565),
                                   fontWeight: FontWeight.bold,
+                                  fontSize: 15,
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                "$orgName • Posted $postedDate",
-                                style: const TextStyle(color: Colors.grey, fontSize: 13),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Color(0xffF1F2FF),
-                          ),
-                          child: Text(
-                            matchScore,
-                            style: const TextStyle(
-                              color: Color(0xff474DC5),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
                             ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        OutlinedButton.icon(
+                          onPressed: showContactDialog,
+                          icon: const Icon(Icons.chat, color: Color(0xff006565)),
+                          label: const Text("Contact"),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xff006565),
+                            side: const BorderSide(color: Color(0xff006565)),
+                            minimumSize: const Size(double.infinity, 44),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: chips,
-                    ),
-                    const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      onPressed: showContactDialog,
-                      icon: const Icon(Icons.chat, color: Color(0xff474DC5)),
-                      label: const Text("Contact Recruiter"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xff474DC5),
-                        side: const BorderSide(color: Color(0xff474DC5)),
-                        minimumSize: const Size(double.infinity, 44),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ),
-            Transform.translate(
-              offset: const Offset(0, -20),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(5),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          )
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              children: [
-                                Text(
-                                  payoutType,
-                                  style: const TextStyle(color: Colors.grey, fontSize: 13),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  payoutAmount,
-                                  style: const TextStyle(
-                                    color: Color(0xff474DC5),
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  paymentFrequency,
-                                  style: const TextStyle(color: Colors.grey, fontSize: 11),
-                                ),
-                              ],
-                            ),
+            ],
+          ),
+          const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              )
+                            ],
                           ),
-                          Container(
-                            width: 1,
-                            height: 60,
-                            color: Colors.grey.shade300,
-                          ),
-                          Expanded(
-                            child: Column(
-                              children: [
-                                const Text(
-                                  "Applicants",
-                                  style: TextStyle(color: Colors.grey, fontSize: 13),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  "${opp['total_applications'] ?? 0}",
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  opp['status'] == 1 ? 'Active' : 'Closed',
-                                  style: const TextStyle(color: Colors.grey, fontSize: 11),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            width: 1,
-                            height: 60,
-                            color: Colors.grey.shade300,
-                          ),
-                          Expanded(
-                            child: Column(
-                              children: [
-                                const Text(
-                                  "Positions",
-                                  style: TextStyle(color: Colors.grey, fontSize: 13),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  "$positions",
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  duration,
-                                  style: const TextStyle(color: Colors.grey, fontSize: 11),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    buildSectionTitle("About the Role"),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(18),
-                      margin: const EdgeInsets.only(top: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(5),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          )
-                        ],
-                      ),
-                      child: Text(
-                        description,
-                        style: const TextStyle(height: 1.6, color: Colors.black87),
-                      ),
-                    ),
-                    if (opp['benefits'] != null && opp['benefits'].toString().isNotEmpty) ...[
-                      const SizedBox(height: 24),
-                      buildSectionTitle("Benefits & Perks"),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(18),
-                        margin: const EdgeInsets.only(top: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withAlpha(5),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            )
-                          ],
-                        ),
-                        child: Text(
-                          opp['benefits'].toString(),
-                          style: const TextStyle(height: 1.6, color: Colors.black87),
-                        ),
-                      ),
-                    ],
-                    if (galleryList.isNotEmpty) ...[
-                      const SizedBox(height: 24),
-                      buildSectionTitle("Gallery"),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 120,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: galleryList.length,
-                          itemBuilder: (context, index) {
-                            final imageUrl = galleryList[index].toString();
-                            return Container(
-                              margin: const EdgeInsets.only(right: 12),
-                              width: 160,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                image: DecorationImage(
-                                  image: NetworkImage(imageUrl),
-                                  fit: BoxFit.cover,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      payoutType,
+                                      style: const TextStyle(color: Colors.grey, fontSize: 13),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      payoutAmount,
+                                      style: const TextStyle(
+                                        color: Color(0xff006565),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      paymentFrequency,
+                                      style: const TextStyle(color: Colors.grey, fontSize: 11),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            );
-                          },
+                              Container(
+                                width: 1,
+                                height: 60,
+                                color: Colors.grey.shade300,
+                              ),
+                              Expanded(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text(
+                                      "Applicants",
+                                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      "${opp['total_applications'] ?? 0}",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      opp['status'] == 1 ? 'Active' : 'Closed',
+                                      style: const TextStyle(color: Colors.grey, fontSize: 11),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                width: 1,
+                                height: 60,
+                                color: Colors.grey.shade300,
+                              ),
+                              Expanded(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text(
+                                      "Positions",
+                                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      "$positions",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      duration,
+                                      style: const TextStyle(color: Colors.grey, fontSize: 11),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                    const SizedBox(height: 24),
-                    buildSectionTitle("Requirements"),
-                    const SizedBox(height: 12),
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 1.3,
-                      children: requirements,
+                        const SizedBox(height: 20),
+                        buildSectionTitle("About the Role"),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(18),
+                          margin: const EdgeInsets.only(top: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              )
+                            ],
+                          ),
+                          child: Text(
+                            description,
+                            style: const TextStyle(height: 1.6, color: Colors.black87),
+                          ),
+                        ),
+                        if (opp['benefits'] != null && opp['benefits'].toString().isNotEmpty) ...[
+                          const SizedBox(height: 24),
+                          buildSectionTitle("Benefits & Perks"),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(18),
+                            margin: const EdgeInsets.only(top: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                )
+                              ],
+                            ),
+                            child: Text(
+                              opp['benefits'].toString(),
+                              style: const TextStyle(height: 1.6, color: Colors.black87),
+                            ),
+                          ),
+                        ],
+                        if (galleryList.isNotEmpty) ...[
+                          const SizedBox(height: 24),
+                          buildSectionTitle("Gallery"),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 120,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: galleryList.length,
+                              itemBuilder: (context, index) {
+                                final imageUrl = galleryList[index].toString();
+                                return Container(
+                                  margin: const EdgeInsets.only(right: 12),
+                                  width: 160,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xffe5f7f7),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Image.network(
+                                      imageUrl,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) => const Center(
+                                        child: Icon(
+                                          Icons.broken_image,
+                                          color: Color(0xff006565),
+                                          size: 32,
+                                        ),
+                                      ),
+                                      loadingBuilder: (context, child, loadingProgress) {
+                                        if (loadingProgress == null) return child;
+                                        return const Center(
+                                          child: SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Color(0xff006565),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 24),
+                        buildSectionTitle("Requirements"),
+                        const SizedBox(height: 16),
+                        Column(
+                          children: requirements.map((r) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: r,
+                          )).toList(),
+                        ),
+                        const SizedBox(height: 120),
+                      ],
                     ),
-                    const SizedBox(height: 120),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -1461,7 +2016,7 @@ class _OpportunityDetailScreenState
           width: 4,
           height: 24,
           decoration: BoxDecoration(
-            color: const Color(0xff474DC5),
+            color: const Color(0xff006565),
             borderRadius: BorderRadius.circular(10),
           ),
         ),
@@ -1491,35 +2046,42 @@ class RequirementCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withOpacity(0.04)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(3),
-            blurRadius: 8,
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
             offset: const Offset(0, 4),
           )
         ],
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Row(
         children: [
-          CircleAvatar(
-            backgroundColor: const Color(0xffF1F2FF),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xff006565).withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Icon(
               icon,
-              color: const Color(0xff474DC5),
+              color: const Color(0xff006565),
+              size: 22,
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: Colors.black87,
+              ),
             ),
           ),
         ],

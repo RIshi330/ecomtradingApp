@@ -14,11 +14,11 @@ class FeaturedBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF6067DF),
+        color: const Color(0xFF006565),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6067DF).withAlpha(64),
+            color: const Color(0xFF006565).withAlpha(64),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -47,7 +47,7 @@ class FeaturedBanner extends StatelessWidget {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF6067DF),
+              foregroundColor: const Color(0xFF006565),
               minimumSize: const Size(120, 36),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               shape: RoundedRectangleBorder(

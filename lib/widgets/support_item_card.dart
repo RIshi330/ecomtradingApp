@@ -32,12 +32,12 @@ class SupportItemCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F2FF),
+                color: const Color(0xffe5f7f7),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(
                 Icons.inventory_2,
-                color: Color(0xFF474DC5),
+                color: Color(0xFF006565),
               ),
             ),
             const SizedBox(width: 12),
@@ -85,7 +85,7 @@ class SupportItemCard extends StatelessWidget {
               onPressed: onIncrement,
               icon: const Icon(
                 Icons.add_circle,
-                color: Color(0xFF474DC5),
+                color: Color(0xFF006565),
               ),
             ),
           ],

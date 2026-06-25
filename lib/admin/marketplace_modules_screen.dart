@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../Database/Database.dart';
 import '../model/module_model.dart';
+import '../core/theme/app_theme.dart';
 
 class MarketplaceModulesScreen extends StatefulWidget {
-  const MarketplaceModulesScreen({super.key});
+  final bool isEmbedded;
+  const MarketplaceModulesScreen({super.key, this.isEmbedded = false});
 
   @override
   State<MarketplaceModulesScreen> createState() =>
@@ -77,7 +79,7 @@ class _MarketplaceModulesScreenState
       final db = Database();
       final res = await db.getData(
         {
-          "action": "get_marketplace_id",
+          "action": "get_marketplace_modules",
           "marketplace_id": selectedId,
         },
         endpoint: "new_apis/module_marketplace_api.php",
@@ -150,29 +152,37 @@ class _MarketplaceModulesScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF9F9FF),
-      appBar: AppBar(
-        title: const Text("ModuleMarket"),
+      backgroundColor: AppTheme.background,
+      appBar: widget.isEmbedded ? null : AppBar(
+        title: const Text(
+          "ModuleMarket",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textPrimary,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
+            icon: const Icon(Icons.search, color: AppTheme.textPrimary),
             onPressed: () {},
           ),
           IconButton(
-            icon: const Icon(Icons.tune),
+            icon: const Icon(Icons.tune, color: AppTheme.textPrimary),
             onPressed: showFilterSheet,
           ),
           const Padding(
             padding: EdgeInsets.only(right: 12),
             child: CircleAvatar(
               radius: 18,
-              child: Icon(Icons.person),
+              backgroundColor: AppTheme.secondaryContainer,
+              child: Icon(Icons.person, color: AppTheme.primary),
             ),
           ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: _fetchMarketplacesAndModules,
+        color: AppTheme.primary,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
@@ -181,29 +191,46 @@ class _MarketplaceModulesScreenState
               Container(
                 margin: const EdgeInsets.all(16),
                 padding: const EdgeInsets.all(24),
-                height: 220,
+                height: 180,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                   gradient: const LinearGradient(
                     colors: [
-                      Color(0xff7C83FD),
-                      Color(0xffA3A9FF),
+                      AppTheme.primary,
+                      AppTheme.primaryContainer,
                     ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
+                  boxShadow: AppTheme.cardShadow,
                 ),
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Chip(
-                      label: Text("Featured Module"),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        "Featured Module",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                    SizedBox(height: 16),
-                    Text(
+                    const SizedBox(height: 12),
+                    const Text(
                       "E-com Revolution\nMarketplace Engine",
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 26,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
+                        height: 1.2,
                       ),
                     ),
                   ],
@@ -216,24 +243,40 @@ class _MarketplaceModulesScreenState
                   child: Text(
                     "Categories",
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
               SizedBox(
-                height: 48,
+                height: 40,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: categoriesList.length,
                   itemBuilder: (context, index) {
+                    final isSelected = selectedCategory == index;
                     return Padding(
                       padding: const EdgeInsets.only(left: 12),
                       child: ChoiceChip(
-                        label: Text(categoriesList[index]),
-                        selected: selectedCategory == index,
+                        label: Text(
+                          categoriesList[index],
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : AppTheme.textSecondary,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                            fontSize: 13,
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: AppTheme.primary,
+                        backgroundColor: AppTheme.surfaceContainer,
+                        side: BorderSide.none,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        showCheckmark: false,
                         onSelected: (_) async {
                           setState(() {
                             selectedCategory = index;
@@ -257,8 +300,9 @@ class _MarketplaceModulesScreenState
                   child: Text(
                     "Recommended For You",
                     style: TextStyle(
-                      fontSize: 22,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
                     ),
                   ),
                 ),
@@ -269,7 +313,7 @@ class _MarketplaceModulesScreenState
                   padding: EdgeInsets.symmetric(vertical: 40),
                   child: Center(
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xff7C83FD)),
+                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
                     ),
                   ),
                 )
@@ -278,9 +322,13 @@ class _MarketplaceModulesScreenState
                   padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
                   child: Column(
                     children: [
-                      Text(_errorMessage!, style: const TextStyle(color: Colors.red), textAlign: TextAlign.center),
+                      Text(_errorMessage!, style: const TextStyle(color: AppTheme.error), textAlign: TextAlign.center),
                       const SizedBox(height: 12),
                       ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primary,
+                          foregroundColor: Colors.white,
+                        ),
                         onPressed: _fetchMarketplacesAndModules,
                         child: const Text("Retry"),
                       ),
@@ -291,7 +339,7 @@ class _MarketplaceModulesScreenState
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 40),
                   child: Center(
-                    child: Text("No modules found in this category."),
+                    child: Text("No modules found in this category.", style: TextStyle(color: AppTheme.textSecondary)),
                   ),
                 )
               else
@@ -310,9 +358,12 @@ class _MarketplaceModulesScreenState
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: widget.isEmbedded ? null : BottomNavigationBar(
         currentIndex: 0,
-        selectedItemColor: const Color(0xff7C83FD),
+        selectedItemColor: AppTheme.primary,
+        unselectedItemColor: AppTheme.textSecondary.withOpacity(0.6),
+        backgroundColor: Colors.white,
+        elevation: 8,
         onTap: (index) {
           if (index == 1) {
             Navigator.pushNamed(context, '/module_manager');
@@ -367,9 +418,11 @@ class ModuleCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        boxShadow: AppTheme.cardShadow,
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -377,72 +430,135 @@ class ModuleCard extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: const Color(0xffF1F2FF),
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppTheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                 ),
                 child: Icon(
                   module.icon,
-                  color: const Color(0xff7C83FD),
+                  color: AppTheme.primary,
+                  size: 28,
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      module.title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      module.category,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
+                  horizontal: 8,
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xff7C83FD),
-                  borderRadius: BorderRadius.circular(8),
+                  color: const Color(0xFFFFF4EB),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text(
-                  module.rating,
-                  style: const TextStyle(
-                    color: Colors.white,
-                  ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.star, color: Colors.orange, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      module.rating,
+                      style: const TextStyle(
+                        color: Colors.orange,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 14),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              module.title,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+          if (module.features.isNotEmpty) ...[
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: module.features
+                  .map(
+                    (e) => Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceContainer,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        e,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
             ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: module.features
-                .map(
-                  (e) => Chip(
-                    label: Text(e),
-                  ),
-                )
-                .toList(),
-          ),
-          const SizedBox(height: 14),
+            const SizedBox(height: 16),
+          ],
           Row(
             children: [
-              Text(
-                module.price,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (module.originalPrice != module.discountPrice) ...[
+                    Text(
+                      module.originalPrice,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        decoration: TextDecoration.lineThrough,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                  ],
+                  Text(
+                    module.price,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primary,
+                    ),
+                  ),
+                ],
               ),
               const Spacer(),
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(110, 38),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
                 onPressed: () {
                   Navigator.pushNamed(context, '/module_details', arguments: module);
                 },
-                child: const Text("View Details"),
+                child: const Text(
+                  "View Details",
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
               ),
             ],
           ),
@@ -457,110 +573,126 @@ class FilterSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text(
-                "Filter Modules",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  "Filter Modules",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
+                  ),
                 ),
+                const Spacer(),
+                IconButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              "Price Range",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
               ),
-              const Spacer(),
-              IconButton(
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.primary,
+                      side: const BorderSide(color: AppTheme.primary),
+                    ),
+                    onPressed: () {},
+                    child: const Text("Free"),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primary,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () {},
+                    child: const Text("Paid"),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              "Sort By",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                FilterChip(
+                  label: const Text("Popularity"),
+                  selected: true,
+                  selectedColor: AppTheme.primary.withOpacity(0.12),
+                  checkmarkColor: AppTheme.primary,
+                  labelStyle: const TextStyle(color: AppTheme.primary),
+                  onSelected: (_) {},
+                ),
+                FilterChip(
+                  label: const Text("Newest"),
+                  selected: false,
+                  onSelected: (_) {},
+                ),
+                FilterChip(
+                  label: const Text("Rating"),
+                  selected: false,
+                  onSelected: (_) {},
+                ),
+                FilterChip(
+                  label: const Text("Price"),
+                  selected: false,
+                  onSelected: (_) {},
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                  ),
+                ),
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                icon: const Icon(Icons.close),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            "Price Range",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {},
-                  child: const Text("Free"),
+                child: const Text(
+                  "Apply Filters",
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {},
-                  child: const Text("Paid"),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            "Sort By",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
             ),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              FilterChip(
-                label: const Text("Popularity"),
-                selected: true,
-                onSelected: (_) {},
-              ),
-              FilterChip(
-                label: const Text("Newest"),
-                selected: false,
-                onSelected: (_) {},
-              ),
-              FilterChip(
-                label: const Text("Rating"),
-                selected: false,
-                onSelected: (_) {},
-              ),
-              FilterChip(
-                label: const Text("Price"),
-                selected: false,
-                onSelected: (_) {},
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff7C83FD),
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                ),
-              ),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text(
-                "Apply Filters",
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }

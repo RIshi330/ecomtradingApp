@@ -43,6 +43,9 @@ class TradingMarketplaceScreen extends StatefulWidget {
 }
 
 class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
+  static const Color themeColor = Color(0xFF006565); // Teal Primary
+  static const Color themeAccent = Color(0xFFD4E6E5); // Light Teal Container
+
   final TextEditingController searchController = TextEditingController();
   int currentIndex = 0;
   bool isLoading = false;
@@ -182,6 +185,7 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
   }
 
   Future<void> _fetchItems() async {
+    if (!mounted) return;
     setState(() {
       isLoading = true;
     });
@@ -260,6 +264,7 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
           }
         }
 
+        if (!mounted) return;
         setState(() {
           b2cProducts = fetchedB2C.isNotEmpty ? fetchedB2C : mockB2C;
           b2bProducts = fetchedB2B.isNotEmpty ? fetchedB2B : mockB2B;
@@ -279,13 +284,16 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
       debugPrint('Error fetching marketplace items: $e');
       _loadMockData();
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
   void _loadMockData() {
+    if (!mounted) return;
     setState(() {
       b2cProducts = mockB2C;
       b2bProducts = mockB2B;
@@ -342,7 +350,7 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
                       Navigator.pushNamed(context, AppRoutes.selectedItems);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple,
+                      backgroundColor: themeColor,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: const Text("Yes", style: TextStyle(color: Colors.white)),
@@ -389,52 +397,49 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Widget scrollContent = SingleChildScrollView(
+      child: Column(
+        children: [
+          if (!widget.isEmbedded) buildTopBar(),
+          buildSearchBar(),
+          buildMembershipBanner(),
+          if (isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20.0),
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: themeColor,
+                ),
+              ),
+            ),
+          buildB2CSection(),
+          buildB2BSection(),
+          buildServicesSection(),
+          buildComboPackSection(),
+          buildMembershipPlans(),
+          buildTrainingSection(),
+          buildDonationSection(),
+          buildEventsSection(),
+          const SizedBox(height: 180),
+        ],
+      ),
+    );
+
     Widget content = Stack(
       children: [
-        SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                if (!widget.isEmbedded) buildTopBar(),
-                buildSearchBar(),
-                buildMembershipBanner(),
-                if (isLoading)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20.0),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: Colors.deepPurple,
-                      ),
-                    ),
-                  ),
-                buildB2CSection(),
-                buildB2BSection(),
-                buildServicesSection(),
-                buildComboPackSection(),
-                buildMembershipPlans(),
-                buildTrainingSection(),
-                buildDonationSection(),
-                buildEventsSection(),
-                const SizedBox(height: 180),
-              ],
-            ),
-          ),
-        ),
+        Positioned.fill(child: scrollContent),
         if (selectedItems.isNotEmpty) buildSelectionBar(),
       ],
     );
 
     if (widget.isEmbedded) {
-      return Scaffold(
-        backgroundColor: const Color(0xffFEF7FF),
-        body: content,
-      );
+      return content;
     }
 
     return Scaffold(
       backgroundColor: const Color(0xffFEF7FF),
       bottomNavigationBar: buildBottomNav(),
-      body: content,
+      body: SafeArea(child: content),
     );
   }
 
@@ -445,7 +450,7 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
         children: [
           const CircleAvatar(
             radius: 22,
-            backgroundColor: Colors.deepPurple,
+            backgroundColor: themeColor,
             child: Icon(Icons.person, color: Colors.white),
           ),
           const SizedBox(width: 12),
@@ -503,7 +508,7 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xffE8DEF9),
+        color: themeAccent,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -520,8 +525,8 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
                   errorBuilder: (ctx, err, stack) => Container(
                     width: 80,
                     height: 80,
-                    color: Colors.deepPurple.shade100,
-                    child: const Icon(Icons.business, size: 40, color: Colors.deepPurple),
+                    color: themeAccent,
+                    child: const Icon(Icons.business, size: 40, color: themeColor),
                   ),
                 ),
               ),
@@ -607,7 +612,7 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
           ),
         ),
         SizedBox(
-          height: 360,
+          height: 400,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.all(16),
@@ -668,7 +673,7 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.deepPurple,
+                    color: themeColor,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -685,7 +690,7 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
                 right: 10,
                 child: Checkbox(
                   value: item.selected,
-                  activeColor: Colors.deepPurple,
+                  activeColor: themeColor,
                   onChanged: (_) {
                     toggleSelection(item);
                   },
@@ -717,7 +722,7 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
                 Text(
                   item.price,
                   style: const TextStyle(
-                    color: Colors.deepPurple,
+                    color: themeColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
                   ),
@@ -756,7 +761,7 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 310,
+          height: 360,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.all(16),
@@ -790,7 +795,7 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
               const Icon(
                 Icons.business_center,
                 size: 60,
-                color: Colors.deepPurple,
+                color: themeColor,
               ),
               const SizedBox(height: 10),
               Text(
@@ -837,7 +842,7 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
             right: 0,
             child: Checkbox(
               value: item.selected,
-              activeColor: Colors.deepPurple,
+              activeColor: themeColor,
               onChanged: (_) {
                 toggleSelection(item);
               },
@@ -894,10 +899,10 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
             children: [
               CircleAvatar(
                 radius: 32,
-                backgroundColor: Colors.deepPurple.shade50,
+                backgroundColor: themeAccent,
                 backgroundImage: item.image.isNotEmpty ? NetworkImage(item.image) : null,
                 child: item.image.isEmpty
-                    ? const Icon(Icons.school, size: 30, color: Colors.deepPurple)
+                    ? const Icon(Icons.school, size: 30, color: themeColor)
                     : null,
               ),
               Positioned(
@@ -906,7 +911,7 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(2),
                   decoration: const BoxDecoration(
-                    color: Colors.deepPurple,
+                    color: themeColor,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -954,7 +959,7 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
             children: [
               Checkbox(
                 value: item.selected,
-                activeColor: Colors.deepPurple,
+                activeColor: themeColor,
                 onChanged: (_) {
                   toggleSelection(item);
                 },
@@ -965,7 +970,7 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: Colors.deepPurple,
+                  color: themeColor,
                 ),
               ),
             ],
@@ -989,13 +994,14 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
         child: Row(
           children: [
             CircleAvatar(
-              backgroundColor: Colors.deepPurple,
+              radius: 18,
+              backgroundColor: themeColor,
               child: Text(
                 selectedItems.length.toString(),
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1006,28 +1012,32 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
+                      fontSize: 13,
                     ),
                   ),
                   Text(
                     "${selectedItems.length} products selected",
                     style: const TextStyle(
                       color: Colors.white70,
-                      fontSize: 12,
+                      fontSize: 11,
                     ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             ElevatedButton(
               onPressed: saveSelectedItems,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
+                backgroundColor: themeColor,
                 foregroundColor: Colors.white,
+                minimumSize: const Size(0, 40),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text("Add To My List"),
+              child: const Text("Add To My List", overflow: TextOverflow.ellipsis),
             ),
           ],
         ),
@@ -1095,7 +1105,7 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
-                  foregroundColor: Colors.deepPurple,
+                  foregroundColor: themeColor,
                 ),
                 child: const Text("Buy Combo"),
               ),
@@ -1181,7 +1191,7 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
           Text(
             price,
             style: const TextStyle(
-              color: Colors.deepPurple,
+              color: themeColor,
               fontSize: 22,
               fontWeight: FontWeight.bold,
             ),
@@ -1268,7 +1278,7 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
         children: [
           const CircleAvatar(
             radius: 32,
-            backgroundColor: Colors.deepPurple,
+            backgroundColor: themeColor,
             child: Icon(Icons.school, color: Colors.white),
           ),
           const SizedBox(width: 16),
@@ -1362,8 +1372,8 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
           const SizedBox(height: 10),
           const LinearProgressIndicator(
             value: .65,
-            color: Colors.deepPurple,
-            backgroundColor: Color(0xffE8DEF9),
+            color: themeColor,
+            backgroundColor: themeAccent,
           ),
           const SizedBox(height: 10),
           Text(raised),
@@ -1408,16 +1418,44 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
     String title,
     String date,
   ) {
-    return ListTile(
-      leading: const CircleAvatar(
-        backgroundColor: Colors.deepPurple,
-        child: Icon(Icons.event, color: Colors.white),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade300),
       ),
-      title: Text(title),
-      subtitle: Text(date),
-      trailing: ElevatedButton(
-        onPressed: () {},
-        child: const Text("Register"),
+      child: Row(
+        children: [
+          const CircleAvatar(
+            backgroundColor: themeColor,
+            child: Icon(Icons.event, color: Colors.white),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 2),
+                Text(date, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 100,
+            height: 36,
+            child: ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.zero,
+              ),
+              child: const Text("Register"),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1425,7 +1463,7 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
   Widget buildBottomNav() {
     return BottomNavigationBar(
       currentIndex: currentIndex,
-      selectedItemColor: Colors.deepPurple,
+      selectedItemColor: themeColor,
       unselectedItemColor: Colors.grey,
       onTap: (index) {
         setState(() {
@@ -1472,6 +1510,7 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
               ),
               const SizedBox(height: 20),
               DropdownButtonFormField(
+                isExpanded: true,
                 items: const [
                   DropdownMenuItem(
                     value: "All",

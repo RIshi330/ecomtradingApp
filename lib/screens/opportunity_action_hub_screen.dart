@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../app_constants.dart';
@@ -20,8 +22,15 @@ class ActionHubApp extends StatelessWidget {
       title: 'Opportunity Action Hub',
       theme: ThemeData(
         useMaterial3: true,
-        colorSchemeSeed: const Color(0xFF474DC5),
+        colorSchemeSeed: const Color(0xFF006565),
       ),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        FlutterQuillLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('en', 'US')],
       home: const OpportunityActionHubScreen(),
     );
   }
@@ -105,8 +114,12 @@ class _OpportunityActionHubScreenState
         final data = res['data'];
         if (data != null) {
           setState(() {
-            ecashBalance = double.tryParse(data['cash']?['available_balance']?.toString() ?? '0') ?? 0.0;
-            ewalletBalance = double.tryParse(data['wallet']?['available_balance']?.toString() ?? '0') ?? 0.0;
+            ecashBalance = double.tryParse(
+                    data['cash']?['available_balance']?.toString() ?? '0') ??
+                0.0;
+            ewalletBalance = double.tryParse(
+                    data['wallet']?['available_balance']?.toString() ?? '0') ??
+                0.0;
           });
         }
       }
@@ -146,7 +159,7 @@ class _OpportunityActionHubScreenState
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff474DC5),
+              backgroundColor: const Color(0xFF006565),
               foregroundColor: Colors.white,
             ),
             onPressed: () {
@@ -171,14 +184,15 @@ class _OpportunityActionHubScreenState
       barrierDismissible: false,
       builder: (_) => const Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff474DC5)),
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF006565)),
         ),
       ),
     );
 
     try {
       final db = Database();
-      final notes = "Payment Breakdown: Ecash ₹$ecashUsed, Ewallet ₹$ewalletUsed, Online: ₹${(amount - ecashUsed - ewalletUsed).toStringAsFixed(2)}";
+      final notes =
+          "Payment Breakdown: Ecash ₹$ecashUsed, Ewallet ₹$ewalletUsed, Online: ₹${(amount - ecashUsed - ewalletUsed).toStringAsFixed(2)}";
       final response = await db.getData({
         'action': 'donate',
         'name': userName.isNotEmpty ? userName : 'Test Donor',
@@ -199,13 +213,19 @@ class _OpportunityActionHubScreenState
         Navigator.pop(context); // Close donation modal
         _fetchBalances(); // reload balances
 
-        final orderId = response['data']?['id']?.toString() ?? response['id']?.toString() ?? 'N/A';
+        final orderId = response['data']?['id']?.toString() ??
+            response['id']?.toString() ??
+            'N/A';
         final List<String> methods = [];
-        if (ecashUsed > 0) methods.add("E-Cash (₹${ecashUsed.toStringAsFixed(2)})");
-        if (ewalletUsed > 0) methods.add("E-Wallet (₹${ewalletUsed.toStringAsFixed(2)})");
+        if (ecashUsed > 0)
+          methods.add("E-Cash (₹${ecashUsed.toStringAsFixed(2)})");
+        if (ewalletUsed > 0)
+          methods.add("E-Wallet (₹${ewalletUsed.toStringAsFixed(2)})");
         final onlinePaid = amount - ecashUsed - ewalletUsed;
-        if (onlinePaid > 0) methods.add("Razorpay Online (₹${onlinePaid.toStringAsFixed(2)})");
-        final methodString = methods.isEmpty ? "Free Donation" : methods.join(" + ");
+        if (onlinePaid > 0)
+          methods.add("Razorpay Online (₹${onlinePaid.toStringAsFixed(2)})");
+        final methodString =
+            methods.isEmpty ? "Free Donation" : methods.join(" + ");
 
         Navigator.push(
           context,
@@ -242,7 +262,8 @@ class _OpportunityActionHubScreenState
   Future<void> _submitSupportItems(String actionType) async {
     final selectedItemsText = supportItems
         .where((item) => item.quantity > 0)
-        .map((item) => "${item.name} (Qty: ${item.quantity}, Cost: ₹${item.price * item.quantity})")
+        .map((item) =>
+            "${item.name} (Qty: ${item.quantity}, Cost: ₹${item.price * item.quantity})")
         .join(", ");
 
     if (selectedItemsText.isEmpty) {
@@ -284,7 +305,8 @@ class _OpportunityActionHubScreenState
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: const Row(
               children: [
                 Icon(Icons.check_circle, color: Colors.green),
@@ -300,7 +322,7 @@ class _OpportunityActionHubScreenState
             actions: [
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff474DC5),
+                  backgroundColor: const Color(0xFF006565),
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () => Navigator.pop(ctx),
@@ -330,7 +352,8 @@ class _OpportunityActionHubScreenState
     }
   }
 
-  Future<void> _submitCallbackRequest(String phone, String preferredTime) async {
+  Future<void> _submitCallbackRequest(
+      String phone, String preferredTime) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -383,7 +406,8 @@ class _OpportunityActionHubScreenState
     }
   }
 
-  Future<void> _submitAppointmentRequest(DateTime date, String slot, String notes) async {
+  Future<void> _submitAppointmentRequest(
+      DateTime date, String slot, String notes) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -391,7 +415,8 @@ class _OpportunityActionHubScreenState
     );
 
     try {
-      final dateStr = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+      final dateStr =
+          "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
       final db = Database();
       final response = await db.getData({
         'action': 'appointment',
@@ -412,7 +437,8 @@ class _OpportunityActionHubScreenState
         showDialog(
           context: context,
           builder: (_) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: const Text("Appointment Confirmed"),
             content: Text(
               "Your appointment has been successfully booked for $dateStr at $slot.",
@@ -420,7 +446,7 @@ class _OpportunityActionHubScreenState
             actions: [
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff474DC5),
+                  backgroundColor: const Color(0xFF006565),
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () => Navigator.pop(context),
@@ -460,14 +486,14 @@ class _OpportunityActionHubScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9FF),
+      backgroundColor: const Color(0xffFCF9F8),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back,
-            color: Color(0xFF474DC5),
+            color: Color(0xFF006565),
           ),
           onPressed: () {
             Navigator.maybePop(context);
@@ -483,46 +509,13 @@ class _OpportunityActionHubScreenState
           IconButton(
             icon: const Icon(
               Icons.share,
-              color: Color(0xFF474DC5),
+              color: Color(0xFF006565),
             ),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("Link copied to clipboard!")),
               );
             },
-          ),
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        onTap: (index) {
-          setState(() {
-            currentIndex = index;
-          });
-        },
-        selectedItemColor: const Color(0xFF474DC5),
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: "Home",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: "Search",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.grid_view),
-            label: "My Hub",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat),
-            label: "Messages",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: "Profile",
           ),
         ],
       ),
@@ -567,7 +560,7 @@ class _OpportunityActionHubScreenState
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6067DF),
+                        color: const Color(0xFF006565),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: const Text(
@@ -608,7 +601,7 @@ class _OpportunityActionHubScreenState
               crossAxisCount: 2,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              childAspectRatio: 1.2,
+              childAspectRatio: 1.1,
               children: [
                 ActionHubCard(
                   title: "Donate Now",
@@ -659,7 +652,7 @@ class _OpportunityActionHubScreenState
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFF474DC5),
+                color: const Color(0xFF006565),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Column(
@@ -700,7 +693,8 @@ class _OpportunityActionHubScreenState
   // --- MODALS ---
 
   void showDonateModal() {
-    final amountController = TextEditingController(text: selectedDonation.toString());
+    final amountController =
+        TextEditingController(text: selectedDonation.toString());
     bool useEcash = false;
     bool useEwallet = false;
 
@@ -724,7 +718,8 @@ class _OpportunityActionHubScreenState
             }
 
             if (useEwallet) {
-              ewalletUsed = remaining > ewalletBalance ? ewalletBalance : remaining;
+              ewalletUsed =
+                  remaining > ewalletBalance ? ewalletBalance : remaining;
               remaining -= ewalletUsed;
             }
 
@@ -765,7 +760,7 @@ class _OpportunityActionHubScreenState
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF1F2FF),
+                        color: const Color(0xffe5f7f7),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: const Column(
@@ -774,7 +769,7 @@ class _OpportunityActionHubScreenState
                           Text(
                             "Current Project",
                             style: TextStyle(
-                              color: Color(0xFF474DC5),
+                              color: Color(0xFF006565),
                             ),
                           ),
                           SizedBox(height: 6),
@@ -833,8 +828,11 @@ class _OpportunityActionHubScreenState
                     CheckboxListTile(
                       contentPadding: EdgeInsets.zero,
                       value: useEcash,
-                      title: Text("Use Ecash (Available: ₹${ecashBalance.toStringAsFixed(2)})"),
-                      subtitle: useEcash ? Text("Applying: ₹${ecashUsed.toStringAsFixed(2)}") : null,
+                      title: Text(
+                          "Use Ecash (Available: ₹${ecashBalance.toStringAsFixed(2)})"),
+                      subtitle: useEcash
+                          ? Text("Applying: ₹${ecashUsed.toStringAsFixed(2)}")
+                          : null,
                       onChanged: (value) {
                         modalSetState(() {
                           useEcash = value ?? false;
@@ -844,8 +842,11 @@ class _OpportunityActionHubScreenState
                     CheckboxListTile(
                       contentPadding: EdgeInsets.zero,
                       value: useEwallet,
-                      title: Text("Use Ewallet (Available: ₹${ewalletBalance.toStringAsFixed(2)})"),
-                      subtitle: useEwallet ? Text("Applying: ₹${ewalletUsed.toStringAsFixed(2)}") : null,
+                      title: Text(
+                          "Use Ewallet (Available: ₹${ewalletBalance.toStringAsFixed(2)})"),
+                      subtitle: useEwallet
+                          ? Text("Applying: ₹${ewalletUsed.toStringAsFixed(2)}")
+                          : null,
                       onChanged: (value) {
                         modalSetState(() {
                           useEwallet = value ?? false;
@@ -866,7 +867,9 @@ class _OpportunityActionHubScreenState
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text("Total Amount:"),
-                              Text("₹${totalAmount.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                              Text("₹${totalAmount.toStringAsFixed(2)}",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold)),
                             ],
                           ),
                           if (ecashUsed > 0) ...[
@@ -875,7 +878,8 @@ class _OpportunityActionHubScreenState
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 const Text("Ecash Deduction:"),
-                                Text("-₹${ecashUsed.toStringAsFixed(2)}", style: const TextStyle(color: Colors.red)),
+                                Text("-₹${ecashUsed.toStringAsFixed(2)}",
+                                    style: const TextStyle(color: Colors.red)),
                               ],
                             ),
                           ],
@@ -885,7 +889,8 @@ class _OpportunityActionHubScreenState
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 const Text("Ewallet Deduction:"),
-                                Text("-₹${ewalletUsed.toStringAsFixed(2)}", style: const TextStyle(color: Colors.red)),
+                                Text("-₹${ewalletUsed.toStringAsFixed(2)}",
+                                    style: const TextStyle(color: Colors.red)),
                               ],
                             ),
                           ],
@@ -893,8 +898,13 @@ class _OpportunityActionHubScreenState
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text("Remaining to Pay Online:", style: TextStyle(fontWeight: FontWeight.bold)),
-                              Text("₹${remaining.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF474DC5))),
+                              const Text("Remaining to Pay Online:",
+                                  style:
+                                      TextStyle(fontWeight: FontWeight.bold)),
+                              Text("₹${remaining.toStringAsFixed(2)}",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF006565))),
                             ],
                           ),
                         ],
@@ -915,14 +925,15 @@ class _OpportunityActionHubScreenState
                       width: double.infinity,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xff474DC5),
+                          backgroundColor: const Color(0xFF006565),
                           foregroundColor: Colors.white,
                         ),
                         onPressed: () {
                           if (totalAmount <= 0) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text("Please enter a valid donation amount"),
+                                content: Text(
+                                    "Please enter a valid donation amount"),
                                 backgroundColor: Colors.red,
                               ),
                             );
@@ -1035,7 +1046,7 @@ class _OpportunityActionHubScreenState
                             Text(
                               "₹${totalSupportCost.toStringAsFixed(0)}",
                               style: const TextStyle(
-                                color: Color(0xFF474DC5),
+                                color: Color(0xFF006565),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 20,
                               ),
@@ -1066,7 +1077,7 @@ class _OpportunityActionHubScreenState
                             Expanded(
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xff474DC5),
+                                  backgroundColor: const Color(0xFF006565),
                                   foregroundColor: Colors.white,
                                 ),
                                 onPressed: () {
@@ -1100,234 +1111,544 @@ class _OpportunityActionHubScreenState
 
   void showCallbackModal() {
     final phoneController = TextEditingController(text: userPhone);
-    String selectedTime = "Morning";
+    String selectedTime = "Afternoon (12 PM - 4 PM)";
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (_) {
-        return StatefulBuilder(
-          builder: (context, modalSetState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-                left: 20,
-                right: 20,
-                top: 20,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Request Callback",
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: StatefulBuilder(
+          builder: (context, setModalState) {
+            return SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title and Close Button Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Request Callback",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1C1B1B),
+                          ),
+                        ),
+                        IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: const Icon(Icons.close, color: Colors.grey),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: phoneController,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: "Phone Number",
-                      prefixIcon: Icon(Icons.phone),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    "Preferred Time",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  DropdownButtonFormField<String>(
-                    value: selectedTime,
-                    items: const [
-                      DropdownMenuItem(
-                        value: "Morning",
-                        child: Text("Morning"),
-                      ),
-                      DropdownMenuItem(
-                        value: "Afternoon",
-                        child: Text("Afternoon"),
-                      ),
-                      DropdownMenuItem(
-                        value: "Evening",
-                        child: Text("Evening"),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      modalSetState(() {
-                        selectedTime = value ?? "Morning";
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xff474DC5),
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: () {
-                        if (phoneController.text.trim().isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Please enter a phone number"),
-                              backgroundColor: Colors.red,
+                    const SizedBox(height: 16),
+                    // Support Banner Row
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Color(0xffe5f7f7),
+                          ),
+                          child: const Icon(
+                            Icons.headset_mic_outlined,
+                            color: Color(0xff006565),
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            "An initiative coordinator will reach out to you shortly.",
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.black87,
+                              height: 1.4,
                             ),
-                          );
-                          return;
-                        }
-                        _submitCallbackRequest(phoneController.text.trim(), selectedTime);
-                      },
-                      child: const Text("Request Call"),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 20),
+                    // Phone Number label
+                    const Text(
+                      "Phone Number",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Phone Number Text Field
+                    TextField(
+                      controller: phoneController,
+                      keyboardType: TextInputType.phone,
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(
+                          Icons.smartphone_outlined,
+                          size: 20,
+                          color: Colors.grey,
+                        ),
+                        hintText: "+91 98765 43210",
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 14),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              const BorderSide(color: Color(0xff006565)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Preferred Time label
+                    const Text(
+                      "Preferred Time",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Preferred Time Dropdown
+                    DropdownButtonFormField<String>(
+                      value: selectedTime,
+                      decoration: InputDecoration(
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 14),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              const BorderSide(color: Color(0xff006565)),
+                        ),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: "Morning (9 AM - 12 PM)",
+                          child: Text("Morning (9 AM - 12 PM)"),
+                        ),
+                        DropdownMenuItem(
+                          value: "Afternoon (12 PM - 4 PM)",
+                          child: Text("Afternoon (12 PM - 4 PM)"),
+                        ),
+                        DropdownMenuItem(
+                          value: "Evening (4 PM - 7 PM)",
+                          child: Text("Evening (4 PM - 7 PM)"),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        setModalState(() {
+                          selectedTime = value ?? "Afternoon (12 PM - 4 PM)";
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    // Request Call Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xff006565),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed: () {
+                          final phoneVal = phoneController.text.trim();
+                          if (phoneVal.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Please enter a phone number"),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+                          Navigator.pop(context);
+                          _submitCallbackRequest(phoneVal, selectedTime);
+                        },
+                        child: const Text(
+                          "Request Call",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
-        );
-      },
+        ),
+      ),
     );
   }
 
   void showAppointmentModal() {
-    DateTime? selectedDate;
-    String selectedSlot = "10:00 AM";
+    DateTime selectedDate = DateTime.now();
+    DateTime focusedDate = DateTime.now();
+    String selectedSlot = "02:00 PM";
     final notesController = TextEditingController();
 
-    showModalBottomSheet(
+    final weekdaysAbbr = ["M", "T", "W", "T", "F", "S", "S"];
+    final months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ];
+    final monthsFull = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ];
+
+    String formatFriendlyDate(DateTime dt) {
+      final weekdayName = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ][dt.weekday - 1];
+      final monthName = months[dt.month - 1];
+      return "$weekdayName, ${dt.day} $monthName";
+    }
+
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (_) {
-        return StatefulBuilder(
-          builder: (context, modalSetState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-                left: 20,
-                right: 20,
-                top: 20,
-              ),
-              child: SingleChildScrollView(
+      builder: (_) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: StatefulBuilder(
+          builder: (context, setModalState) {
+            final daysInMonth =
+                DateTime(focusedDate.year, focusedDate.month + 1, 0).day;
+
+            return SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Book Appointment",
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.calendar_today),
-                      title: Text(
-                        selectedDate == null
-                            ? "Choose Date"
-                            : "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
-                      ),
-                      trailing: ElevatedButton(
-                        onPressed: () async {
-                          final date = await showDatePicker(
-                            context: context,
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime(2030),
-                            initialDate: DateTime.now(),
-                          );
-                          if (date != null) {
-                            modalSetState(() {
-                              selectedDate = date;
-                            });
-                          }
-                        },
-                        child: const Text("Select"),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      "Available Time Slots",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                    // Title and Close Button Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        for (final slot in [
-                          "10:00 AM",
-                          "02:00 PM",
-                          "04:30 PM",
-                          "05:00 PM"
-                        ])
-                          ChoiceChip(
-                            label: Text(slot),
-                            selected: selectedSlot == slot,
-                            onSelected: (selected) {
-                              modalSetState(() {
-                                if (selected) {
-                                  selectedSlot = slot;
-                                }
-                              });
-                            },
+                        const Text(
+                          "Schedule Meeting",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1C1B1B),
                           ),
+                        ),
+                        IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: const Icon(Icons.close, color: Colors.grey),
+                          onPressed: () => Navigator.pop(context),
+                        ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    // Select Date label
+                    const Text(
+                      "Select Date",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    // Calendar card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 14, horizontal: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xfffcfaf9),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Column(
+                        children: [
+                          // Month Selector Header
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.chevron_left,
+                                    color: Colors.grey),
+                                onPressed: () {
+                                  setModalState(() {
+                                    focusedDate = DateTime(focusedDate.year,
+                                        focusedDate.month - 1, 1);
+                                  });
+                                },
+                              ),
+                              Text(
+                                "${monthsFull[focusedDate.month - 1]} ${focusedDate.year}",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.chevron_right,
+                                    color: Colors.grey),
+                                onPressed: () {
+                                  setModalState(() {
+                                    focusedDate = DateTime(focusedDate.year,
+                                        focusedDate.month + 1, 1);
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          // Horizontal list of days in the month
+                          SizedBox(
+                            height: 64,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: daysInMonth,
+                              itemBuilder: (context, index) {
+                                final dayNum = index + 1;
+                                final date = DateTime(focusedDate.year,
+                                    focusedDate.month, dayNum);
+                                final isSelected =
+                                    selectedDate.year == date.year &&
+                                        selectedDate.month == date.month &&
+                                        selectedDate.day == date.day;
+
+                                return InkWell(
+                                  onTap: () {
+                                    setModalState(() {
+                                      selectedDate = date;
+                                    });
+                                  },
+                                  child: Container(
+                                    width: 44,
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 4),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: isSelected
+                                          ? const Color(0xff006565)
+                                          : Colors.transparent,
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          weekdaysAbbr[date.weekday - 1],
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: isSelected
+                                                ? Colors.white70
+                                                : Colors.grey,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          "$dayNum",
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: isSelected
+                                                ? Colors.white
+                                                : Colors.black87,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          // Selected Date display
+                          Text(
+                            formatFriendlyDate(selectedDate),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xff006565),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 20),
+                    // Available Slots label
+                    const Text(
+                      "Available Slots",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    // Time slots grid (custom buttons)
+                    GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 2.8,
+                      children: ["10:00 AM", "02:00 PM", "04:30 PM", "05:00 PM"]
+                          .map((slot) {
+                        final isSelected = selectedSlot == slot;
+                        return OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: isSelected
+                                ? const Color(0xff006565)
+                                : Colors.white,
+                            foregroundColor: isSelected
+                                ? Colors.white
+                                : const Color(0xff006565),
+                            side: const BorderSide(color: Color(0xff006565)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: () {
+                            setModalState(() {
+                              selectedSlot = slot;
+                            });
+                          },
+                          child: Text(
+                            slot,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 20),
+                    // Request Message label
+                    const Text(
+                      "Request Message",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Text Field for notes
                     TextField(
                       controller: notesController,
-                      maxLines: 4,
-                      decoration: const InputDecoration(
-                        labelText: "Additional Notes",
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: "Describe the purpose of your visit...",
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 14),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              const BorderSide(color: Color(0xff006565)),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
+                    // Cancel & Confirm Booking Buttons
                     Row(
                       children: [
                         Expanded(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            child: const Text("Cancel"),
+                          child: TextButton(
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.grey,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text(
+                              "Cancel",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 15),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xff474DC5),
+                              backgroundColor: const Color(0xff006565),
                               foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
                             ),
                             onPressed: () {
-                              if (selectedDate == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("Please select a date"),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                                return;
-                              }
+                              Navigator.pop(context);
                               _submitAppointmentRequest(
-                                selectedDate!,
+                                selectedDate,
                                 selectedSlot,
                                 notesController.text.trim(),
                               );
                             },
-                            child: const Text("Confirm Booking"),
+                            child: const Text(
+                              "Confirm Booking",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -1337,8 +1658,8 @@ class _OpportunityActionHubScreenState
               ),
             );
           },
-        );
-      },
+        ),
+      ),
     );
   }
 }

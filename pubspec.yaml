@@ -76,14 +76,17 @@ dependencies:
   # Geolocator & Geocoding
   geolocator: ^13.0.2
   geocoding: ^3.0.0
-  file_picker: ^11.0.2
+  file_picker: ^10.3.8
+  syncfusion_flutter_maps: ^26.2.2
+  flutter_quill: ^11.5.0
+  vsc_quill_delta_to_html: ^1.0.5
 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: ^6.0.0
+  flutter_lints: ^4.0.0
 
 flutter:
 

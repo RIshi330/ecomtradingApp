@@ -97,7 +97,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case "order":
         return Colors.orange;
       default:
-        return Colors.deepPurple;
+        return const Color(0xFF006565);
     }
   }
 
@@ -112,7 +112,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: n["unread"] ? Colors.deepPurple.shade50 : Colors.white,
+          color: n["unread"] ? const Color(0xffe5f7f7) : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: Colors.grey.shade200),
         ),

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class SellerManagementScreen extends StatefulWidget {
-  const SellerManagementScreen({super.key});
+  final bool isEmbedded;
+  const SellerManagementScreen({super.key, this.isEmbedded = false});
 
   @override
   State<SellerManagementScreen> createState() =>
@@ -18,7 +19,7 @@ class _SellerManagementScreenState
     return Scaffold(
       backgroundColor: const Color(0xffFCF9F8),
 
-      drawer: Drawer(
+      drawer: widget.isEmbedded ? null : Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
@@ -64,7 +65,7 @@ class _SellerManagementScreenState
         ),
       ),
 
-      appBar: AppBar(
+      appBar: widget.isEmbedded ? null : AppBar(
         backgroundColor: Colors.white,
         leading: Navigator.canPop(context)
             ? IconButton(
@@ -89,7 +90,7 @@ class _SellerManagementScreenState
         ],
       ),
 
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: widget.isEmbedded ? null : BottomNavigationBar(
         currentIndex: currentIndex,
         selectedItemColor: const Color(0xff006565),
         unselectedItemColor: Colors.grey,

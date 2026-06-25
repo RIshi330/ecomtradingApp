@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 
 class WalletAdminScreen extends StatefulWidget {
-  const WalletAdminScreen({super.key});
+  final bool isEmbedded;
+  const WalletAdminScreen({super.key, this.isEmbedded = false});
 
   @override
   State<WalletAdminScreen> createState() => _WalletAdminScreenState();
 }
 
 class _WalletAdminScreenState extends State<WalletAdminScreen> {
-  int currentIndex = 0;
   List<dynamic> _transactions = [];
   bool _isLoading = false;
 
@@ -195,7 +195,7 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
 
-      appBar: AppBar(
+      appBar: widget.isEmbedded ? null : AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: Navigator.canPop(context)
@@ -230,37 +230,6 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
         backgroundColor: const Color(0xff006565),
         onPressed: _showWithdrawSheet,
         child: const Icon(Icons.add, color: Colors.white),
-      ),
-
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        selectedItemColor: const Color(0xff006565),
-        unselectedItemColor: Colors.grey,
-        backgroundColor: Colors.white,
-        type: BottomNavigationBarType.fixed,
-        onTap: (index) {
-          setState(() {
-            currentIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: "Overview",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_wallet),
-            label: "Wallet",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long),
-            label: "History",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: "Settings",
-          ),
-        ],
       ),
 
       body: RefreshIndicator(

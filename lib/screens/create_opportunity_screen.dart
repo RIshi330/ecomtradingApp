@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_quill/flutter_quill.dart';
+import 'package:vsc_quill_delta_to_html/vsc_quill_delta_to_html.dart';
 import '../Database/Database.dart';
+import '../index.dart';
 
 class FinancialOffering {
   String value;
@@ -24,22 +27,110 @@ class _OpportunityFormScreenState
   final formKey = GlobalKey<FormState>();
 
   final titleController = TextEditingController();
-  final detailsController = TextEditingController();
-  final audienceController = TextEditingController();
-  final locationController = TextEditingController();
-  final termsController = TextEditingController();
-  final expectationsController = TextEditingController();
-  final eligibilityController = TextEditingController();
-  final prerequisiteController = TextEditingController();
+  final audienceInputController = TextEditingController();
+  final audienceInputFocusNode = FocusNode();
+  final List<String> selectedAudiences = [];
   final whoCanApplyController = TextEditingController();
-  final otherSpecifyController = TextEditingController();
 
-  String? selectedOfferType;
+  final detailsQuillController = QuillController.basic();
+  final termsQuillController = QuillController.basic();
+  final expectationsQuillController = QuillController.basic();
+  final eligibilityQuillController = QuillController.basic();
+  final prerequisiteQuillController = QuillController.basic();
+
+  final List<String> selectedOfferTypes = [];
+  String? currentOfferTypeSelection;
+
+  final List<String> selectedLocations = [];
+  String? currentPreferredLocationSelection;
+
   bool showOtherField = false;
   bool _isSubmitting = false;
 
+  String _getHtmlFromQuill(QuillController controller) {
+    try {
+      final delta = controller.document.toDelta().toJson();
+      final converter = QuillDeltaToHtmlConverter(
+        List.castFrom(delta),
+        ConverterOptions.forEmail(),
+      );
+      return converter.convert();
+    } catch (e) {
+      debugPrint("Error converting Quill to HTML: $e");
+      return "";
+    }
+  }
+
+  Widget _buildQuillField({
+    required QuillController controller,
+    required String hint,
+    double height = 200,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade400),
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          QuillSimpleToolbar(
+            controller: controller,
+            config: const QuillSimpleToolbarConfig(
+              showFontFamily: false,
+              showFontSize: false,
+              showBoldButton: true,
+              showItalicButton: true,
+              showSmallButton: false,
+              showUnderLineButton: true,
+              showStrikeThrough: false,
+              showInlineCode: false,
+              showColorButton: false,
+              showBackgroundColorButton: false,
+              showClearFormat: true,
+              showAlignmentButtons: true,
+              showLeftAlignment: true,
+              showCenterAlignment: true,
+              showRightAlignment: true,
+              showJustifyAlignment: true,
+              showHeaderStyle: false,
+              showListNumbers: true,
+              showListBullets: true,
+              showListCheck: false,
+              showCodeBlock: false,
+              showQuote: false,
+              showIndent: false,
+              showLink: true,
+              showUndo: true,
+              showRedo: true,
+              showDirection: false,
+              showSearchButton: false,
+              showSubscript: false,
+              showSuperscript: false,
+              multiRowsDisplay: false,
+            ),
+          ),
+          const Divider(height: 1, thickness: 1),
+          Container(
+            height: height,
+            padding: const EdgeInsets.all(8.0),
+            child: QuillEditor.basic(
+              controller: controller,
+              config: QuillEditorConfig(
+                placeholder: hint,
+                autoFocus: false,
+                expands: true,
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   final List<String> selectedIndustries = [];
-  final List<String> selectedOpportunityTypes = [];
   final List<String> selectedActions = [];
   final List<String> uploadedFiles = [];
 
@@ -59,13 +150,7 @@ class _OpportunityFormScreenState
     "Delivery",
   ];
 
-  final opportunityTypes = [
-    "Partnership",
-    "Investment",
-    "Service Offering",
-    "Joint Venture",
-    "Other",
-  ];
+
 
   final preferredActions = [
     "Apply",
@@ -82,20 +167,19 @@ class _OpportunityFormScreenState
   @override
   void dispose() {
     titleController.dispose();
-    detailsController.dispose();
-    audienceController.dispose();
-    locationController.dispose();
-    termsController.dispose();
-    expectationsController.dispose();
-    eligibilityController.dispose();
-    prerequisiteController.dispose();
+    audienceInputController.dispose();
+    audienceInputFocusNode.dispose();
     whoCanApplyController.dispose();
-    otherSpecifyController.dispose();
+    detailsQuillController.dispose();
+    termsQuillController.dispose();
+    expectationsQuillController.dispose();
+    eligibilityQuillController.dispose();
+    prerequisiteQuillController.dispose();
     super.dispose();
   }
 
   Future<void> pickFiles() async {
-    final result = await FilePicker.pickFiles(
+    final result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
     );
 
@@ -138,28 +222,30 @@ class _OpportunityFormScreenState
     });
 
     try {
+      final detailsHtml = _getHtmlFromQuill(detailsQuillController);
+      final termsHtml = _getHtmlFromQuill(termsQuillController);
+      final expectationsHtml = _getHtmlFromQuill(expectationsQuillController);
+      final eligibilityHtml = _getHtmlFromQuill(eligibilityQuillController);
+      final prerequisiteHtml = _getHtmlFromQuill(prerequisiteQuillController);
+
       final postData = {
         "action": isPublish ? "publish" : "draft",
         "title": titleController.text.trim(),
         "industry": selectedIndustries.isNotEmpty ? selectedIndustries.join(', ') : null,
-        "offerType": selectedOfferType,
-        "opptype": selectedOpportunityTypes.isNotEmpty ? selectedOpportunityTypes.join(', ') : null,
-        "other_opp_type": showOtherField ? otherSpecifyController.text.trim() : null,
-        "details": detailsController.text.trim(),
-        "target_audience": audienceController.text.isNotEmpty
-            ? audienceController.text.split(',').map((e) => e.trim()).toList()
-            : [],
-        "preferred_locations": locationController.text.isNotEmpty
-            ? locationController.text.split(',').map((e) => e.trim()).toList()
-            : [],
-        "business_terms": termsController.text.trim(),
-        "expectations": expectationsController.text.trim(),
+        "offerType": selectedOfferTypes.isNotEmpty ? selectedOfferTypes.join(', ') : null,
+        "opptype": null,
+        "other_opp_type": null,
+        "details": detailsHtml.trim(),
+        "target_audience": selectedAudiences,
+        "preferred_locations": selectedLocations,
+        "business_terms": termsHtml.trim(),
+        "expectations": expectationsHtml.trim(),
         "who_can_apply": whoCanApplyController.text.isNotEmpty
             ? whoCanApplyController.text.split(',').map((e) => e.trim()).toList()
             : [],
         "preferred_actions": selectedActions,
-        "eligibility_criteria": eligibilityController.text.trim(),
-        "prerequisites": prerequisiteController.text.trim(),
+        "eligibility_criteria": eligibilityHtml.trim(),
+        "prerequisites": prerequisiteHtml.trim(),
         "financial_offerings": offerings
             .where((o) => o.value.trim().isNotEmpty)
             .map((o) => {
@@ -178,19 +264,13 @@ class _OpportunityFormScreenState
 
       final response = await Database().getJsonData(
         postData,
-        endpoint: "new_apis/oppFormAPI 1.php",
+        endpoint: "new_apis/oppFormAPI 1 (1).php",
       );
 
       if (!mounted) return;
 
       if (response['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(isPublish ? "Opportunity Published Successfully" : "Draft Saved Successfully"),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context, true); // Return true to trigger lists refresh
+        _showSuccessDialog(isPublish ? "Opportunity Published Successfully" : "Draft Saved Successfully");
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -216,17 +296,97 @@ class _OpportunityFormScreenState
     }
   }
 
+  void _showSuccessDialog(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext ctx) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 16),
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFD4E6E5), // Light teal background matching theme accents
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check,
+                    color: Color(0xFF006565), // Teal primary color
+                    size: 40,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  "Success",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF006565),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(ctx); // Close dialog
+                      // Redirect to My Listing screen (and clear/replace current screen from stack)
+                      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.manageOpportunities, (route) => false);
+                    },
+                    child: const Text(
+                      "OK",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9FF),
+      backgroundColor: const Color(0xffFCF9F8),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back,
-            color: Color(0xFF474DC5),
+            color: Color(0xFF006565),
           ),
           onPressed: () => Navigator.pop(context),
         ),
@@ -246,7 +406,7 @@ class _OpportunityFormScreenState
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Color(0xFF474DC5),
+                    color: Color(0xFF006565),
                   ),
                 ),
               ),
@@ -257,7 +417,7 @@ class _OpportunityFormScreenState
               child: const Text(
                 "Save Draft",
                 style: TextStyle(
-                  color: Color(0xFF474DC5),
+                  color: Color(0xFF006565),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -271,7 +431,7 @@ class _OpportunityFormScreenState
           height: 52,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF474DC5),
+              backgroundColor: const Color(0xFF006565),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -299,6 +459,7 @@ class _OpportunityFormScreenState
                 "Opportunity Title",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
               const SizedBox(height: 8),
@@ -322,19 +483,26 @@ class _OpportunityFormScreenState
                 "Industry",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
               const SizedBox(height: 12),
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: 4,
+                runSpacing: 4,
                 children: industries.map((industry) {
                   final selected = selectedIndustries.contains(industry);
                   return FilterChip(
-                    label: Text(industry),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    side: BorderSide.none,
+                    label: Text(
+                      industry,
+                      style: const TextStyle(fontSize: 11),
+                    ),
                     selected: selected,
-                    selectedColor: const Color(0xFF474DC5).withOpacity(0.2),
-                    checkmarkColor: const Color(0xFF474DC5),
+                    selectedColor: const Color(0xFF006565).withValues(alpha: 0.12),
+                    checkmarkColor: const Color(0xFF006565),
                     onSelected: (value) {
                       setState(() {
                         if (value) {
@@ -350,7 +518,8 @@ class _OpportunityFormScreenState
               const SizedBox(height: 24),
 
               DropdownButtonFormField<String>(
-                value: selectedOfferType,
+                initialValue: currentOfferTypeSelection,
+                hint: const Text("Select Offer Type"),
                 decoration: const InputDecoration(
                   labelText: "Offer Type",
                   border: OutlineInputBorder(),
@@ -375,75 +544,68 @@ class _OpportunityFormScreenState
                   ),
                 ],
                 onChanged: (value) {
-                  setState(() {
-                    selectedOfferType = value;
-                  });
+                  if (value != null) {
+                    setState(() {
+                      if (!selectedOfferTypes.contains(value)) {
+                        selectedOfferTypes.add(value);
+                      }
+                      currentOfferTypeSelection = null;
+                    });
+                  }
                 },
               ),
-              const SizedBox(height: 24),
+              if (selectedOfferTypes.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: selectedOfferTypes.map((type) {
+                    return Chip(
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      label: Text(
+                        type,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Color(0xFF006565),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      backgroundColor: const Color(0xFF006565).withValues(alpha: 0.12),
+                      side: BorderSide.none,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      deleteIcon: const Icon(
+                        Icons.close,
+                        size: 14,
+                        color: Color(0xFF006565),
+                      ),
+                      onDeleted: () {
+                        setState(() {
+                          selectedOfferTypes.remove(type);
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ],
+
 
               const Text(
-                "Opportunity Type",
+                "Opportunity Description",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: opportunityTypes.map((type) {
-                  final selected = selectedOpportunityTypes.contains(type);
-                  return FilterChip(
-                    label: Text(type),
-                    selected: selected,
-                    selectedColor: const Color(0xFF474DC5).withOpacity(0.2),
-                    checkmarkColor: const Color(0xFF474DC5),
-                    onSelected: (value) {
-                      setState(() {
-                        if (value) {
-                          selectedOpportunityTypes.add(type);
-                        } else {
-                          selectedOpportunityTypes.remove(type);
-                        }
-                        if (type == "Other") {
-                          showOtherField = value;
-                        }
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
-
-              if (showOtherField)
-                Padding(
-                  padding: const EdgeInsets.only(top: 16),
-                  child: TextFormField(
-                    controller: otherSpecifyController,
-                    decoration: const InputDecoration(
-                      hintText: "Please Specify Type",
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 24),
-
-              const Text(
-                "Product / Service / Solution Details",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
               const SizedBox(height: 8),
-              TextFormField(
-                controller: detailsController,
-                maxLines: 6,
-                decoration: const InputDecoration(
-                  hintText: "Describe the solution or brand in detail...",
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                ),
+              _buildQuillField(
+                controller: detailsQuillController,
+                hint: "Describe the solution or brand in detail...",
+                height: 250,
               ),
               const SizedBox(height: 24),
 
@@ -451,6 +613,7 @@ class _OpportunityFormScreenState
                 "Financial Offering",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
               const SizedBox(height: 12),
@@ -499,10 +662,10 @@ class _OpportunityFormScreenState
                     alignment: Alignment.centerLeft,
                     child: TextButton.icon(
                       onPressed: addOffering,
-                      icon: const Icon(Icons.add, color: Color(0xFF474DC5)),
+                      icon: const Icon(Icons.add, color: Color(0xFF006565)),
                       label: const Text(
                         "Add More",
-                        style: TextStyle(color: Color(0xFF474DC5), fontWeight: FontWeight.bold),
+                        style: TextStyle(color: Color(0xFF006565), fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -510,72 +673,195 @@ class _OpportunityFormScreenState
               ),
               const SizedBox(height: 24),
 
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Target Audience",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: audienceController,
-                          decoration: const InputDecoration(
-                            hintText: "Tech Founders, NGOs",
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Preferred Locations",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: locationController,
-                          decoration: const InputDecoration(
-                            hintText: "Remote, USA",
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              const Text(
+                "Target Audience",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () {
+                  audienceInputFocusNode.requestFocus();
+                },
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 52),
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade400),
+                    borderRadius: BorderRadius.circular(4),
+                    color: Colors.white,
+                  ),
+                  child: Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      ...selectedAudiences.map((audience) {
+                        return Chip(
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          label: Text(
+                            audience,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Color(0xFF006565),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          backgroundColor: const Color(0xFF006565).withValues(alpha: 0.12),
+                          side: BorderSide.none,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          deleteIcon: const Icon(
+                            Icons.close,
+                            size: 16,
+                            color: Color(0xFF006565),
+                          ),
+                          onDeleted: () {
+                            setState(() {
+                              selectedAudiences.remove(audience);
+                            });
+                          },
+                        );
+                      }),
+                      IntrinsicWidth(
+                        child: TextField(
+                          controller: audienceInputController,
+                          focusNode: audienceInputFocusNode,
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            hintText: selectedAudiences.isEmpty ? "Tech Founders, NGOs" : "",
+                            contentPadding: EdgeInsets.zero,
+                            isDense: true,
+                          ),
+                          style: const TextStyle(fontSize: 14),
+                          onSubmitted: (value) {
+                            if (value.trim().isNotEmpty) {
+                              setState(() {
+                                if (!selectedAudiences.contains(value.trim())) {
+                                  selectedAudiences.add(value.trim());
+                                }
+                                audienceInputController.clear();
+                              });
+                            }
+                          },
+                          onChanged: (value) {
+                            if (value.endsWith(',')) {
+                              final text = value.substring(0, value.length - 1).trim();
+                              if (text.isNotEmpty) {
+                                setState(() {
+                                  if (!selectedAudiences.contains(text)) {
+                                    selectedAudiences.add(text);
+                                  }
+                                  audienceInputController.clear();
+                                });
+                              }
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              const Text(
+                "Preferred Locations",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                initialValue: currentPreferredLocationSelection,
+                hint: const Text("Select Preferred Location"),
+                decoration: const InputDecoration(
+                  labelText: "Preferred Locations",
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                ),
+                items: const [
+                  DropdownMenuItem(value: "Remote", child: Text("Remote")),
+                  DropdownMenuItem(value: "Bhagalpur", child: Text("Bhagalpur")),
+                  DropdownMenuItem(value: "Jaipur", child: Text("Jaipur")),
+                  DropdownMenuItem(value: "Kota", child: Text("Kota")),
+                  DropdownMenuItem(value: "Patna", child: Text("Patna")),
+                  DropdownMenuItem(value: "Mumbai", child: Text("Mumbai")),
+                  DropdownMenuItem(value: "Bengaluru", child: Text("Bengaluru")),
+                  DropdownMenuItem(value: "Delhi", child: Text("Delhi")),
+                  DropdownMenuItem(value: "USA", child: Text("USA")),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      if (!selectedLocations.contains(value)) {
+                        selectedLocations.add(value);
+                      }
+                      currentPreferredLocationSelection = null;
+                    });
+                  }
+                },
+              ),
+              if (selectedLocations.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: selectedLocations.map((loc) {
+                    return Chip(
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      label: Text(
+                        loc,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Color(0xFF006565),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      backgroundColor: const Color(0xFF006565).withValues(alpha: 0.12),
+                      side: BorderSide.none,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      deleteIcon: const Icon(
+                        Icons.close,
+                        size: 16,
+                        color: Color(0xFF006565),
+                      ),
+                      onDeleted: () {
+                        setState(() {
+                          selectedLocations.remove(loc);
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ],
               const SizedBox(height: 24),
 
               const Text(
                 "Business Terms & Duration",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
               const SizedBox(height: 8),
-              TextFormField(
-                controller: termsController,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  hintText: "Duration, renewal, trial terms...",
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                ),
+              _buildQuillField(
+                controller: termsQuillController,
+                hint: "Duration, renewal, trial terms...",
+                height: 200,
               ),
               const SizedBox(height: 24),
 
@@ -583,17 +869,14 @@ class _OpportunityFormScreenState
                 "Expectations From Partner",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
               const SizedBox(height: 8),
-              TextFormField(
-                controller: expectationsController,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  hintText: "Promote, host, distribute, invest...",
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                ),
+              _buildQuillField(
+                controller: expectationsQuillController,
+                hint: "Promote, host, distribute, invest...",
+                height: 200,
               ),
               const SizedBox(height: 24),
 
@@ -601,6 +884,7 @@ class _OpportunityFormScreenState
                 "Who Can Apply?",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
               const SizedBox(height: 8),
@@ -618,19 +902,26 @@ class _OpportunityFormScreenState
                 "Preferred Actions",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
               const SizedBox(height: 12),
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: 4,
+                runSpacing: 4,
                 children: preferredActions.map((action) {
                   final selected = selectedActions.contains(action);
                   return FilterChip(
-                    label: Text(action),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    side: BorderSide.none,
+                    label: Text(
+                      action,
+                      style: const TextStyle(fontSize: 11),
+                    ),
                     selected: selected,
-                    selectedColor: const Color(0xFF474DC5).withOpacity(0.2),
-                    checkmarkColor: const Color(0xFF474DC5),
+                    selectedColor: const Color(0xFF006565).withValues(alpha: 0.12),
+                    checkmarkColor: const Color(0xFF006565),
                     onSelected: (value) {
                       setState(() {
                         if (value) {
@@ -649,17 +940,14 @@ class _OpportunityFormScreenState
                 "Eligibility Criteria",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
               const SizedBox(height: 8),
-              TextFormField(
-                controller: eligibilityController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  hintText: "Must be a registered business...",
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                ),
+              _buildQuillField(
+                controller: eligibilityQuillController,
+                hint: "Must be a registered business...",
+                height: 200,
               ),
               const SizedBox(height: 24),
 
@@ -667,17 +955,14 @@ class _OpportunityFormScreenState
                 "Prerequisites",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
               const SizedBox(height: 8),
-              TextFormField(
-                controller: prerequisiteController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  hintText: "Business license, NDA...",
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                ),
+              _buildQuillField(
+                controller: prerequisiteQuillController,
+                hint: "Business license, NDA...",
+                height: 200,
               ),
               const SizedBox(height: 24),
 
@@ -685,6 +970,7 @@ class _OpportunityFormScreenState
                 "Supporting Material",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
               const SizedBox(height: 12),
@@ -705,7 +991,7 @@ class _OpportunityFormScreenState
                       Icon(
                         Icons.cloud_upload,
                         size: 50,
-                        color: Color(0xFF474DC5),
+                        color: Color(0xFF006565),
                       ),
                       SizedBox(height: 12),
                       Text(
@@ -725,14 +1011,20 @@ class _OpportunityFormScreenState
               ),
               const SizedBox(height: 16),
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: 4,
+                runSpacing: 4,
                 children: uploadedFiles.map((file) {
                   return Chip(
-                    label: Text(file),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    side: BorderSide.none,
+                    label: Text(
+                      file,
+                      style: const TextStyle(fontSize: 11),
+                    ),
                     deleteIcon: const Icon(
                       Icons.close,
-                      size: 18,
+                      size: 16,
                     ),
                     onDeleted: () {
                       setState(() {

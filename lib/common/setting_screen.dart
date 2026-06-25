@@ -4,6 +4,8 @@ import 'package:trading_ecommerce_admin/auth_screen.dart';
 import 'package:trading_ecommerce_admin/services/auth_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 
 void main() {
   runApp(const StreetBuddyApp());
@@ -21,6 +23,13 @@ class StreetBuddyApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.white,
         fontFamily: 'Roboto',
       ),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        FlutterQuillLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('en', 'US')],
       home: const SettingsScreen(),
     );
   }
@@ -28,9 +37,9 @@ class StreetBuddyApp extends StatelessWidget {
 
 // ─── COLORS ───────────────────────────────────────────────────────────────────
 class AppColors {
-  static const lavender = Color.fromRGBO(140, 140, 255, 1);
-  static const lavenderDark = Color(0xFF7E57C2);
-  static const lavenderBg = Color(0xFFF3EEF8);
+  static const lavender = Color(0xFF008080); // Teal Container/Accent
+  static const lavenderDark = Color(0xFF006565); // Teal Primary
+  static const lavenderBg = Color(0xFFD4E6E5); // Light Teal Container
   static const textPrimary = Color(0xFF1A1A1A);
   static const textSub = Color(0xFF888888);
   static const dividerColor = Color(0xFFE0E0E0);

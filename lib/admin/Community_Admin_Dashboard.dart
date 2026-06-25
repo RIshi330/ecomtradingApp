@@ -4,12 +4,42 @@ import 'package:trading_ecommerce_admin/index.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:trading_ecommerce_admin/common/chat_screen.dart';
 import 'package:trading_ecommerce_admin/common/community_inbox_screen.dart';
+import 'package:trading_ecommerce_admin/widgets/account_actions.dart';
+import 'package:trading_ecommerce_admin/core/theme/app_theme.dart';
 import 'package:trading_ecommerce_admin/screens/manage_opportunities_screen.dart';
 import 'package:trading_ecommerce_admin/screens/product_management_screen.dart';
+import 'package:trading_ecommerce_admin/screens/low_stock_inventory_screen.dart';
 import 'package:trading_ecommerce_admin/screens/trading_marketplace_screen.dart';
 import 'package:trading_ecommerce_admin/screens/selected_items_screen.dart';
 import 'package:trading_ecommerce_admin/screens/affiliate_orders_screen.dart';
 import 'package:trading_ecommerce_admin/admin/seller_orders_screen.dart';
+import 'package:trading_ecommerce_admin/screens/event_marketplace_screen.dart';
+import 'package:trading_ecommerce_admin/screens/my_events_screen.dart';
+import 'package:trading_ecommerce_admin/screens/event_opportunities_screen.dart';
+
+import 'package:trading_ecommerce_admin/admin/taxonomy_manager_screen.dart';
+import 'package:trading_ecommerce_admin/admin/manage_items_screen.dart';
+import 'package:trading_ecommerce_admin/admin/platform_settings_screen.dart';
+import 'package:trading_ecommerce_admin/admin/wallet_admin_screen.dart';
+import 'package:trading_ecommerce_admin/admin/membership_plans_screen.dart';
+import 'package:trading_ecommerce_admin/admin/membership_builder_screen.dart';
+import 'package:trading_ecommerce_admin/admin/seller_dashboard_screen.dart';
+import 'package:trading_ecommerce_admin/admin/seller_management_screen.dart';
+import 'package:trading_ecommerce_admin/admin/marketplace_modules_screen.dart';
+import 'package:trading_ecommerce_admin/admin/module_integration_screen.dart';
+import 'package:trading_ecommerce_admin/admin/module_manager_screen.dart';
+import 'package:trading_ecommerce_admin/screens/manage_team_screen.dart';
+import 'package:trading_ecommerce_admin/screens/manage_tasks_screen.dart';
+import 'package:trading_ecommerce_admin/screens/explore_partners_screen.dart';
+import 'package:trading_ecommerce_admin/screens/explore_talent_screen.dart';
+import 'package:trading_ecommerce_admin/screens/rewards_recognition_screen.dart';
+import 'package:trading_ecommerce_admin/screens/logistics_screen.dart';
+import 'package:trading_ecommerce_admin/screens/packaging_screen.dart';
+import 'package:trading_ecommerce_admin/screens/promotions_screen.dart';
+import 'package:trading_ecommerce_admin/screens/local_delivery_screen.dart';
+import 'package:trading_ecommerce_admin/screens/combo_packages_screen.dart';
+import 'package:trading_ecommerce_admin/screens/explore_charity_projects_screen.dart';
+import 'package:trading_ecommerce_admin/screens/charity_marketplace_screen.dart';
 
 class CommunityAdminDashboard extends StatefulWidget {
   const CommunityAdminDashboard({super.key});
@@ -26,7 +56,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   // 4: Category Management, 5: List Items, 6: Platform Settings,
   // 7: Wallet, 8: Withdrawal Requests, 9: Seller Bank Details,
   // 10: Membership Plans, 11: Profile, 15: Community Approvals
-  int _currentIndex = 0;
+  // 12: Seller Dashboard (Default)
+  int _currentIndex = 12;
 
   // Colors
   static const Color primaryPurple = Color(0xFF006565); // Changed to Teal matching AppTheme.primary
@@ -371,6 +402,13 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       case 23: return "Trading Opportunities";
       case 24: return "My Selected Items";
       case 25: return "Affiliate Orders";
+      case 28: return "Explore Partners";
+      case 29: return "Explore Talent";
+      case 40: return "Logistics Dashboard";
+      case 41: return "Packaging Inventory";
+      case 42: return "Promotions & Discounts";
+      case 43: return "Local Delivery Logistics";
+      case 44: return "Combo Packages";
       default: return "Admin Portal";
     }
   }
@@ -408,13 +446,92 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     );
   }
 
+  Future<bool> _showExitConfirmation() async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Text(
+                'Exit App',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 17,
+                ),
+              ),
+              content: const Text(
+                'Are you sure you want to exit the app?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.black54,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+              actionsPadding: EdgeInsets.zero,
+              actions: [
+                Divider(height: 1, color: Colors.grey.shade200),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(color: Colors.black54, fontSize: 16),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 48,
+                      color: Colors.grey.shade200,
+                    ),
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        child: const Text(
+                          'Exit',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return WillPopScope(
+      onWillPop: () async {
+        if (_currentIndex != 12) {
+          setState(() {
+            _currentIndex = 12;
+          });
+          return false;
+        } else {
+          return await _showExitConfirmation();
+        }
+      },
+      child: Scaffold(
       key: _scaffoldKey,
       backgroundColor: bgLight,
       floatingActionButton: (_currentIndex == 18 || _currentIndex == 19)
-          ? FloatingActionButton(
+          ? FloatingActionButton.small(
               backgroundColor: primaryPurple,
               foregroundColor: Colors.white,
               onPressed: () {
@@ -428,274 +545,519 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
               child: const Icon(Icons.add),
             )
           : null,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: Navigator.canPop(context)
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: primaryPurple),
-                onPressed: () => Navigator.pop(context),
-              )
-            : IconButton(
-                icon: const Icon(Icons.menu_rounded, color: primaryPurple),
-                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-              ),
-        title: Text(
-          _getTitle(),
-          style: const TextStyle(color: textDark, fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        actions: [
-          // Header Notification Icon
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: primaryPurple),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const LocalNotificationsScreen()),
-            ),
-          ),
-          // Header Cart Icon
-          IconButton(
-            icon: const Icon(Icons.shopping_cart_outlined, color: primaryPurple),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Cart Overview: 3 Pending Purchases awaiting approval."),
-                  backgroundColor: primaryPurple,
-                  behavior: SnackBarBehavior.floating,
+      appBar: _currentIndex == 0
+          ? _buildTealHeader()
+          : _currentIndex == 12
+              ? _buildSellerHeader()
+              : AppBar(
+              backgroundColor: Colors.white,
+              elevation: 1,
+              leading: Navigator.canPop(context)
+                  ? IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Color(0xFF006565)),
+                      onPressed: () => Navigator.pop(context),
+                    )
+                  : Builder(
+                      builder: (context) => IconButton(
+                        icon: const Icon(Icons.menu, color: Color(0xFF006565)),
+                        onPressed: () => Scaffold.of(context).openDrawer(),
+                      ),
+                    ),
+              centerTitle: true,
+              title: Text(
+                _getAppBarTitle(),
+                style: const TextStyle(
+                  color: Color(0xFF006565),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
                 ),
-              );
-            },
-          ),
-          // Header Chat Icon
-          IconButton(
-            icon: const Icon(Icons.chat_bubble_outline_rounded, color: primaryPurple),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const CommunityInboxScreen()),
+              ),
+              actions: [
+                Stack(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.notifications_outlined, color: Color(0xFF006565)),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LocalNotificationsScreen()),
+                      ),
+                    ),
+                    Positioned(
+                      right: 12,
+                      top: 12,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.person_outline, color: Color(0xFF006565)),
+                  onPressed: () {
+                    setState(() => _currentIndex = 11); // Navigates to Admin Profile
+                  },
+                ),
+              ],
             ),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
 
       // Left Navigation Drawer
       drawer: Drawer(
-        backgroundColor: bgDark,
-        child: Column(
-          children: [
-            // Drawer Header
-            UserAccountsDrawerHeader(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [primaryPurple, bgDark],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+        backgroundColor: Colors.white,
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Profile Header
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 28,
+                      backgroundImage: NetworkImage(
+                        "https://i.pravatar.cc/150",
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Elite Partner",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1C1B1B), // AppTheme.textPrimary
+                            ),
+                          ),
+                          Row(
+                            children: const [
+                              Icon(
+                                Icons.verified,
+                                color: Color(0xFF006565), // AppTheme.primary
+                                size: 16,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                "Verified B2B",
+                                style: TextStyle(
+                                  color: Color(0xFF3E4949), // AppTheme.textSecondary
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Text(
+                            "Mumbai, India",
+                            style: TextStyle(
+                              color: Color(0xFF3E4949), // AppTheme.textSecondary
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              currentAccountPicture: const CircleAvatar(
-                backgroundColor: Colors.white,
-                child: Icon(Icons.admin_panel_settings_rounded, size: 40, color: primaryPurple),
+
+              const Divider(),
+
+              // Navigation Drawer Items List
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    // _buildDrawerItem(0, Icons.dashboard_rounded, "Dashboard"),
+                    _buildDrawerItem(12, Icons.storefront_rounded, "Seller Dashboard"),
+                    _buildDrawerItem(33, Icons.chat_bubble_outline_rounded, "Inbox"),
+                    // _buildDrawerItem(13, Icons.supervised_user_circle_rounded, "Seller Management"),
+                    // _buildDrawerItem(1, Icons.people_rounded, "Users"),
+                    // _buildDrawerItem(15, Icons.group_add_rounded, "Community Approvals"),
+                    
+                    // Collapsible Products (aligned and borderless)
+                    Theme(
+                      data: Theme.of(context).copyWith(
+                        dividerColor: Colors.transparent,
+                        listTileTheme: const ListTileThemeData(
+                          horizontalTitleGap: 8,
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                        child: ExpansionTile(
+                          shape: const Border(),
+                          collapsedShape: const Border(),
+                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                          leading: const Icon(Icons.shopping_bag_rounded, color: Color(0xFF3E4949)),
+                          title: const Text(
+                            "Products menus",
+                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
+                          ),
+                          iconColor: Color(0xFF1C1B1B),
+                          collapsedIconColor: Color(0xFF3E4949),
+                          children: [
+                            _buildDrawerItem(2, Icons.inventory_2_rounded, "Manage Listing", isSubItem: true),
+                            _buildDrawerItem(3, Icons.receipt_long_rounded, "Manage Orders", isSubItem: true),
+                            _buildDrawerItem(31, Icons.warning_amber_rounded, "Manage Inventory", isSubItem: true),
+                            _buildDrawerItem(44, Icons.layers, "Combo Pack", isSubItem: true),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Collapsible Operations (aligned and borderless)
+                    Theme(
+                      data: Theme.of(context).copyWith(
+                        dividerColor: Colors.transparent,
+                        listTileTheme: const ListTileThemeData(
+                          horizontalTitleGap: 8,
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                        child: ExpansionTile(
+                          shape: const Border(),
+                          collapsedShape: const Border(),
+                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                          leading: const Icon(Icons.build_circle_rounded, color: Color(0xFF3E4949)),
+                          title: const Text(
+                            "Operations",
+                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
+                          ),
+                          iconColor: Color(0xFF1C1B1B),
+                          collapsedIconColor: Color(0xFF3E4949),
+                          children: [
+                            _buildDrawerItem(40, Icons.local_shipping_rounded, "Logistics", isSubItem: true),
+                            _buildDrawerItem(41, Icons.inventory_rounded, "Packaging", isSubItem: true),
+                            _buildDrawerItem(42, Icons.local_offer_rounded, "Promotions", isSubItem: true),
+                            _buildDrawerItem(29, Icons.work_outline_rounded, "Talent", isSubItem: true),
+                            _buildDrawerItem(28, Icons.handshake_rounded, "Partnerships", isSubItem: true),
+                            _buildDrawerItem(43, Icons.electric_scooter_rounded, "Local Delivery", isSubItem: true),
+                          ],
+                        ),
+                      ),
+                    ),
+                    
+                    // Collapsible Memberships (aligned and borderless)
+                    Theme(
+                      data: Theme.of(context).copyWith(
+                        dividerColor: Colors.transparent,
+                        listTileTheme: const ListTileThemeData(
+                          horizontalTitleGap: 8,
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                        child: ExpansionTile(
+                          shape: const Border(),
+                          collapsedShape: const Border(),
+                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                          leading: const Icon(Icons.card_membership_rounded, color: Color(0xFF3E4949)),
+                          title: const Text(
+                            "Memberships",
+                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
+                          ),
+                          iconColor: Color(0xFF1C1B1B),
+                          collapsedIconColor: Color(0xFF3E4949),
+                          children: [
+                            _buildDrawerItem(10, Icons.card_membership_rounded, "Membership Plans", isSubItem: true),
+                            _buildDrawerItem(14, Icons.build_rounded, "Membership Builder", isSubItem: true),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Collapsible Business Opportunities (aligned and borderless)
+                    Theme(
+                      data: Theme.of(context).copyWith(
+                        dividerColor: Colors.transparent,
+                        listTileTheme: const ListTileThemeData(
+                          horizontalTitleGap: 8,
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                        child: ExpansionTile(
+                          shape: const Border(),
+                          collapsedShape: const Border(),
+                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                          leading: const Icon(Icons.business_center_rounded, color: Color(0xFF3E4949)),
+                          title: const Text(
+                            "Business Opportunities",
+                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
+                          ),
+                          iconColor: Color(0xFF1C1B1B),
+                          collapsedIconColor: Color(0xFF3E4949),
+                          children: [
+                            _buildDrawerItem(18, Icons.work_outline_rounded, "Marketplace Opportunities", isSubItem: true),
+                            _buildDrawerItem(20, Icons.assignment_turned_in_rounded, "My Submissions", isSubItem: true),
+                            _buildDrawerItem(19, Icons.list_alt_rounded, "My Listings", isSubItem: true),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Collapsible Trading Opportunities (aligned and borderless)
+                    Theme(
+                      data: Theme.of(context).copyWith(
+                        dividerColor: Colors.transparent,
+                        listTileTheme: const ListTileThemeData(
+                          horizontalTitleGap: 8,
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                        child: ExpansionTile(
+                          shape: const Border(),
+                          collapsedShape: const Border(),
+                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                          leading: const Icon(Icons.swap_horiz_rounded, color: Color(0xFF3E4949)),
+                          title: const Text(
+                            "Trading Opportunities",
+                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
+                          ),
+                          iconColor: Color(0xFF1C1B1B),
+                          collapsedIconColor: Color(0xFF3E4949),
+                          children: [
+                            _buildDrawerItem(23, Icons.swap_horiz, "Explore Opportunities", isSubItem: true),
+                            _buildDrawerItem(24, Icons.bookmark_border, "My Selected Items", isSubItem: true),
+                            _buildDrawerItem(25, Icons.receipt_long, "Affiliate Orders", isSubItem: true),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Collapsible Financial (aligned and borderless)
+                    Theme(
+                      data: Theme.of(context).copyWith(
+                        dividerColor: Colors.transparent,
+                        listTileTheme: const ListTileThemeData(
+                          horizontalTitleGap: 8,
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                        child: ExpansionTile(
+                          shape: const Border(),
+                          collapsedShape: const Border(),
+                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                          leading: const Icon(Icons.account_balance_wallet_rounded, color: Color(0xFF3E4949)),
+                          title: const Text(
+                            "Financial",
+                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
+                          ),
+                          iconColor: Color(0xFF1C1B1B),
+                          collapsedIconColor: Color(0xFF3E4949),
+                          children: [
+                            _buildDrawerItem(7, Icons.wallet_giftcard_rounded, "Wallet", isSubItem: true),
+                            // _buildDrawerItem(8, Icons.monetization_on_rounded, "Withdrawal Requests", isSubItem: true),
+                            _buildDrawerItem(9, Icons.account_balance_rounded, "Bank Details", isSubItem: true),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Collapsible Module Integration (aligned and borderless)
+                    Theme(
+                      data: Theme.of(context).copyWith(
+                        dividerColor: Colors.transparent,
+                        listTileTheme: const ListTileThemeData(
+                          horizontalTitleGap: 8,
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                        child: ExpansionTile(
+                          shape: const Border(),
+                          collapsedShape: const Border(),
+                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                          leading: const Icon(Icons.integration_instructions_rounded, color: Color(0xFF3E4949)),
+                          title: const Text(
+                            "Module Integration",
+                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
+                          ),
+                          iconColor: Color(0xFF1C1B1B),
+                          collapsedIconColor: Color(0xFF3E4949),
+                          children: [
+                            _buildDrawerItem(16, Icons.shopping_bag_rounded, "Module Marketplace", isSubItem: true),
+                            _buildDrawerItem(32, Icons.extension_rounded, "Module Manager", isSubItem: true),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Collapsible General Settings (aligned and borderless)
+                    Theme(
+                      data: Theme.of(context).copyWith(
+                        dividerColor: Colors.transparent,
+                        listTileTheme: const ListTileThemeData(
+                          horizontalTitleGap: 8,
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                        child: ExpansionTile(
+                          shape: const Border(),
+                          collapsedShape: const Border(),
+                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                          leading: const Icon(Icons.settings_rounded, color: Color(0xFF3E4949)),
+                          title: const Text(
+                            "General Settings",
+                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
+                          ),
+                          iconColor: Color(0xFF1C1B1B),
+                          collapsedIconColor: Color(0xFF3E4949),
+                          children: [
+                            _buildDrawerItem(4, Icons.category_rounded, "Category management", isSubItem: true),
+                            _buildDrawerItem(5, Icons.list_alt_rounded, "List Items", isSubItem: true),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Collapsible Team Building (aligned and borderless)
+                    Theme(
+                      data: Theme.of(context).copyWith(
+                        dividerColor: Colors.transparent,
+                        listTileTheme: const ListTileThemeData(
+                          horizontalTitleGap: 8,
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                        child: ExpansionTile(
+                          shape: const Border(),
+                          collapsedShape: const Border(),
+                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                          leading: const Icon(Icons.groups_rounded, color: Color(0xFF3E4949)),
+                          title: const Text(
+                            "Team Building",
+                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
+                          ),
+                          iconColor: Color(0xFF1C1B1B),
+                          collapsedIconColor: Color(0xFF3E4949),
+                          children: [
+                            _buildDrawerItem(26, Icons.people_outline_rounded, "Manage Team", isSubItem: true),
+                            _buildDrawerItem(27, Icons.task_outlined, "Manage Task", isSubItem: true),
+                            _buildDrawerItem(28, Icons.handshake_outlined, "Explore Partners", isSubItem: true),
+                            _buildDrawerItem(29, Icons.work_outline_rounded, "Explore Talent", isSubItem: true),
+                            _buildDrawerItem(30, Icons.emoji_events_outlined, "Rewards & Recognition", isSubItem: true),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Collapsible Support a Cause (aligned and borderless)
+                    Theme(
+                      data: Theme.of(context).copyWith(
+                        dividerColor: Colors.transparent,
+                        listTileTheme: const ListTileThemeData(
+                          horizontalTitleGap: 8,
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                        child: ExpansionTile(
+                          shape: const Border(),
+                          collapsedShape: const Border(),
+                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                          leading: const Icon(Icons.volunteer_activism_rounded, color: Color(0xFF3E4949)),
+                          title: const Text(
+                            "Support a Cause",
+                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
+                          ),
+                          iconColor: Color(0xFF1C1B1B),
+                          collapsedIconColor: Color(0xFF3E4949),
+                          children: [
+                            _buildDrawerItem(45, Icons.explore_outlined, "Explore Charity Projects", isSubItem: true),
+                            _buildDrawerItem(46, Icons.storefront_outlined, "Charity Marketplace", isSubItem: true),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Collapsible Events (aligned and borderless)
+                    Theme(
+                      data: Theme.of(context).copyWith(
+                        dividerColor: Colors.transparent,
+                        listTileTheme: const ListTileThemeData(
+                          horizontalTitleGap: 8,
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                        child: ExpansionTile(
+                          shape: const Border(),
+                          collapsedShape: const Border(),
+                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                          leading: const Icon(Icons.event_rounded, color: Color(0xFF3E4949)),
+                          title: const Text(
+                            "Events",
+                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
+                          ),
+                          iconColor: Color(0xFF1C1B1B),
+                          collapsedIconColor: Color(0xFF3E4949),
+                          children: [
+                            _buildDrawerItem(47, Icons.storefront_outlined, "Event marketplace", isSubItem: true),
+                            _buildDrawerItem(48, Icons.event_available_outlined, "My Events", isSubItem: true),
+                            _buildDrawerItem(49, Icons.work_outline_rounded, "Event Opportunities", isSubItem: true),
+                          ],
+                        ),
+                      ),
+                    ),
+                    
+                    _buildDrawerItem(6, Icons.settings_input_component_rounded, "Platform Settings"),
+                    // _buildDrawerItem(11, Icons.person_rounded, "Profile"),
+                  ],
+                ),
               ),
-              accountName: const Text("Luxe Admin", style: TextStyle(fontWeight: FontWeight.bold)),
-              accountEmail: const Text("admin@luxe.com"),
-            ),
 
-            // Navigation Drawer Items List
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  _buildDrawerItem(0, Icons.dashboard_rounded, "Dashboard"),
-                  _buildDrawerItem(12, Icons.storefront_rounded, "Seller Dashboard"),
-                  _buildDrawerItem(13, Icons.supervised_user_circle_rounded, "Seller Management"),
-                  _buildDrawerItem(1, Icons.people_rounded, "Users"),
-                  _buildDrawerItem(15, Icons.group_add_rounded, "Community Approvals"),
-                  // Collapsible Products (aligned and borderless)
-                  Theme(
-                    data: Theme.of(context).copyWith(
-                      dividerColor: Colors.transparent,
-                    ),
-                    child: Container(
-                      margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
-                      child: ExpansionTile(
-                        shape: const Border(),
-                        collapsedShape: const Border(),
-                        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                        leading: const Icon(Icons.shopping_bag_rounded, color: Colors.white70),
-                        title: const Text(
-                          "Products",
-                          style: TextStyle(color: Colors.white70, fontSize: 14),
-                        ),
-                        iconColor: Colors.white,
-                        collapsedIconColor: Colors.white70,
-                        children: [
-                          _buildDrawerItem(2, Icons.inventory_2_rounded, "Product Catalog", isSubItem: true),
-                          _buildDrawerItem(22, Icons.local_shipping_rounded, "Order Management", isSubItem: true),
-                        ],
-                      ),
-                    ),
-                  ),
-                  _buildDrawerItem(3, Icons.receipt_long_rounded, "Orders"),
-                  
-                  // Collapsible General Settings (aligned and borderless)
-                  Theme(
-                    data: Theme.of(context).copyWith(
-                      dividerColor: Colors.transparent,
-                    ),
-                    child: Container(
-                      margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
-                      child: ExpansionTile(
-                        shape: const Border(),
-                        collapsedShape: const Border(),
-                        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                        leading: const Icon(Icons.settings_rounded, color: Colors.white70),
-                        title: const Text(
-                          "General Settings",
-                          style: TextStyle(color: Colors.white70, fontSize: 14),
-                        ),
-                        iconColor: Colors.white,
-                        collapsedIconColor: Colors.white70,
-                        children: [
-                          _buildDrawerItem(4, Icons.category_rounded, "Category Management", isSubItem: true),
-                          _buildDrawerItem(5, Icons.list_alt_rounded, "List Items", isSubItem: true),
-                          _buildDrawerItem(16, Icons.shopping_bag_rounded, "Marketplace Modules", isSubItem: true),
-                          _buildDrawerItem(17, Icons.integration_instructions_rounded, "Module Integration", isSubItem: true),
-                        ],
-                      ),
-                    ),
-                  ),
+              const Divider(),
 
-                  _buildDrawerItem(6, Icons.settings_input_component_rounded, "Platform Settings"),
-
-                  // Collapsible Financials (aligned and borderless)
-                  Theme(
-                    data: Theme.of(context).copyWith(
-                      dividerColor: Colors.transparent,
-                    ),
-                    child: Container(
-                      margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
-                      child: ExpansionTile(
-                        shape: const Border(),
-                        collapsedShape: const Border(),
-                        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                        leading: const Icon(Icons.account_balance_wallet_rounded, color: Colors.white70),
-                        title: const Text(
-                          "Financials",
-                          style: TextStyle(color: Colors.white70, fontSize: 14),
-                        ),
-                        iconColor: Colors.white,
-                        collapsedIconColor: Colors.white70,
-                        children: [
-                          _buildDrawerItem(7, Icons.wallet_giftcard_rounded, "Wallet", isSubItem: true),
-                          _buildDrawerItem(8, Icons.monetization_on_rounded, "Withdrawal Requests", isSubItem: true),
-                          _buildDrawerItem(9, Icons.account_balance_rounded, "Seller Bank Details", isSubItem: true),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Collapsible Membership (aligned and borderless)
-                  Theme(
-                    data: Theme.of(context).copyWith(
-                      dividerColor: Colors.transparent,
-                    ),
-                    child: Container(
-                      margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
-                      child: ExpansionTile(
-                        shape: const Border(),
-                        collapsedShape: const Border(),
-                        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                        leading: const Icon(Icons.card_membership_rounded, color: Colors.white70),
-                        title: const Text(
-                          "Membership Options",
-                          style: TextStyle(color: Colors.white70, fontSize: 14),
-                        ),
-                        iconColor: Colors.white,
-                        collapsedIconColor: Colors.white70,
-                        children: [
-                          _buildDrawerItem(10, Icons.card_membership_rounded, "Plans List", isSubItem: true),
-                          _buildDrawerItem(14, Icons.build_rounded, "Plans Builder", isSubItem: true),
-                        ],
-                      ),
-                    ),
-                  ),
-                  
-                  // Collapsible Opportunities (aligned and borderless)
-                  Theme(
-                    data: Theme.of(context).copyWith(
-                      dividerColor: Colors.transparent,
-                    ),
-                    child: Container(
-                      margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
-                      child: ExpansionTile(
-                        shape: const Border(),
-                        collapsedShape: const Border(),
-                        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                        leading: const Icon(Icons.business_center_rounded, color: Colors.white70),
-                        title: const Text(
-                          "Opportunity",
-                          style: TextStyle(color: Colors.white70, fontSize: 14),
-                        ),
-                        iconColor: Colors.white,
-                        collapsedIconColor: Colors.white70,
-                        children: [
-                          _buildDrawerItem(18, Icons.work_outline_rounded, "Marketplace Opportunities", isSubItem: true),
-                          _buildDrawerItem(23, Icons.swap_horiz, "Trading Opportunities", isSubItem: true),
-                          _buildDrawerItem(24, Icons.bookmark_border, "My Selected Items", isSubItem: true),
-                          _buildDrawerItem(25, Icons.receipt_long, "Affiliate Orders", isSubItem: true),
-                          _buildDrawerItem(19, Icons.list_alt_rounded, "My Listings", isSubItem: true),
-                          _buildDrawerItem(20, Icons.assignment_turned_in_rounded, "My Submissions", isSubItem: true),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Collapsible Team Building (aligned and borderless)
-                  Theme(
-                    data: Theme.of(context).copyWith(
-                      dividerColor: Colors.transparent,
-                    ),
-                    child: Container(
-                      margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
-                      child: ExpansionTile(
-                        shape: const Border(),
-                        collapsedShape: const Border(),
-                        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                        leading: const Icon(Icons.groups_rounded, color: Colors.white70),
-                        title: const Text(
-                          "Team Building",
-                          style: TextStyle(color: Colors.white70, fontSize: 14),
-                        ),
-                        iconColor: Colors.white,
-                        collapsedIconColor: Colors.white70,
-                        children: [
-                          _buildDrawerItem(26, Icons.people_outline_rounded, "Manage Team", isSubItem: true),
-                          _buildDrawerItem(27, Icons.task_outlined, "Manage Task", isSubItem: true),
-                          _buildDrawerItem(28, Icons.handshake_outlined, "Explore Partners", isSubItem: true),
-                          _buildDrawerItem(29, Icons.work_outline_rounded, "Explore Talent", isSubItem: true),
-                          _buildDrawerItem(30, Icons.emoji_events_outlined, "Rewards & Recognition", isSubItem: true),
-                        ],
-                      ),
-                    ),
-                  ),
-                  
-                  _buildDrawerItem(11, Icons.person_rounded, "Profile"),
-                ],
+              ListTile(
+                leading: const Icon(
+                  Icons.logout,
+                  color: Color(0xFFBA1A1A),
+                ),
+                title: const Text(
+                  "Sign Out",
+                  style: TextStyle(color: Color(0xFFBA1A1A)),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  AccountActions.showLogoutSheet(context);
+                },
               ),
-            ),
-
-            // Logout Footer
-            const Divider(color: Colors.white24, height: 1),
-            ListTile(
-              leading: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-              title: const Text("Logout", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
-              onTap: () {
-                Navigator.pop(context); // Close Drawer
-                _handleLogout();
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
+            ],
+          ),
         ),
       ),
 
@@ -703,6 +1065,15 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       body: SafeArea(
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
+          layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+            return Stack(
+              fit: StackFit.expand,
+              children: <Widget>[
+                ...previousChildren,
+                if (currentChild != null) currentChild,
+              ],
+            );
+          },
           child: _buildBodyContent(),
         ),
       ),
@@ -728,20 +1099,20 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         unselectedLabelStyle: const TextStyle(fontSize: 11),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: "Dashboard"),
+          BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: "Orders"),
           BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_rounded), label: "Products"),
-          BottomNavigationBarItem(icon: Icon(Icons.settings_rounded), label: "Settings"),
           BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_rounded), label: "Wallet"),
           BottomNavigationBarItem(icon: Icon(Icons.more_horiz_rounded), label: "More"),
         ],
       ),
-    );
+    ),);
   }
 
   // Map Drawer views to Bottom Nav indexes
   int _getBottomNavBarIndex() {
     if (_currentIndex == 0) return 0;
-    if (_currentIndex == 2) return 1;
-    if (_currentIndex == 4 || _currentIndex == 5 || _currentIndex == 6) return 2; // Settings group
+    if (_currentIndex == 3) return 1; // Orders
+    if (_currentIndex == 2) return 2; // Products
     if (_currentIndex == 7) return 3; // Wallet
     return 4; // fallback for others
   }
@@ -753,9 +1124,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     } else {
       setState(() {
         switch (bottomIndex) {
-          case 0: _currentIndex = 0; break;
-          case 1: _currentIndex = 2; break; // Products
-          case 2: _currentIndex = 6; break; // Platform Settings
+          case 0: _currentIndex = 0; break; // Admin Dashboard
+          case 1: _currentIndex = 3; break; // Orders
+          case 2: _currentIndex = 2; break; // Products
         }
       });
     }
@@ -780,52 +1151,39 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
             : null,
       ),
       child: ListTile(
+        dense: true,
         visualDensity: VisualDensity.compact,
-        leading: Icon(icon, color: isSelected ? Colors.white : Colors.white70, size: isSubItem ? 20 : 24),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+        horizontalTitleGap: 8,
+        leading: Icon(icon, color: isSelected ? Colors.white : const Color(0xFF3E4949), size: isSubItem ? 20 : 24),
         title: Text(
           title,
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.white70,
+            color: isSelected ? Colors.white : const Color(0xFF1C1B1B),
             fontSize: isSubItem ? 13 : 14,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
         onTap: () {
           Navigator.pop(context); // Close Drawer
-          if (index == 4) {
-            Navigator.pushNamed(context, '/taxonomy');
-          } else if (index == 5) {
-            Navigator.pushNamed(context, '/manage_items');
+          if (index == 21) {
+            Navigator.pushNamed(context, AppRoutes.createOpportunity);
           } else if (index == 6) {
             Navigator.pushNamed(context, '/platform_settings');
-          } else if (index == 7) {
-            Navigator.pushNamed(context, '/wallet');
-          } else if (index == 10) {
-            Navigator.pushNamed(context, '/membership_plans');
-          } else if (index == 14) {
-            Navigator.pushNamed(context, '/membership_builder');
-          } else if (index == 11) {
-            setState(() => _currentIndex = index);
-          } else if (index == 12) {
-            Navigator.pushNamed(context, '/seller');
-          } else if (index == 13) {
-            Navigator.pushNamed(context, '/seller_management');
-          } else if (index == 16) {
-            Navigator.pushNamed(context, '/marketplace_modules');
-          } else if (index == 17) {
-            Navigator.pushNamed(context, '/module_integration');
-          } else if (index == 21) {
-            Navigator.pushNamed(context, AppRoutes.createOpportunity);
-          } else if (index == 26) {
-            Navigator.pushNamed(context, AppRoutes.manageTeam);
-          } else if (index == 27) {
-            Navigator.pushNamed(context, AppRoutes.manageTasks);
-          } else if (index == 28) {
-            Navigator.pushNamed(context, AppRoutes.explorePartners);
+          } else if (index == 40) {
+            Navigator.pushNamed(context, AppRoutes.logistics);
+          } else if (index == 41) {
+            Navigator.pushNamed(context, AppRoutes.packaging);
+          } else if (index == 42) {
+            Navigator.pushNamed(context, AppRoutes.promotions);
+          } else if (index == 43) {
+            Navigator.pushNamed(context, AppRoutes.localDelivery);
           } else if (index == 29) {
             Navigator.pushNamed(context, AppRoutes.exploreTalent);
-          } else if (index == 30) {
-            Navigator.pushNamed(context, AppRoutes.rewardsRecognition);
+          } else if (index == 28) {
+            Navigator.pushNamed(context, AppRoutes.explorePartners);
           } else {
             setState(() => _currentIndex = index);
           }
@@ -834,31 +1192,353 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     );
   }
 
+  String _getAppBarTitle() {
+    switch (_currentIndex) {
+      case 4: return "Category Management";
+      case 5: return "List Items";
+      case 7: return "Wallet";
+      case 10: return "Membership Plans";
+      case 14: return "Membership Builder";
+      case 16: return "Module Marketplace";
+      case 17: return "Module Integration";
+      case 18: return "Marketplace Opportunities";
+      case 19: return "My Listings";
+      case 20: return "My Submissions";
+      case 23: return "Explore Opportunities";
+      case 24: return "My Selected Items";
+      case 25: return "Affiliate Orders";
+      case 26: return "Manage Team";
+      case 27: return "Manage Task";
+      case 28: return "Explore Partners";
+      case 29: return "Explore Talent";
+      case 30: return "Rewards & Recognition";
+      case 32: return "Module Manager";
+      case 33: return "Inbox";
+      case 40: return "Logistics Dashboard";
+      case 41: return "Packaging Inventory";
+      case 42: return "Promotions & Discounts";
+      case 43: return "Local Delivery Logistics";
+      case 44: return "Combo Packages";
+      case 45: return "Explore Charity Projects";
+      case 46: return "Charity Marketplace";
+      case 47: return "Event Marketplace";
+      case 48: return "My Events";
+      case 49: return "Event Opportunities";
+      default: return "Serene Commerce";
+    }
+  }
+
   // Render Body based on index
   Widget _buildBodyContent() {
     switch (_currentIndex) {
       case 0: return _buildDashboardView();
       case 1: return _buildTextUsersView(); // renamed custom users view helper below
       case 2: return const ProductManagementScreen(isEmbedded: true);
-      case 3: return _buildOrdersView();
-      case 4: return _buildCategoriesView();
-      case 5: return _buildListItemsView();
+      case 31: return const LowStockInventoryScreen(isEmbedded: true);
+      case 3: return const SellerOrderScreen(isEmbedded: true);
+      case 4: return const TaxonomyManagerScreen(isEmbedded: true);
+      case 5: return const ManageItemsScreen(isEmbedded: true);
       case 6: return _buildPlatformSettingsView();
-      case 7: return _buildWalletView();
+      case 7: return const WalletAdminScreen(isEmbedded: true);
       case 8: return _buildWithdrawalRequestsView();
       case 9: return _buildBankDetailsView();
-      case 10: return _buildMembershipPlansView();
+      case 10: return const MembershipPlansScreen(isEmbedded: true);
       case 11: return _buildProfileView();
+      case 12: return const SellerDashboardScreen(isEmbedded: true);
+      case 13: return const SellerManagementScreen(isEmbedded: true);
+      case 14: return const MembershipBuilderScreen(isEmbedded: true);
       case 15: return _buildCommunityApprovalsView();
+      case 16: return const MarketplaceModulesScreen(isEmbedded: true);
+      case 17: return const ModuleIntegrationScreen(isEmbedded: true);
       case 18: return _buildMarketplaceOpportunitiesView();
       case 19: return const ManageOpportunitiesScreen(isTab: true);
       case 20: return _buildMySubmissionsView();
-      case 22: return const SellerOrderScreen(isEmbedded: true);
       case 23: return const TradingMarketplaceScreen(isEmbedded: true);
       case 24: return const SelectedItemsScreen(isEmbedded: true);
       case 25: return const AffiliateOrdersScreen(isEmbedded: true);
+      case 26: return const ManageTeamScreen(isEmbedded: true);
+      case 27: return const ManageTasksScreen(isEmbedded: true);
+      case 28: return const ExplorePartnersScreen(isEmbedded: true);
+      case 29: return const ExploreTalentScreen(isEmbedded: true);
+      case 30: return const RewardsRecognitionScreen(isEmbedded: true);
+      case 32: return const ModuleManagerScreen();
+      case 33: return const CommunityInboxScreen(isStandalone: false);
+      case 40: return const LogisticsScreen(isEmbedded: true);
+      case 41: return const PackagingScreen(isEmbedded: true);
+      case 42: return const PromotionsScreen(isEmbedded: true);
+      case 43: return const LocalDeliveryScreen(isEmbedded: true);
+      case 44: return const ComboPackagesScreen(isEmbedded: true);
+      case 45: return const ExploreCharityProjectsScreen(isEmbedded: true);
+      case 46: return const CharityMarketplaceScreen(isEmbedded: true);
+      case 47: return const EventMarketplaceScreen(isEmbedded: true);
+      case 48: return const MyEventsScreen(isEmbedded: true);
+      case 49: return const EventOpportunitiesScreen(isEmbedded: true);
       default: return _buildDashboardView();
     }
+  }
+
+  PreferredSizeWidget _buildSellerHeader() {
+    return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      scrolledUnderElevation: 1.0,
+      shadowColor: Colors.black.withOpacity(0.08),
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(1),
+        child: Container(
+          color: Colors.black.withOpacity(0.04),
+          height: 1,
+        ),
+      ),
+      leading: Builder(
+        builder: (context) => IconButton(
+          icon: const Icon(Icons.menu, color: Color(0xff006565)),
+          onPressed: () => Scaffold.of(context).openDrawer(),
+        ),
+      ),
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xff006565).withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.storefront,
+              color: Color(0xff006565),
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Flexible(
+            child: Text(
+              "Seller Central",
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              style: TextStyle(
+                color: Color(0xff006565),
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        Container(
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.02),
+            shape: BoxShape.circle,
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(
+                  Icons.notifications_none_rounded,
+                  color: Colors.black87,
+                ),
+              ),
+              Positioned(
+                right: 12,
+                top: 12,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
+                ),
+              )
+            ],
+          ),
+        ),
+        if (MediaQuery.of(context).size.width >= 600) ...[
+          const SizedBox(width: 4),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Text(
+                "Store Owner",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: Colors.black87,
+                ),
+              ),
+              Text(
+                "Premier Seller",
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.teal.shade700,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(width: 12),
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: const Color(0xff006565).withOpacity(0.2),
+              width: 2,
+            ),
+          ),
+          child: const CircleAvatar(
+            radius: 18,
+            backgroundColor: Color(0xffe5f7f7),
+            backgroundImage: NetworkImage(
+              "https://i.pravatar.cc/150?img=33",
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+      ],
+    );
+  }
+
+  PreferredSizeWidget _buildTealHeader() {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(135), // Increased to fit search bar and action icons cleanly without overflow
+      child: Container(
+        color: const Color(0xFF006565),
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Row 1: Menu Icon & Location dropdown
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.menu, color: Colors.white, size: 24),
+                      onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.location_on_outlined, color: Colors.white, size: 18),
+                    const SizedBox(width: 4),
+                    const Text(
+                      "Location ",
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
+                    const Text(
+                      "180004",
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 18),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Row 2: Search Bar & Icons
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 22,
+                              height: 22,
+                              decoration: BoxDecoration(
+                                color: Colors.red.shade400,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              alignment: Alignment.center,
+                              child: const Text(
+                                "M",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text(
+                                "Search for products...",
+                                style: TextStyle(color: Colors.grey, fontSize: 13),
+                              ),
+                            ),
+                            const Icon(Icons.search, color: Colors.grey, size: 18),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Notification Icon with Badge
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.notifications_outlined, color: Colors.white, size: 24),
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const LocalNotificationsScreen()),
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                        Positioned(
+                          right: 4,
+                          top: 4,
+                          child: Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 12),
+                    // Favorites Icon
+                    IconButton(
+                      icon: const Icon(Icons.favorite_border, color: Colors.white, size: 24),
+                      onPressed: () {},
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: 12),
+                    // Profile Icon
+                    IconButton(
+                      icon: const Icon(Icons.person_outline, color: Colors.white, size: 24),
+                      onPressed: () {
+                        setState(() => _currentIndex = 11);
+                      },
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   // 1. Dashboard View
@@ -868,6 +1548,25 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const Text(
+            "Good Morning,",
+            style: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1C1B1B),
+              height: 1.2,
+            ),
+          ),
+          const Text(
+            "Alex",
+            style: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1C1B1B),
+              height: 1.2,
+            ),
+          ),
+          const SizedBox(height: 24),
           const Text("Overview Status", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textDark)),
           const SizedBox(height: 16),
           // Stats Row
@@ -1195,29 +1894,6 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 ),
               ),
             ],
-          ),
-        );
-      },
-    );
-  }
-
-  // 4. Orders View
-  Widget _buildOrdersView() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(20),
-      itemCount: _mockOrders.length,
-      itemBuilder: (context, idx) {
-        final order = _mockOrders[idx];
-        return Card(
-          color: cardColor,
-          elevation: 0,
-          margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: ListTile(
-            leading: const Icon(Icons.receipt_rounded, color: primaryPurple, size: 28),
-            title: Text("Order: ${order['id']}", style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text("Customer: ${order['user']}"),
-            trailing: Text(order["amount"], style: const TextStyle(fontWeight: FontWeight.bold, color: primaryPurple, fontSize: 15)),
           ),
         );
       },
@@ -1851,69 +2527,132 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           color: cardColor,
           elevation: 0,
           margin: const EdgeInsets.only(bottom: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: InkWell(
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            onTap: () {
-              Navigator.pushNamed(context, '/opportunity_detail', arguments: item);
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const CircleAvatar(
-                        backgroundColor: bgLight,
-                        child: Icon(Icons.business_center_rounded, color: primaryPurple),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                            Text(companyName, style: const TextStyle(color: textLight, fontSize: 13)),
-                          ],
+            side: BorderSide(color: Colors.black.withOpacity(0.04)),
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () {
+                Navigator.pushNamed(context, '/opportunity_detail', arguments: item);
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: primaryPurple.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.business_center_rounded, color: primaryPurple, size: 24),
                         ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: accentPurple.withAlpha(25),
-                          borderRadius: BorderRadius.circular(20),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: textDark,
+                                  letterSpacing: 0.1,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                companyName,
+                                style: const TextStyle(
+                                  color: textLight,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        child: Text(
-                          match,
-                          style: const TextStyle(color: primaryPurple, fontWeight: FontWeight.bold, fontSize: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: primaryPurple.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            match,
+                            style: const TextStyle(
+                              color: primaryPurple,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (tags.isNotEmpty)
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: tags.map((t) => Chip(
-                        visualDensity: VisualDensity.compact,
-                        label: Text(t.toString(), style: const TextStyle(fontSize: 11)),
-                        backgroundColor: bgLight,
-                        side: BorderSide.none,
-                      )).toList(),
+                      ],
                     ),
-                  const SizedBox(height: 16),
-                  const Divider(),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text("Budget: $payoutAmount", style: const TextStyle(fontWeight: FontWeight.w600, color: primaryPurple)),
-                      Text("$applicantsCount Applicants", style: const TextStyle(color: textLight, fontSize: 12)),
-                    ],
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    if (tags.isNotEmpty)
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: tags.map((t) => Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xfff0f7f7),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: primaryPurple.withOpacity(0.05)),
+                          ),
+                          child: Text(
+                            t.toString(),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff004d4d),
+                            ),
+                          ),
+                        )).toList(),
+                      ),
+                    const SizedBox(height: 16),
+                    Divider(color: Colors.black.withOpacity(0.05)),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Budget: $payoutAmount",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: primaryPurple,
+                            fontSize: 14,
+                          ),
+                        ),
+                        Text(
+                          "$applicantsCount Applicants",
+                          style: const TextStyle(
+                            color: textLight,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

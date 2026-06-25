@@ -3,7 +3,8 @@ import '../Database/Database.dart';
 import '../screens/membership_payment_modal.dart';
 
 class MembershipPlansScreen extends StatefulWidget {
-  const MembershipPlansScreen({super.key});
+  final bool isEmbedded;
+  const MembershipPlansScreen({super.key, this.isEmbedded = false});
 
   @override
   State<MembershipPlansScreen> createState() => _MembershipPlansScreenState();
@@ -74,7 +75,7 @@ class _MembershipPlansScreenState extends State<MembershipPlansScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xffFCF9F8),
-      appBar: AppBar(
+      appBar: widget.isEmbedded ? null : AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         title: const Text(
@@ -103,7 +104,7 @@ class _MembershipPlansScreenState extends State<MembershipPlansScreen> {
           )
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: widget.isEmbedded ? null : BottomNavigationBar(
         currentIndex: 1,
         selectedItemColor: primaryColor,
         unselectedItemColor: Colors.grey,

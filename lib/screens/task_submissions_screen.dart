@@ -77,7 +77,7 @@ class _TaskSubmissionsScreenState extends State<TaskSubmissionsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF9F9FF),
+      backgroundColor: const Color(0xffFCF9F8),
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
@@ -188,7 +188,7 @@ class _TaskSubmissionsScreenState extends State<TaskSubmissionsScreen> {
             const SizedBox(height: 16),
             const Text(
               "NOTES",
-              style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold, fontSize: 11),
+              style: TextStyle(color: Color(0xFF006565), fontWeight: FontWeight.bold, fontSize: 11),
             ),
             const SizedBox(height: 4),
             Text(
@@ -198,23 +198,23 @@ class _TaskSubmissionsScreenState extends State<TaskSubmissionsScreen> {
             const SizedBox(height: 16),
             const Text(
               "ATTACHMENTS",
-              style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold, fontSize: 11),
+              style: TextStyle(color: Color(0xFF006565), fontWeight: FontWeight.bold, fontSize: 11),
             ),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.indigo.shade50,
+                color: const Color(0xffe5f7f7),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.description, color: Colors.indigo),
+                  const Icon(Icons.description, color: Color(0xFF006565)),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       fileName,
-                      style: const TextStyle(color: Colors.indigo, fontWeight: FontWeight.w500),
+                      style: const TextStyle(color: Color(0xFF006565), fontWeight: FontWeight.w500),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -227,7 +227,7 @@ class _TaskSubmissionsScreenState extends State<TaskSubmissionsScreen> {
                 Expanded(
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.indigo,
+                      backgroundColor: const Color(0xFF006565),
                       foregroundColor: Colors.white,
                     ),
                     onPressed: () => _handleApproval('approved'),
@@ -250,7 +250,7 @@ class _TaskSubmissionsScreenState extends State<TaskSubmissionsScreen> {
                 const SizedBox(width: 8),
                 IconButton(
                   onPressed: () => _showContactDialog(context),
-                  icon: const Icon(Icons.mail, color: Colors.indigo),
+                  icon: const Icon(Icons.mail, color: Color(0xFF006565)),
                 )
               ],
             )

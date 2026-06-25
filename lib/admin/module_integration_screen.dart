@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class ModuleIntegrationScreen extends StatefulWidget {
-  const ModuleIntegrationScreen({super.key});
+  final bool isEmbedded;
+  const ModuleIntegrationScreen({super.key, this.isEmbedded = false});
 
   @override
   State<ModuleIntegrationScreen> createState() =>
@@ -48,9 +49,9 @@ class _ModuleIntegrationScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor:
-          const Color(0xffF9F9FF),
+          const Color(0xffFCF9F8),
 
-      appBar: AppBar(
+      appBar: widget.isEmbedded ? null : AppBar(
         title: const Text(
           "Module Integration",
         ),
@@ -308,11 +309,11 @@ class IntegrationCard extends StatelessWidget {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor:
-              const Color(0xffF1F2FF),
+              const Color(0xffe5f7f7),
           child: Icon(
             integration.icon,
             color:
-                const Color(0xff7C83FD),
+                const Color(0xFF006565),
           ),
         ),
 

@@ -27,6 +27,7 @@ import 'screens/opportunity_action_hub_screen.dart';
 import 'screens/manage_opportunities_screen.dart';
 import 'screens/create_opportunity_screen.dart';
 import 'screens/product_management_screen.dart';
+import 'screens/low_stock_inventory_screen.dart';
 import 'screens/trading_marketplace_screen.dart';
 import 'screens/selected_items_screen.dart';
 import 'screens/affiliate_orders_screen.dart';
@@ -35,8 +36,21 @@ import 'screens/manage_tasks_screen.dart';
 import 'screens/explore_partners_screen.dart';
 import 'screens/explore_talent_screen.dart';
 import 'screens/rewards_recognition_screen.dart';
+import 'screens/logistics_screen.dart';
+import 'screens/packaging_screen.dart';
+import 'screens/packaging_product_detail_screen.dart';
+import 'screens/promotions_screen.dart';
+import 'screens/local_delivery_screen.dart';
+import 'screens/explore_charity_projects_screen.dart';
+import 'screens/charity_marketplace_screen.dart';
+import 'screens/charity_project_detail_screen.dart';
+import 'screens/event_marketplace_screen.dart';
+import 'screens/my_events_screen.dart';
+import 'screens/event_opportunities_screen.dart';
+import 'screens/event_detail_screen.dart';
+import 'screens/event_opp_detail_screen.dart';
 import 'common/payment_screen.dart';
-import 'user/profile_screen.dart' as user;
+import 'screens/seller_profile_screen.dart';
 import 'user/seller_bank_accounts_screen.dart';
 import 'user/wallet_screen.dart';
 import 'user/membership_plan.dart';
@@ -87,6 +101,7 @@ class AppRoutes {
   static const String manageOpportunities = '/manage_opportunities';
   static const String createOpportunity = '/create_opportunity';
   static const String productManagement = '/product_management';
+  static const String manageInventory = '/manage_inventory';
   static const String tradingMarketplace = '/trading_marketplace';
   static const String selectedItems = '/selected_items';
   static const String affiliateOrders = '/affiliate_orders';
@@ -100,63 +115,108 @@ class AppRoutes {
   static const String explorePartners = '/explore_partners';
   static const String exploreTalent = '/explore_talent';
   static const String rewardsRecognition = '/rewards_recognition';
+  static const String logistics = '/logistics';
+  static const String packaging = '/packaging';
+  static const String packagingProductDetail = '/packaging_product_detail';
+  static const String promotions = '/promotions';
+  static const String localDelivery = '/local_delivery';
+  static const String exploreCharityProjects = '/explore_charity_projects';
+  static const String charityMarketplace = '/charity_marketplace';
+  static const String charityProjectDetail = '/charity_project_detail';
+  static const String eventMarketplace = '/event_marketplace';
+  static const String myEvents = '/my_events';
+  static const String eventOpportunities = '/event_opportunities';
+  static const String eventDetail = '/event_detail';
+  static const String eventOppDetail = '/event_opp_detail';
 
   /// Named routes mapping for MaterialApp
   static Map<String, WidgetBuilder> get routes => {
-    splash: (context) => const WelcomeSplashScreen(),
-    login: (context) => const LoginScreen(),
-    signup: (context) => const SignupScreen(),
-    otp: (context) {
-      final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
-      return OtpScreen(
-        email: args['email'] as String,
-        isRecruiter: args['isRecruiter'] as bool,
-      );
-    },
-    auth: (context) => const AuthProduction(),
-    adminDashboard: (context) => const CommunityAdminDashboard(),
-    adminProfile: (context) => const admin.ProfileScreen(),
-    userProfile: (context) => const user.ProfileScreen(),
-    sellerBankAccounts: (context) => const SellerBankAccountsScreen(),
-    wallet: (context) => const WalletScreen(),
-    membership: (context) => const MembershipScreen(),
-    chat: (context) => const CommunityInboxScreen(),
-    notification: (context) => const NotificationsScreen(),
-    setting: (context) => const SettingsScreen(),
-    shell: (context) => const AppShell(),
+        splash: (context) => const WelcomeSplashScreen(),
+        login: (context) => const LoginScreen(),
+        signup: (context) => const SignupScreen(),
+        otp: (context) {
+          final args = ModalRoute.of(context)!.settings.arguments
+              as Map<String, dynamic>;
+          return OtpScreen(
+            email: args['email'] as String,
+            isRecruiter: args['isRecruiter'] as bool,
+          );
+        },
+        auth: (context) => const AuthProduction(),
+        adminDashboard: (context) => const CommunityAdminDashboard(),
+        adminProfile: (context) => const admin.ProfileScreen(),
+        userProfile: (context) => const SellerProfileScreen(),
+        sellerBankAccounts: (context) => const SellerBankAccountsScreen(),
+        wallet: (context) => const WalletScreen(),
+        membership: (context) => const MembershipScreen(),
+        chat: (context) => const CommunityInboxScreen(),
+        notification: (context) => const NotificationsScreen(),
+        setting: (context) => const SettingsScreen(),
+        shell: (context) => const AppShell(),
 
-    // New Admin Route Builders
-    walletAdmin: (context) => const WalletAdminScreen(),
-    sellerDashboard: (context) => const SellerDashboardScreen(),
-    communityAdmin: (context) => const CommunityAdminDashboard(),
-    sellerManagement: (context) => const SellerManagementScreen(),
-    taxonomyManager: (context) => const TaxonomyManagerScreen(),
-    adminProfileScreen: (context) => const AdminProfileScreen(),
-    manageItems: (context) => const ManageItemsScreen(),
-    platformSettings: (context) => const PlatformSettingsScreen(),
-    membershipPlans: (context) => const MembershipPlansScreen(),
-    membershipBuilder: (context) => const MembershipBuilderScreen(),
-    marketplaceModules: (context) => const MarketplaceModulesScreen(),
-    moduleDetails: (context) => const ModuleDetailsScreen(),
-    moduleManager: (context) => const ModuleManagerScreen(),
-    moduleIntegration: (context) => const ModuleIntegrationScreen(),
-    opportunityDetail: (context) => const OpportunityDetailScreen(),
-    opportunityActionHub: (context) => const OpportunityActionHubScreen(),
-    manageOpportunities: (context) => const ManageOpportunitiesScreen(),
-    createOpportunity: (context) => const OpportunityFormScreen(),
-    productManagement: (context) => const ProductManagementScreen(),
-    tradingMarketplace: (context) => const TradingMarketplaceScreen(),
-    selectedItems: (context) => const SelectedItemsScreen(),
-    affiliateOrders: (context) => const AffiliateOrdersScreen(),
-    payment: (context) => const PaymentScreen(),
-    sellerOrders: (context) => const SellerOrderScreen(),
-    orderDetails: (context) => const OrderDetailsScreen(),
-    offers: (context) => const OffersScreen(),
-    terms: (context) => const TermsConditionsScreen(),
-    manageTeam: (context) => const ManageTeamScreen(),
-    manageTasks: (context) => const ManageTasksScreen(),
-    explorePartners: (context) => const ExplorePartnersScreen(),
-    exploreTalent: (context) => const ExploreTalentScreen(),
-    rewardsRecognition: (context) => const RewardsRecognitionScreen(),
-  };
+        // New Admin Route Builders
+        walletAdmin: (context) => const WalletAdminScreen(),
+        sellerDashboard: (context) => const SellerDashboardScreen(),
+        communityAdmin: (context) => const CommunityAdminDashboard(),
+        sellerManagement: (context) => const SellerManagementScreen(),
+        taxonomyManager: (context) => const TaxonomyManagerScreen(),
+        adminProfileScreen: (context) => const AdminProfileScreen(),
+        manageItems: (context) => const ManageItemsScreen(),
+        platformSettings: (context) => const PlatformSettingsScreen(),
+        membershipPlans: (context) => const MembershipPlansScreen(),
+        membershipBuilder: (context) => const MembershipBuilderScreen(),
+        marketplaceModules: (context) => const MarketplaceModulesScreen(),
+        moduleDetails: (context) => const ModuleDetailsScreen(),
+        moduleManager: (context) => const ModuleManagerScreen(),
+        moduleIntegration: (context) => const ModuleIntegrationScreen(),
+        opportunityDetail: (context) => const OpportunityDetailScreen(),
+        opportunityActionHub: (context) => const OpportunityActionHubScreen(),
+        manageOpportunities: (context) => const ManageOpportunitiesScreen(),
+        createOpportunity: (context) => const OpportunityFormScreen(),
+        productManagement: (context) => const ProductManagementScreen(),
+        manageInventory: (context) => const LowStockInventoryScreen(),
+        tradingMarketplace: (context) => const TradingMarketplaceScreen(),
+        selectedItems: (context) => const SelectedItemsScreen(),
+        affiliateOrders: (context) => const AffiliateOrdersScreen(),
+        payment: (context) => const PaymentScreen(),
+        sellerOrders: (context) => const SellerOrderScreen(),
+        orderDetails: (context) => const OrderDetailsScreen(),
+        offers: (context) => const OffersScreen(),
+        terms: (context) => const TermsConditionsScreen(),
+        manageTeam: (context) => const ManageTeamScreen(),
+        manageTasks: (context) => const ManageTasksScreen(),
+        explorePartners: (context) => const ExplorePartnersScreen(),
+        exploreTalent: (context) => const ExploreTalentScreen(),
+        rewardsRecognition: (context) => const RewardsRecognitionScreen(),
+        logistics: (context) => const LogisticsScreen(),
+        packaging: (context) => const PackagingScreen(),
+        packagingProductDetail: (context) {
+          final args = ModalRoute.of(context)!.settings.arguments
+              as Map<String, dynamic>;
+          return PackagingProductDetailPage(
+            productId: args['productId'] as String,
+            variantId: args['variantId'] as String?,
+          );
+        },
+        promotions: (context) => const PromotionsScreen(),
+        localDelivery: (context) => const LocalDeliveryScreen(),
+        exploreCharityProjects: (context) =>
+            const ExploreCharityProjectsScreen(),
+        charityMarketplace: (context) => const CharityMarketplaceScreen(),
+        charityProjectDetail: (context) {
+          final project = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+          return CharityProjectDetailScreen(project: project);
+        },
+        eventMarketplace: (context) => const EventMarketplaceScreen(),
+        myEvents: (context) => const MyEventsScreen(),
+        eventOpportunities: (context) => const EventOpportunitiesScreen(),
+        eventDetail: (context) {
+          final event = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+          return EventDetailScreen(event: event);
+        },
+        eventOppDetail: (context) {
+          final opportunity = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+          return EventOppDetailScreen(opportunity: opportunity);
+        },
+      };
 }

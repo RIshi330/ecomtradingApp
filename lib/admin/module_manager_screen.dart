@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../Database/Database.dart';
 import '../model/module_model.dart';
+import '../core/theme/app_theme.dart';
 
 class ModuleManagerScreen extends StatefulWidget {
   const ModuleManagerScreen({super.key});
@@ -135,18 +136,25 @@ class _ModuleManagerScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF9F9FF),
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text("Module Manager"),
+        title: const Text(
+          "Module Manager",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textPrimary,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications),
+            icon: const Icon(Icons.notifications, color: AppTheme.textPrimary),
             onPressed: () {},
           ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: _fetchInstalledModules,
+        color: AppTheme.primary,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
@@ -156,47 +164,45 @@ class _ModuleManagerScreenState
               const Text(
                 "Dashboard Overview",
                 style: TextStyle(
-                  fontSize: 28,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
                 ),
               ),
               const SizedBox(height: 20),
               if (_isLoading)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 40),
-                  child: Center(child: CircularProgressIndicator()),
+                  child: Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary))),
                 )
               else
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: stats.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
+                SizedBox(
+                  height: 90,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: stats.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (context, index) {
+                      return StatCard(stat: stats[index]);
+                    },
                   ),
-                  itemBuilder: (context, index) {
-                    return StatCard(
-                      stat: stats[index],
-                    );
-                  },
                 ),
               const SizedBox(height: 24),
               const Text(
                 "Installed Modules",
                 style: TextStyle(
-                  fontSize: 22,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
                 ),
               ),
               const SizedBox(height: 12),
               if (_isLoading)
-                const Center(child: CircularProgressIndicator())
+                const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary)))
               else if (_errorMessage != null && _installedModules.isEmpty)
-                Text(_errorMessage!, style: const TextStyle(color: Colors.red))
+                Text(_errorMessage!, style: const TextStyle(color: AppTheme.error))
               else if (_installedModules.isEmpty)
-                const Text("No modules are currently installed.")
+                const Text("No modules are currently installed.", style: TextStyle(color: AppTheme.textSecondary))
               else
                 ListView.builder(
                   shrinkWrap: true,
@@ -208,7 +214,7 @@ class _ModuleManagerScreenState
                       padding: const EdgeInsets.only(bottom: 12),
                       child: InstalledModuleCard(
                         title: module.title,
-                        version: "v1.0.0", // Default, could read from database if present
+                        version: "v1.0.0",
                         status: module.badge.isNotEmpty ? module.badge : "Installed",
                         icon: module.icon,
                       ),
@@ -219,8 +225,9 @@ class _ModuleManagerScreenState
               const Text(
                 "Revenue Analytics",
                 style: TextStyle(
-                  fontSize: 22,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
                 ),
               ),
               const SizedBox(height: 12),
@@ -228,20 +235,29 @@ class _ModuleManagerScreenState
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xff7C83FD),
-                  borderRadius: BorderRadius.circular(20),
+                  gradient: const LinearGradient(
+                    colors: [
+                      AppTheme.primary,
+                      AppTheme.primaryContainer,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                  boxShadow: AppTheme.cardShadow,
                 ),
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       "Monthly Revenue",
                       style: TextStyle(
                         color: Colors.white70,
+                        fontSize: 14,
                       ),
                     ),
-                    SizedBox(height: 10),
-                    Text(
+                    const SizedBox(height: 8),
+                    const Text(
                       "₹48,750",
                       style: TextStyle(
                         color: Colors.white,
@@ -249,9 +265,15 @@ class _ModuleManagerScreenState
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 20),
-                    LinearProgressIndicator(
-                      value: 0.75,
+                    const SizedBox(height: 20),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: const LinearProgressIndicator(
+                        value: 0.75,
+                        backgroundColor: Colors.white24,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        minHeight: 6,
+                      ),
                     ),
                   ],
                 ),
@@ -260,8 +282,9 @@ class _ModuleManagerScreenState
               const Text(
                 "Recent Activity",
                 style: TextStyle(
-                  fontSize: 22,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
                 ),
               ),
               const SizedBox(height: 12),
@@ -312,29 +335,52 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      width: 140,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        boxShadow: AppTheme.cardShadow,
       ),
-      child: Column(
-        mainAxisAlignment:
-            MainAxisAlignment.center,
+      child: Row(
         children: [
-          Icon(
-            stat.icon,
-            size: 32,
-            color: const Color(0xff7C83FD),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            stat.value,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
+            ),
+            child: Icon(
+              stat.icon,
+              size: 20,
+              color: AppTheme.primary,
             ),
           ),
-          Text(stat.title),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  stat.value,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                Text(
+                  stat.title,
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -357,22 +403,47 @@ class InstalledModuleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+    final bool isUpdate = status.toLowerCase().contains("update");
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        boxShadow: AppTheme.cardShadow,
       ),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
-          backgroundColor: const Color(0xffF1F2FF),
+          backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
           child: Icon(
             icon,
-            color: const Color(0xff7C83FD),
+            color: AppTheme.primary,
           ),
         ),
-        title: Text(title),
-        subtitle: Text(version),
-        trailing: Chip(
-          label: Text(status),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        subtitle: Text(
+          version,
+          style: const TextStyle(color: AppTheme.textSecondary),
+        ),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: isUpdate ? AppTheme.error.withValues(alpha: 0.1) : AppTheme.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            status,
+            style: TextStyle(
+              color: isUpdate ? AppTheme.error : AppTheme.primary,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
         ),
       ),
     );
@@ -394,19 +465,33 @@ class ActivityTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       leading: const CircleAvatar(
-        backgroundColor: Color(0xffF1F2FF),
+        backgroundColor: AppTheme.surfaceContainer,
         child: Icon(
           Icons.history,
-          color: Color(0xff7C83FD),
+          color: AppTheme.secondary,
         ),
       ),
-      title: Text(title),
-      subtitle: Text(subtitle),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          color: AppTheme.textPrimary,
+          fontSize: 14,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(
+          color: AppTheme.textSecondary,
+          fontSize: 12,
+        ),
+      ),
       trailing: Text(
         time,
         style: const TextStyle(
-          fontSize: 12,
+          fontSize: 11,
           color: Colors.grey,
         ),
       ),

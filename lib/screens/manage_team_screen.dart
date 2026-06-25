@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../Database/Database.dart';
 
 class ManageTeamScreen extends StatefulWidget {
-  const ManageTeamScreen({super.key});
+  final bool isEmbedded;
+  const ManageTeamScreen({super.key, this.isEmbedded = false});
 
   @override
   State<ManageTeamScreen> createState() => _ManageTeamScreenState();
@@ -79,40 +80,42 @@ class _ManageTeamScreenState extends State<ManageTeamScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF9F9FF),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text(
-          "Team Building",
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        iconTheme: const IconThemeData(color: Colors.black),
-        leading: Navigator.canPop(context)
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.pop(context),
-              )
-            : null,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: CircleAvatar(
-              backgroundColor: Colors.indigo.shade100,
-              child: const Text(
-                "AD",
+      backgroundColor: const Color(0xffFCF9F8),
+      appBar: widget.isEmbedded
+          ? null
+          : AppBar(
+              elevation: 0,
+              backgroundColor: Colors.white,
+              title: const Text(
+                "Team Building",
                 style: TextStyle(
-                  color: Colors.indigo,
+                  color: Colors.black,
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              iconTheme: const IconThemeData(color: Colors.black),
+              leading: Navigator.canPop(context)
+                  ? IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () => Navigator.pop(context),
+                    )
+                  : null,
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: CircleAvatar(
+                    backgroundColor: const Color(0xFFD4E6E5),
+                    child: const Text(
+                      "AD",
+                      style: TextStyle(
+                        color: Color(0xFF006565),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
       body: RefreshIndicator(
         onRefresh: _fetchMembers,
         child: SingleChildScrollView(
@@ -187,9 +190,10 @@ class _ManageTeamScreenState extends State<ManageTeamScreen> {
             child: const Icon(Icons.person_add),
           ),
           const SizedBox(height: 10),
-          FloatingActionButton(
+          FloatingActionButton.small(
             heroTag: "main",
-            backgroundColor: Colors.indigo,
+            backgroundColor: const Color(0xFF006565),
+            foregroundColor: Colors.white,
             onPressed: () {
               showModalBottomSheet(
                 context: context,
@@ -240,100 +244,48 @@ class _ManageTeamScreenState extends State<ManageTeamScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: 1,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: "Dashboard",
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.list_alt_outlined),
-            selectedIcon: Icon(Icons.list_alt),
-            label: "Directory",
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: "Settings",
-          ),
-        ],
-      ),
+      bottomNavigationBar: widget.isEmbedded
+          ? null
+          : NavigationBar(
+              selectedIndex: 1,
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.dashboard_outlined),
+                  selectedIcon: Icon(Icons.dashboard),
+                  label: "Dashboard",
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.list_alt_outlined),
+                  selectedIcon: Icon(Icons.list_alt),
+                  label: "Directory",
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.settings_outlined),
+                  selectedIcon: Icon(Icons.settings),
+                  label: "Settings",
+                ),
+              ],
+            ),
     );
   }
 
   Widget _buildFilters() {
-    return Column(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  showAdvancedFilterDialog(context);
-                },
-                icon: const Icon(Icons.filter_list),
-                label: const Text("Advanced Filters"),
-              ),
-            ),
-          ],
+        const Text(
+          "Team Directory",
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1C1B1B),
+          ),
         ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: DropdownButtonFormField<String>(
-                value: teamsList.contains(selectedTeam) ? selectedTeam : "All Teams",
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: "Team",
-                ),
-                items: teamsList
-                    .map(
-                      (e) => DropdownMenuItem(
-                        value: e,
-                        child: Text(e),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (v) {
-                  setState(() {
-                    selectedTeam = v!;
-                  });
-                  _fetchMembers();
-                },
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: DropdownButtonFormField<String>(
-                value: selectedStatus,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: "Status",
-                ),
-                items: [
-                  "Active",
-                  "Inactive",
-                  "Pending",
-                ]
-                    .map(
-                      (e) => DropdownMenuItem(
-                        value: e,
-                        child: Text(e),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (v) {
-                  setState(() {
-                    selectedStatus = v!;
-                  });
-                  _fetchMembers();
-                },
-              ),
-            ),
-          ],
+        IconButton(
+          icon: const Icon(Icons.filter_list, color: Color(0xFF006565)),
+          onPressed: () {
+            showFilterBottomSheet(context);
+          },
         ),
       ],
     );
@@ -677,35 +629,138 @@ class _ManageTeamScreenState extends State<ManageTeamScreen> {
     );
   }
 
-  void showAdvancedFilterDialog(BuildContext context) {
-    double performance = 50;
+  void showFilterBottomSheet(BuildContext context) {
+    String tempTeam = selectedTeam;
+    String tempStatus = selectedStatus;
+    double tempPerformance = 50;
+    String tempRole = "All Roles";
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) {
         return StatefulBuilder(
-          builder: (context, setState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 10,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
+              child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Advanced Filters",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 5,
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    DropdownButtonFormField(
-                      decoration: const InputDecoration(
-                        labelText: "Role",
-                        border: OutlineInputBorder(),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Filter Members",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            setSheetState(() {
+                              tempTeam = "All Teams";
+                              tempStatus = "Active";
+                              tempPerformance = 50;
+                              tempRole = "All Roles";
+                            });
+                          },
+                          child: const Text(
+                            "Reset",
+                            style: TextStyle(color: Color(0xFF006565)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(),
+                    const SizedBox(height: 12),
+                    const Text(
+                      "Team",
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      initialValue: teamsList.contains(tempTeam) ? tempTeam : "All Teams",
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                      items: teamsList
+                          .map(
+                            (e) => DropdownMenuItem(
+                              value: e,
+                              child: Text(e),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) {
+                        setSheetState(() {
+                          tempTeam = v!;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Status",
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      initialValue: tempStatus,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: "Active", child: Text("Active")),
+                        DropdownMenuItem(value: "Inactive", child: Text("Inactive")),
+                        DropdownMenuItem(value: "Pending", child: Text("Pending")),
+                      ],
+                      onChanged: (v) {
+                        setSheetState(() {
+                          tempStatus = v!;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Role",
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      initialValue: tempRole,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       ),
                       items: const [
                         DropdownMenuItem(
@@ -725,40 +780,58 @@ class _ManageTeamScreenState extends State<ManageTeamScreen> {
                           child: Text("Support Specialist"),
                         ),
                       ],
-                      onChanged: (v) {},
-                    ),
-                    const SizedBox(height: 15),
-                    TextField(
-                      decoration: const InputDecoration(
-                        labelText: "Joined Date",
-                        border: OutlineInputBorder(),
-                        suffixIcon: Icon(Icons.calendar_month),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      "Performance Threshold (${performance.toInt()}%)",
-                    ),
-                    Slider(
-                      value: performance,
-                      min: 0,
-                      max: 100,
-                      onChanged: (value) {
-                        setState(() {
-                          performance = value;
+                      onChanged: (v) {
+                        setSheetState(() {
+                          tempRole = v!;
                         });
                       },
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Performance Threshold (${tempPerformance.toInt()}%)",
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                    Slider(
+                      value: tempPerformance,
+                      min: 0,
+                      max: 100,
+                      activeColor: const Color(0xFF006565),
+                      inactiveColor: const Color(0xFF006565).withOpacity(0.2),
+                      onChanged: (value) {
+                        setSheetState(() {
+                          tempPerformance = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
+                      height: 50,
                       child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF006565),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                         onPressed: () {
+                          setState(() {
+                            selectedTeam = tempTeam;
+                            selectedStatus = tempStatus;
+                          });
+                          _fetchMembers();
                           Navigator.pop(context);
                         },
-                        child: const Text("Apply Filters"),
+                        child: const Text(
+                          "Apply Filters",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -877,7 +950,7 @@ class MemberCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.indigo.shade50,
+                color: const Color(0xffe5f7f7),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -889,7 +962,7 @@ class MemberCard extends StatelessWidget {
                         Text(
                           "${member.submissions} Submissions",
                           style: const TextStyle(
-                            color: Colors.indigo,
+                            color: Color(0xFF006565),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -1102,7 +1175,7 @@ class MemberCard extends StatelessWidget {
       child: ListTile(
         leading: Icon(
           icon,
-          color: Colors.indigo,
+          color: const Color(0xFF006565),
         ),
         title: Text(title),
         subtitle: Text(subtitle),
@@ -1114,7 +1187,7 @@ class MemberCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: status == "Approved"
                 ? Colors.green.shade100
-                : Colors.indigo.shade100,
+                : const Color(0xFFD4E6E5),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
@@ -1152,7 +1225,7 @@ class MemberCard extends StatelessWidget {
                   child: Row(
                     children: [
                       CircleAvatar(
-                        backgroundColor: Colors.indigo,
+                        backgroundColor: const Color(0xFF006565),
                         backgroundImage: member.image.isNotEmpty ? NetworkImage(member.image) : null,
                         child: member.image.isEmpty ? Text(member.name.substring(0, 1).toUpperCase()) : null,
                       ),
@@ -1209,7 +1282,7 @@ class MemberCard extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.indigo,
+                            color: const Color(0xFF006565),
                             borderRadius: BorderRadius.circular(15),
                           ),
                           child: const Text(
@@ -1238,7 +1311,7 @@ class MemberCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 10),
                       CircleAvatar(
-                        backgroundColor: Colors.indigo,
+                        backgroundColor: const Color(0xFF006565),
                         child: IconButton(
                           icon: const Icon(
                             Icons.send,

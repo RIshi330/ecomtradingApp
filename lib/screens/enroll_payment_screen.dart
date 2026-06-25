@@ -311,7 +311,7 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
             'email': '',
           },
           'theme': {
-            'color': '#474DC5',
+            'color': '#006565',
           }
         };
         _razorpay!.open(options);
@@ -401,7 +401,7 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff474DC5),
+              backgroundColor: const Color(0xFF006565),
               foregroundColor: Colors.white,
             ),
             onPressed: () {
@@ -458,7 +458,7 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
       barrierDismissible: false,
       builder: (_) => const Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff474DC5)),
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF006565)),
         ),
       ),
     );
@@ -482,7 +482,7 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
         actions: [
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff474DC5),
+              backgroundColor: const Color(0xFF006565),
               foregroundColor: Colors.white,
             ),
             onPressed: () {
@@ -528,19 +528,19 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF1F2FF),
+      backgroundColor: const Color(0xffFCF9F8),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         title: const Text("Complete Payment",
             style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xff474DC5)),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF006565)),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.help_outline, color: Color(0xff474DC5)),
+            icon: const Icon(Icons.help_outline, color: Color(0xFF006565)),
             onPressed: () {},
           )
         ],
@@ -554,7 +554,7 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
         child: ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
             minimumSize: const Size(double.infinity, 55),
-            backgroundColor: const Color(0xff474DC5),
+            backgroundColor: const Color(0xFF006565),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           onPressed: _isPaying ? null : _handlePayment,
@@ -571,7 +571,7 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
       body: _isLoadingBalances
           ? const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xff474DC5)),
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF006565)),
               ),
             )
           : SingleChildScrollView(
@@ -661,10 +661,10 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
               width: 70,
               height: 70,
               decoration: BoxDecoration(
-                color: const Color(0xffF1F2FF),
+                color: const Color(0xffe5f7f7),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(Icons.school, size: 36, color: Color(0xff474DC5)),
+              child: const Icon(Icons.school, size: 36, color: Color(0xFF006565)),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -683,7 +683,7 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
                   Text(
                     "₹${_price.toStringAsFixed(0)}",
                     style: const TextStyle(
-                      color: Color(0xff474DC5),
+                      color: Color(0xFF006565),
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
                     ),
@@ -711,7 +711,7 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
                 controller: couponController,
                 decoration: InputDecoration(
                   hintText: "Enter coupon code",
-                  prefixIcon: const Icon(Icons.sell, color: Color(0xff474DC5)),
+                  prefixIcon: const Icon(Icons.sell, color: Color(0xFF006565)),
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
@@ -728,7 +728,7 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
             const SizedBox(width: 10),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff474DC5),
+                backgroundColor: const Color(0xFF006565),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -808,8 +808,8 @@ class _WalletCard extends StatelessWidget {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: const Color(0xffF1F2FF),
-                  child: Icon(icon, color: const Color(0xff474DC5)),
+                  backgroundColor: const Color(0xffe5f7f7),
+                  child: Icon(icon, color: const Color(0xFF006565)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -824,7 +824,7 @@ class _WalletCard extends StatelessWidget {
                 ),
                 Switch(
                   value: enabled,
-                  activeColor: const Color(0xff474DC5),
+                  activeColor: const Color(0xFF006565),
                   onChanged: onToggle,
                 ),
               ],
@@ -882,7 +882,7 @@ class _SummaryRow extends StatelessWidget {
             style: TextStyle(
               fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
               fontSize: isBold ? 20 : 14,
-              color: isBold ? const Color(0xff474DC5) : Colors.black87,
+              color: isBold ? const Color(0xFF006565) : Colors.black87,
             ),
           ),
         ],

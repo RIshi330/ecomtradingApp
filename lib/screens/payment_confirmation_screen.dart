@@ -68,7 +68,7 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen>
                 width: 100,
                 height: 100,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF474DC5).withOpacity(.1),
+                  color: const Color(0xFF006565).withOpacity(.1),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -83,7 +83,7 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen>
               child: const Icon(
                 Icons.check_circle,
                 size: 55,
-                color: Color(0xFF474DC5),
+                color: Color(0xFF006565),
               ),
             ),
           ],
@@ -127,7 +127,7 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen>
             "₹${widget.amount.toStringAsFixed(2)}",
             style: const TextStyle(
               fontSize: 34,
-              color: Color(0xFF474DC5),
+              color: Color(0xFF006565),
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -237,7 +237,7 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen>
           height: 48,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff474DC5),
+              backgroundColor: const Color(0xFF006565),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -258,8 +258,8 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen>
           height: 48,
           child: OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xff474DC5),
-              side: const BorderSide(color: Color(0xff474DC5)),
+              foregroundColor: const Color(0xFF006565),
+              side: const BorderSide(color: Color(0xFF006565)),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -294,7 +294,7 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen>
           Icon(
             Icons.verified_user,
             size: 18,
-            color: Color(0xFF474DC5),
+            color: Color(0xFF006565),
           ),
           SizedBox(width: 6),
           Flexible(
@@ -311,7 +311,7 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9FF),
+      backgroundColor: const Color(0xffFCF9F8),
       appBar: AppBar(
         title: const Text(
           "Receipt",
@@ -321,7 +321,7 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen>
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Color(0xFF474DC5)),
+          icon: const Icon(Icons.close, color: Color(0xFF006565)),
           onPressed: () => Navigator.pop(context),
         ),
       ),

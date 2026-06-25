@@ -26,7 +26,7 @@ class _AuthProductionState extends State<AuthProduction> {
   int resendTimer = 30;
   Timer? timer;
 
-  final Color primary = const Color(0xFF7C83FD);
+  final Color primary = const Color(0xFF006565);
 
   /// 🔐 EMAIL VALIDATION
   bool isValidEmail(String email) {
@@ -108,26 +108,29 @@ class _AuthProductionState extends State<AuthProduction> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7FF),
+      backgroundColor: const Color(0xFFFCF9F8),
       body: Stack(
         children: [
           Center(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 420),
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: primary.withOpacity(0.15),
-                    blurRadius: 30,
-                  )
-                ],
-              ),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: showOtp ? _otpUI() : _formUI(),
+            child: SingleChildScrollView(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 420),
+                padding: const EdgeInsets.all(24),
+                margin: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primary.withOpacity(0.15),
+                      blurRadius: 30,
+                    )
+                  ],
+                ),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: showOtp ? _otpUI() : _formUI(),
+                ),
               ),
             ),
           ),
@@ -301,7 +304,7 @@ class _AuthProductionState extends State<AuthProduction> {
     return InputDecoration(
       hintText: hint,
       filled: true,
-      fillColor: const Color(0xFFF3F4FF),
+      fillColor: const Color(0xFFF0EDED),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
       ),

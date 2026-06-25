@@ -9,6 +9,7 @@ import '../app_constants.dart';
 /// Centralized API client with session management and secure storage
 class Database {
   int retry = 0;
+  static String? _cachedSessionId;
 
   /// Get Android options for secure storage
   AndroidOptions _getAndroidOptions() => const AndroidOptions(
@@ -22,7 +23,10 @@ class Database {
     Map<String, String> stringBody = {}; // Initialize here
 
     final storage = FlutterSecureStorage(aOptions: _getAndroidOptions());
-    final existingSessionId = await storage.read(key: "SESSION_ID");
+    if (_cachedSessionId == null || _cachedSessionId!.isEmpty) {
+      _cachedSessionId = await _readSecureKey(storage, "SESSION_ID");
+    }
+    final existingSessionId = _cachedSessionId;
 
     try {
       // Convert all body values to strings to avoid type cast issues
@@ -33,12 +37,14 @@ class Database {
           ? Uri.parse(Uri.encodeFull('$baseUrlLegacy$endpoint'))
           : Uri.parse(baseUrlLegacy);
 
+      print('Database [getData]: Sending request to $targetUrl with SESSION-ID: $existingSessionId');
+
       final response = await http.post(
         targetUrl,
         body: stringBody,
         headers: {
           'APP_ID': (appIdOverride ?? appId).toString(),
-          'SESSION_ID': existingSessionId?.toString() ?? '',
+          'SESSION-ID': existingSessionId?.toString() ?? '',
         },
       );
 
@@ -72,7 +78,12 @@ class Database {
               'status': 200,
             };
           } else {
-            result = decodedResponse;
+            // Scalar value (e.g., integer 1 from echo 1; die;)
+            result = {
+              'success': true,
+              'data': decodedResponse,
+              'status': 200,
+            };
           }
         } catch (jsonError) {
           print('JSON DECODE ERROR: $jsonError');
@@ -108,9 +119,11 @@ class Database {
       }
 
       // Handle session management - FIXED NULL SAFETY
-      if (existingSessionId == null &&
-          result.containsKey('SESSION_ID') &&
-          result['SESSION_ID'] != null) {
+      if (result.containsKey('SESSION_ID') &&
+          result['SESSION_ID'] != null &&
+          result['SESSION_ID'].toString().isNotEmpty &&
+          result['SESSION_ID'].toString() != existingSessionId) {
+        _cachedSessionId = result['SESSION_ID'].toString();
         await storage.write(
             key: "SESSION_ID", value: result['SESSION_ID'].toString());
       } else if (result['status'] == 400 && result.containsKey("logged_out")) {
@@ -122,8 +135,8 @@ class Database {
           String? validator;
 
           try {
-            accessToken = await storage.read(key: "access_token");
-            validator = await storage.read(key: "validator");
+            accessToken = await _readSecureKey(storage, "access_token");
+            validator = await _readSecureKey(storage, "validator");
           } catch (e) {
             validator = accessToken = null;
           }
@@ -190,12 +203,17 @@ class Database {
     var result = {};
 
     final storage = FlutterSecureStorage(aOptions: _getAndroidOptions());
-    final existingSessionId = await storage.read(key: "SESSION_ID");
+    if (_cachedSessionId == null || _cachedSessionId!.isEmpty) {
+      _cachedSessionId = await _readSecureKey(storage, "SESSION_ID");
+    }
+    final existingSessionId = _cachedSessionId;
 
     try {
       final targetUrl = endpoint != null
           ? Uri.parse(Uri.encodeFull('$baseUrlLegacy$endpoint'))
           : Uri.parse(baseUrlLegacy);
+
+      print('Database [getJsonData]: Sending request to $targetUrl with SESSION-ID: $existingSessionId');
 
       final response = await http.post(
         targetUrl,
@@ -203,7 +221,7 @@ class Database {
         headers: {
           'Content-Type': 'application/json',
           'APP_ID': appId.toString(),
-          'SESSION_ID': existingSessionId?.toString() ?? '',
+          'SESSION-ID': existingSessionId?.toString() ?? '',
         },
       );
 
@@ -237,7 +255,12 @@ class Database {
               'status': 200,
             };
           } else {
-            result = decodedResponse;
+            // Scalar value (e.g., integer 1 from echo 1; die;)
+            result = {
+              'success': true,
+              'data': decodedResponse,
+              'status': 200,
+            };
           }
         } catch (jsonError) {
           print('JSON DECODE ERROR: $jsonError');
@@ -273,9 +296,11 @@ class Database {
       }
 
       // Handle session management
-      if (existingSessionId == null &&
-          result.containsKey('SESSION_ID') &&
-          result['SESSION_ID'] != null) {
+      if (result.containsKey('SESSION_ID') &&
+          result['SESSION_ID'] != null &&
+          result['SESSION_ID'].toString().isNotEmpty &&
+          result['SESSION_ID'].toString() != existingSessionId) {
+        _cachedSessionId = result['SESSION_ID'].toString();
         await storage.write(
             key: "SESSION_ID", value: result['SESSION_ID'].toString());
       }
@@ -302,14 +327,18 @@ class Database {
 
   /// Get current session ID
   Future<String?> getSessionId() async {
+    if (_cachedSessionId != null && _cachedSessionId!.isNotEmpty) {
+      return _cachedSessionId;
+    }
     final storage = FlutterSecureStorage(aOptions: _getAndroidOptions());
-    return await storage.read(key: "SESSION_ID");
+    _cachedSessionId = await _readSecureKey(storage, "SESSION_ID");
+    return _cachedSessionId;
   }
 
   /// Get stored Razorpay key
   Future<String?> getRazorpayKey() async {
     final storage = FlutterSecureStorage(aOptions: _getAndroidOptions());
-    return await storage.read(key: "razorpay_key");
+    return await _readSecureKey(storage, "razorpay_key");
   }
 
   /// Store user data securely
@@ -322,7 +351,7 @@ class Database {
   Future<Map<String, dynamic>?> getUserData() async {
     try {
       final storage = FlutterSecureStorage(aOptions: _getAndroidOptions());
-      final userData = await storage.read(key: "user_data");
+      final userData = await _readSecureKey(storage, "user_data");
       return userData != null ? jsonDecode(userData) : null;
     } catch (e) {
       print("Error reading user data: $e");
@@ -332,6 +361,7 @@ class Database {
 
   /// Clear all stored data (for logout)
   Future<void> clearAllData() async {
+    _cachedSessionId = null;
     final storage = FlutterSecureStorage(aOptions: _getAndroidOptions());
     await storage.deleteAll();
   }
@@ -346,7 +376,7 @@ class Database {
   /// Get stored access token
   Future<String?> getAccessToken() async {
     final storage = FlutterSecureStorage(aOptions: _getAndroidOptions());
-    return await storage.read(key: "access_token");
+    return await _readSecureKey(storage, "access_token");
   }
 
   /// Store user preferences
@@ -360,10 +390,25 @@ class Database {
   Future<Map<String, dynamic>?> getUserPreferences() async {
     try {
       final storage = FlutterSecureStorage(aOptions: _getAndroidOptions());
-      final preferences = await storage.read(key: "user_preferences");
+      final preferences = await _readSecureKey(storage, "user_preferences");
       return preferences != null ? jsonDecode(preferences) : null;
     } catch (e) {
       print("Error reading user preferences: $e");
+      return null;
+    }
+  }
+
+  /// Safe secure storage key reading helper
+  Future<String?> _readSecureKey(FlutterSecureStorage storage, String key) async {
+    try {
+      return await storage.read(key: key);
+    } catch (e) {
+      print("Secure storage read failed for key $key, clearing corrupted storage: $e");
+      try {
+        await storage.deleteAll();
+      } catch (clearError) {
+        print("Failed to delete corrupted storage: $clearError");
+      }
       return null;
     }
   }

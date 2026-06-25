@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
-import 'package:trading_ecommerce_admin/services/auth_service.dart';
 import 'package:trading_ecommerce_admin/common/chat_screen.dart';
 
 class CommunityInboxScreen extends StatefulWidget {
@@ -100,7 +99,7 @@ class _CommunityInboxScreenState
   List<ChatModel> _getMockChats() {
     return [
       ChatModel(
-        id: "mock1",
+        id: "90001",
         name: "Sarah Jenkins",
         role: "Vendor",
         message: "I've uploaded the new inventory list for the weekend market...",
@@ -110,7 +109,7 @@ class _CommunityInboxScreenState
         avatarUrl: "",
       ),
       ChatModel(
-        id: "mock2",
+        id: "90002",
         name: "Marcus Thorne",
         role: "Business",
         message: "The contract looks good. I'll send the signed copy by EOD.",
@@ -118,7 +117,7 @@ class _CommunityInboxScreenState
         avatarUrl: "",
       ),
       ChatModel(
-        id: "mock3",
+        id: "90003",
         name: "Elena Rodriguez",
         role: "User",
         message: "Thanks for the quick response regarding my membership.",
@@ -126,7 +125,7 @@ class _CommunityInboxScreenState
         avatarUrl: "",
       ),
       ChatModel(
-        id: "mock4",
+        id: "90004",
         name: "John Doe",
         role: "User",
         message: "Hey John, I wanted to follow up on...",
@@ -135,7 +134,7 @@ class _CommunityInboxScreenState
         avatarUrl: "",
       ),
       ChatModel(
-        id: "mock5",
+        id: "90005",
         name: "David Chen",
         role: "Business",
         message: "The new onboarding flow is much smoother now.",
@@ -166,11 +165,15 @@ class _CommunityInboxScreenState
               });
             },
             decoration: InputDecoration(
-              prefixIcon: const Icon(Icons.search),
               hintText: "Search members or messages...",
+              prefixIcon: const Icon(Icons.search, color: Color(0xFF006565)),
+              filled: true,
+              fillColor: const Color(0xFFF5F7F7),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none,
               ),
+              contentPadding: const EdgeInsets.symmetric(vertical: 12),
             ),
           ),
         ),
@@ -178,7 +181,7 @@ class _CommunityInboxScreenState
           child: isLoading
               ? const Center(
                   child: CircularProgressIndicator(
-                    color: Color(0xff474DC5),
+                    color: Color(0xFF006565),
                   ),
                 )
               : _filteredChats.isEmpty
@@ -190,7 +193,7 @@ class _CommunityInboxScreenState
                     )
                   : RefreshIndicator(
                       onRefresh: _fetchInboxChats,
-                      color: const Color(0xff474DC5),
+                      color: const Color(0xFF006565),
                       child: ListView.builder(
                         itemCount: _filteredChats.length,
                         itemBuilder: (context, index) {
@@ -206,13 +209,13 @@ class _CommunityInboxScreenState
 
     if (!widget.isStandalone) {
       return Scaffold(
-        backgroundColor: const Color(0xffF9F9FF),
+        backgroundColor: const Color(0xffFCF9F8),
         body: bodyContent,
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xffF9F9FF),
+      backgroundColor: const Color(0xffFCF9F8),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -226,14 +229,14 @@ class _CommunityInboxScreenState
             ? IconButton(
                 icon: const Icon(
                   Icons.arrow_back,
-                  color: Color(0xff474DC5),
+                  color: Color(0xFF006565),
                 ),
                 onPressed: () => Navigator.pop(context),
               )
             : IconButton(
                 icon: const Icon(
                   Icons.menu,
-                  color: Color(0xff474DC5),
+                  color: Color(0xFF006565),
                 ),
                 onPressed: () {},
               ),
@@ -241,20 +244,20 @@ class _CommunityInboxScreenState
           IconButton(
             icon: const Icon(
               Icons.search,
-              color: Color(0xff474DC5),
+              color: Color(0xFF006565),
             ),
             onPressed: () {},
           )
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xff474DC5),
+        backgroundColor: const Color(0xFF006565),
         onPressed: () {},
         child: const Icon(Icons.edit, color: Colors.white),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 0,
-        selectedItemColor: const Color(0xff474DC5),
+        selectedItemColor: const Color(0xFF006565),
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         items: const [
@@ -316,7 +319,7 @@ class ChatTile extends StatelessWidget {
   Color getBadgeColor() {
     switch (chat.role) {
       case "Vendor":
-        return const Color(0xffF1F2FF);
+        return const Color(0xffe5f7f7);
       case "Business":
         return const Color(0xffE8F5E9);
       default:
@@ -327,7 +330,7 @@ class ChatTile extends StatelessWidget {
   Color getBadgeTextColor() {
     switch (chat.role) {
       case "Vendor":
-        return const Color(0xff474DC5);
+        return const Color(0xFF006565);
       case "Business":
         return Colors.green;
       default:
@@ -353,12 +356,144 @@ class ChatTile extends StatelessWidget {
         horizontal: 16,
         vertical: 6,
       ),
-      elevation: 0.5,
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(
+          color: Color(0xFFE5ECEB),
+        ),
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(12),
+        leading: Stack(
+          children: [
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: const Color(0xff008080),
+              child: ClipOval(
+                child: chat.avatarUrl.isNotEmpty
+                    ? Image.network(
+                        chat.avatarUrl,
+                        width: 56,
+                        height: 56,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Text(
+                          getInitials(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                    : Text(
+                        getInitials(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+            ),
+            if (chat.online)
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white,
+                      width: 2,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                chat.name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Color(0xFF151C27),
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Text(
+              chat.time,
+              style: TextStyle(
+                fontSize: 12,
+                color: chat.isDraft ? Colors.red : Colors.grey,
+              ),
+            ),
+          ],
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 3,
+              ),
+              decoration: BoxDecoration(
+                color: getBadgeColor(),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                chat.role,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: getBadgeTextColor(),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    chat.message,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: chat.unread > 0 ? Colors.black87 : Colors.grey,
+                      fontWeight: chat.unread > 0 ? FontWeight.w600 : FontWeight.normal,
+                      fontStyle: chat.isDraft ? FontStyle.italic : FontStyle.normal,
+                    ),
+                  ),
+                ),
+                if (chat.unread > 0)
+                  Container(
+                    height: 22,
+                    width: 22,
+                    alignment: Alignment.center,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF006565),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      chat.unread.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
         onTap: () {
           final user = ChatUser(
             id: chat.id,
@@ -378,133 +513,6 @@ class ChatTile extends StatelessWidget {
             ),
           );
         },
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: const Color(0xff6067DF),
-                    child: Text(
-                      getInitials(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  if (chat.online)
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: 14,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white,
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            chat.name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Text(
-                          chat.time,
-                          style: TextStyle(
-                            color: chat.isDraft ? Colors.red : Colors.grey,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: getBadgeColor(),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            chat.role,
-                            style: TextStyle(
-                              color: getBadgeTextColor(),
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            chat.message,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: chat.unread > 0 ? Colors.black87 : Colors.grey,
-                              fontWeight: chat.unread > 0 ? FontWeight.w600 : FontWeight.normal,
-                              fontStyle: chat.isDraft ? FontStyle.italic : FontStyle.normal,
-                            ),
-                          ),
-                        ),
-                        if (chat.unread > 0)
-                          Container(
-                            margin: const EdgeInsets.only(
-                              left: 8,
-                            ),
-                            padding: const EdgeInsets.all(6),
-                            decoration: const BoxDecoration(
-                              color: Color(0xff474DC5),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Text(
-                              chat.unread.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

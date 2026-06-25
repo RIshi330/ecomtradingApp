@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import '../Database/Database.dart';
 
 class ExploreTalentScreen extends StatefulWidget {
-  const ExploreTalentScreen({super.key});
+  final bool isEmbedded;
+  const ExploreTalentScreen({super.key, this.isEmbedded = false});
 
   @override
   State<ExploreTalentScreen> createState() => _ExploreTalentScreenState();
@@ -215,76 +216,78 @@ class _ExploreTalentScreenState extends State<ExploreTalentScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF9F9FF),
-      body: Stack(
+      backgroundColor: const Color(0xffFCF9F8),
+      body: Column(
         children: [
-          Column(
-            children: [
-              /// APPBAR
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.only(
-                  top: 55,
-                  left: 16,
-                  right: 16,
-                  bottom: 12,
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
+          /// APPBAR
+          Container(
+            color: Colors.white,
+            padding: EdgeInsets.only(
+              top: widget.isEmbedded ? 8 : 55,
+              left: 16,
+              right: 16,
+              bottom: 8,
+            ),
+            child: Row(
+              children: [
+                if (!widget.isEmbedded) ...[
+                  Builder(
+                    builder: (context) => IconButton(
                       icon: const Icon(
                         Icons.menu,
                         color: AppTheme.primary,
                       ),
                       onPressed: () {
+                        Scaffold.of(context).openDrawer();
+                      },
+                    ),
+                  ),
+                  const Expanded(
+                    child: Text(
+                      "Talent Marketplace",
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primary,
+                      ),
+                    ),
+                  ),
+                ] else
+                  const Expanded(child: SizedBox()),
+                Row(
+                  children: [
+                    Text(
+                      _activeTab == 0 ? "Talents" : "Hiring Packages",
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primary,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        _activeTab == 0
+                            ? Icons.people_outline
+                            : Icons.card_giftcard,
+                        color: AppTheme.primary,
+                      ),
+                      onPressed: () {
                         setState(() {
-                          _showDrawer = true;
+                          _activeTab = _activeTab == 0 ? 1 : 0;
                         });
                       },
                     ),
-                    const Expanded(
-                      child: Text(
-                        "Talent Marketplace",
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primary,
-                        ),
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            _activeTab == 0
-                                ? Icons.view_carousel
-                                : Icons.card_giftcard,
-                            color: AppTheme.primary,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _activeTab = _activeTab == 0 ? 1 : 0;
-                            });
-                          },
-                        ),
-                        const CircleAvatar(
-                          radius: 18,
-                          child: Icon(Icons.person, size: 18),
-                        ),
-                      ],
-                    )
                   ],
-                ),
-              ),
-
-              Expanded(
-                child: _activeTab == 0
-                    ? _buildSwipeCardsTab()
-                    : _buildHiringPackagesTab(),
-              ),
-            ],
+                )
+              ],
+            ),
           ),
-          if (_showDrawer) _buildFilterDrawerWidget(),
+
+          Expanded(
+            child: _activeTab == 0
+                ? _buildSwipeCardsTab()
+                : _buildHiringPackagesTab(),
+          ),
         ],
       ),
     );
@@ -295,29 +298,48 @@ class _ExploreTalentScreenState extends State<ExploreTalentScreen>
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          /// SEARCH
-          TextField(
-            controller: searchController,
-            onSubmitted: (v) => _loadProfiles(),
-            decoration: InputDecoration(
-              hintText: "Search roles or skills...",
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: searchController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        searchController.clear();
-                        _loadProfiles();
-                      },
-                    )
-                  : null,
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide.none,
+          /// SEARCH & FILTER ROW
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: searchController,
+                  onSubmitted: (v) => _loadProfiles(),
+                  decoration: InputDecoration(
+                    hintText: "Search roles or skills...",
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              searchController.clear();
+                              _loadProfiles();
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 10),
+              GestureDetector(
+                onTap: () => _showFilterBottomSheet(),
+                child: Container(
+                  height: 48,
+                  width: 48,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.tune, color: AppTheme.primary),
+                ),
+              ),
+            ],
           ),
 
           const SizedBox(height: 10),
@@ -365,14 +387,27 @@ class _ExploreTalentScreenState extends State<ExploreTalentScreen>
 
           const SizedBox(height: 12),
 
-          /// SWIPE STACK
+          /// LIST OF TALENTS (replaces swipe stack)
           Expanded(
             child: _isLoadingProfiles
                 ? const Center(
                     child: CircularProgressIndicator(color: AppTheme.primary))
                 : _profiles.isEmpty
                     ? _buildSwipeEmptyState()
-                    : _buildSwipeCardStackWidget(),
+                    : ListView.builder(
+                        itemCount: _profiles.length,
+                        itemBuilder: (context, index) {
+                          final profile = _profiles[index];
+                          return Container(
+                            height: 480,
+                            margin: const EdgeInsets.only(bottom: 20),
+                            child: TalentCard(
+                              profile: profile,
+                              onInvite: () => _showInviteDialogOnSwipe(profile),
+                            ),
+                          );
+                        },
+                      ),
           ),
         ],
       ),
@@ -380,6 +415,12 @@ class _ExploreTalentScreenState extends State<ExploreTalentScreen>
   }
 
   Widget _buildSwipeEmptyState() {
+    final hasFilters = _selectedStreams.isNotEmpty ||
+        _selectedAvails.isNotEmpty ||
+        _selectedSkills.isNotEmpty ||
+        _selectedCollege.isNotEmpty ||
+        searchController.text.isNotEmpty;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -388,7 +429,7 @@ class _ExploreTalentScreenState extends State<ExploreTalentScreen>
               size: 80, color: Colors.grey.shade400),
           const SizedBox(height: 16),
           const Text(
-            "No More Profiles",
+            "No Profiles Found",
             style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -396,123 +437,35 @@ class _ExploreTalentScreenState extends State<ExploreTalentScreen>
           ),
           const SizedBox(height: 8),
           const Text(
-            "Check back later or change your filters.",
+            "Try adjusting your filters or search query.",
             style: TextStyle(color: Colors.grey),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primary),
-            onPressed: () {
-              setState(() {
-                _selectedStreams.clear();
-                _selectedAvails.clear();
-                _selectedSkills.clear();
-                _selectedCollege = "";
-                searchController.clear();
-              });
-              _loadProfiles();
-            },
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            label: const Text("Reset Filters",
-                style: TextStyle(color: Colors.white)),
-          ),
+          if (hasFilters)
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary),
+              onPressed: () {
+                setState(() {
+                  _selectedStreams.clear();
+                  _selectedAvails.clear();
+                  _selectedSkills.clear();
+                  _selectedCollege = "";
+                  searchController.clear();
+                });
+                _loadProfiles();
+              },
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              label: const Text("Reset Filters",
+                  style: TextStyle(color: Colors.white)),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildSwipeCardStackWidget() {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        if (_profiles.length > 2)
-          Transform.scale(
-            scale: .92,
-            child: TalentCard(
-              profile: _profiles[2],
-            ),
-          ),
-        if (_profiles.length > 1)
-          Transform.scale(
-            scale: .96,
-            child: TalentCard(
-              profile: _profiles[1],
-            ),
-          ),
-        GestureDetector(
-          onPanUpdate: (details) {
-            setState(() {
-              xOffset += details.delta.dx;
-              yOffset += details.delta.dy;
-            });
-          },
-          onPanEnd: (_) {
-            if (xOffset > 120) {
-              // Shortlist (opens dialog to invite)
-              _showInviteDialogOnSwipe(_profiles.first);
-            } else if (xOffset < -120) {
-              // Pass
-              _nextCard();
-            } else {
-              setState(() {
-                xOffset = 0;
-                yOffset = 0;
-              });
-            }
-          },
-          child: Transform.translate(
-            offset: Offset(xOffset, yOffset),
-            child: Transform.rotate(
-              angle: xOffset / 500,
-              child: Stack(
-                children: [
-                  TalentCard(
-                    profile: _profiles.first,
-                  ),
-                  if (xOffset > 50)
-                    Positioned(
-                      top: 40,
-                      left: 30,
-                      child: _buildSwipeIndicator("SHORTLIST", Colors.green),
-                    ),
-                  if (xOffset < -50)
-                    Positioned(
-                      top: 40,
-                      right: 30,
-                      child: _buildSwipeIndicator("PASS", Colors.red),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
-  Widget _buildSwipeIndicator(String text, Color color) {
-    return Transform.rotate(
-      angle: -.3,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        decoration: BoxDecoration(
-          border: Border.all(color: color, width: 4),
-          color: Colors.white.withAlpha(220),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: color,
-            fontWeight: FontWeight.bold,
-            fontSize: 26,
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildHiringPackagesTab() {
     return RefreshIndicator(
@@ -741,183 +694,204 @@ class _ExploreTalentScreenState extends State<ExploreTalentScreen>
     );
   }
 
-  Widget _buildFilterDrawerWidget() {
-    return Material(
-      color: Colors.black45,
-      child: Row(
-        children: [
-          Container(
-            width: 320,
-            color: Colors.white,
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      const Expanded(
-                        child: Text(
-                          "Refine Search",
-                          style: TextStyle(
-                              fontSize: 22, fontWeight: FontWeight.bold),
+  void _showFilterBottomSheet() {
+    String tempCollege = _selectedCollege;
+    List<String> tempStreams = List.from(_selectedStreams);
+    List<String> tempAvails = List.from(_selectedAvails);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final hasActiveFilters = tempCollege.isNotEmpty || tempStreams.isNotEmpty || tempAvails.isNotEmpty;
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 10,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 5,
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () {
-                          setState(() {
-                            _showDrawer = false;
-                          });
-                        },
-                      )
-                    ],
-                  ),
-                ),
-                const Divider(),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      const Text("Select College",
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-                      DropdownButtonFormField<String>(
-                        value:
-                            _selectedCollege.isEmpty ? null : _selectedCollege,
-                        decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            contentPadding:
-                                EdgeInsets.symmetric(horizontal: 10)),
-                        items: [
-                          const DropdownMenuItem(
-                              value: "", child: Text("All Colleges")),
-                          ..._colleges.map((c) => DropdownMenuItem(
-                              value: c,
-                              child: Text(c, overflow: TextOverflow.ellipsis))),
-                        ],
-                        onChanged: (v) {
-                          setState(() {
-                            _selectedCollege = v ?? "";
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      const Text("Streams / Interests",
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _streams.map((stream) {
-                          final isSelected = _selectedStreams.contains(stream);
-                          return FilterChip(
-                            label: Text(stream),
-                            selected: isSelected,
-                            selectedColor:
-                                AppTheme.primary.withAlpha(50),
-                            checkmarkColor: AppTheme.primary,
-                            onSelected: (selected) {
-                              setState(() {
-                                if (selected) {
-                                  _selectedStreams.add(stream);
-                                } else {
-                                  _selectedStreams.remove(stream);
-                                }
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Filter Talent",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (hasActiveFilters)
+                          TextButton(
+                            onPressed: () {
+                              setSheetState(() {
+                                tempCollege = "";
+                                tempStreams.clear();
+                                tempAvails.clear();
                               });
                             },
-                          );
-                        }).toList(),
+                            child: const Text(
+                              "Reset",
+                              style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const Divider(),
+                    const SizedBox(height: 12),
+                    const Text(
+                      "Select College",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: tempCollege.isEmpty ? null : tempCollege,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
-                      const SizedBox(height: 20),
-                      const Text("Availability Type",
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-                      ..._availabilities.map((avail) {
-                        final isSelected = _selectedAvails.contains(avail);
-                        return CheckboxListTile(
-                          title:
-                              Text(avail, style: const TextStyle(fontSize: 13)),
-                          value: isSelected,
-                          onChanged: (selected) {
-                            setState(() {
-                              if (selected == true) {
-                                _selectedAvails.add(avail);
+                      items: [
+                        const DropdownMenuItem(value: "", child: Text("All Colleges")),
+                        ..._colleges.map((c) => DropdownMenuItem(
+                            value: c,
+                            child: Text(c, overflow: TextOverflow.ellipsis))),
+                      ],
+                      onChanged: (v) {
+                        setSheetState(() {
+                          tempCollege = v ?? "";
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      "Streams / Interests",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _streams.map((stream) {
+                        final isSelected = tempStreams.contains(stream);
+                        return FilterChip(
+                          label: Text(stream),
+                          selected: isSelected,
+                          selectedColor: AppTheme.primary.withOpacity(0.15),
+                          checkmarkColor: AppTheme.primary,
+                          side: BorderSide.none,
+                          onSelected: (selected) {
+                            setSheetState(() {
+                              if (selected) {
+                                tempStreams.add(stream);
                               } else {
-                                _selectedAvails.remove(avail);
+                                tempStreams.remove(stream);
                               }
                             });
                           },
-                          controlAffinity: ListTileControlAffinity.leading,
-                          contentPadding: EdgeInsets.zero,
-                          dense: true,
                         );
-                      }),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            setState(() {
-                              _selectedStreams.clear();
-                              _selectedAvails.clear();
-                              _selectedCollege = "";
-                              _showDrawer = false;
-                            });
-                            _loadProfiles();
-                          },
-                          child: const Text("Reset"),
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      "Availability Type",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    const SizedBox(height: 8),
+                    ..._availabilities.map((avail) {
+                      final isSelected = tempAvails.contains(avail);
+                      return CheckboxListTile(
+                        title: Text(avail, style: const TextStyle(fontSize: 14)),
+                        value: isSelected,
+                        activeColor: AppTheme.primary,
+                        onChanged: (selected) {
+                          setSheetState(() {
+                            if (selected == true) {
+                              tempAvails.add(avail);
+                            } else {
+                              tempAvails.remove(avail);
+                            }
+                          });
+                        },
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      );
+                    }),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: SizedBox(
-                          height: 45,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primary),
-                            onPressed: () {
-                              setState(() {
-                                _showDrawer = false;
-                              });
-                              _loadProfiles();
-                            },
-                            child: const Text("Apply",
-                                style: TextStyle(color: Colors.white)),
+                        onPressed: () {
+                          setState(() {
+                            _selectedCollege = tempCollege;
+                            _selectedStreams.clear();
+                            _selectedStreams.addAll(tempStreams);
+                            _selectedAvails.clear();
+                            _selectedAvails.addAll(tempAvails);
+                          });
+                          _loadProfiles();
+                          Navigator.pop(context);
+                        },
+                        child: const Text(
+                          "Apply Filters",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                )
-              ],
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _showDrawer = false;
-                });
-              },
-            ),
-          ),
-        ],
-      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
 
 class TalentCard extends StatelessWidget {
   final TalentProfile profile;
+  final VoidCallback onInvite;
 
   const TalentCard({
     super.key,
     required this.profile,
+    required this.onInvite,
   });
 
   @override
@@ -936,7 +910,7 @@ class TalentCard extends StatelessWidget {
       child: Column(
         children: [
           Expanded(
-            flex: 7,
+            flex: 6,
             child: Stack(
               children: [
                 ClipRRect(
@@ -1035,7 +1009,7 @@ class TalentCard extends StatelessWidget {
             ),
           ),
           Expanded(
-            flex: 3,
+            flex: 4,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Column(
@@ -1055,6 +1029,7 @@ class TalentCard extends StatelessWidget {
                             labelStyle:
                                 const TextStyle(color: AppTheme.primary),
                             padding: EdgeInsets.zero,
+                            side: BorderSide.none,
                             materialTapTargetSize:
                                 MaterialTapTargetSize.shrinkWrap,
                           ),
@@ -1070,8 +1045,30 @@ class TalentCard extends StatelessWidget {
                           color: Colors.grey.shade700,
                           fontSize: 13,
                           height: 1.4),
-                      maxLines: 3,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 38,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: onInvite,
+                      child: const Text(
+                        "Invite as Collaborator",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -1086,7 +1083,7 @@ class TalentCard extends StatelessWidget {
   Widget _buildImagePlaceholder() {
     return Container(
       width: double.infinity,
-      color: Colors.indigo.shade50,
+      color: const Color(0xffe5f7f7),
       alignment: Alignment.center,
       child: const Column(
         mainAxisAlignment: MainAxisAlignment.center,

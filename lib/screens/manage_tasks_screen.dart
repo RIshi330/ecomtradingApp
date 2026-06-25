@@ -3,7 +3,8 @@ import '../Database/Database.dart';
 import 'task_submissions_screen.dart';
 
 class ManageTasksScreen extends StatefulWidget {
-  const ManageTasksScreen({super.key});
+  final bool isEmbedded;
+  const ManageTasksScreen({super.key, this.isEmbedded = false});
 
   @override
   State<ManageTasksScreen> createState() => _ManageTasksScreenState();
@@ -66,16 +67,18 @@ class _ManageTasksScreenState extends State<ManageTasksScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF9F9FF),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text(
-          "Task Management",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
-        iconTheme: const IconThemeData(color: Colors.black),
-      ),
+      backgroundColor: const Color(0xffFCF9F8),
+      appBar: widget.isEmbedded
+          ? null
+          : AppBar(
+              elevation: 0,
+              backgroundColor: Colors.white,
+              title: const Text(
+                "Task Management",
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              ),
+              iconTheme: const IconThemeData(color: Colors.black),
+            ),
       body: RefreshIndicator(
         onRefresh: _fetchData,
         child: SingleChildScrollView(
@@ -119,8 +122,8 @@ class _ManageTasksScreenState extends State<ManageTasksScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.indigo,
+      floatingActionButton: FloatingActionButton.small(
+        backgroundColor: const Color(0xFF006565),
         foregroundColor: Colors.white,
         onPressed: () => _showNewTaskWizard(context),
         child: const Icon(Icons.add),
@@ -275,7 +278,7 @@ class _ManageTasksScreenState extends State<ManageTasksScreen> {
                   ),
                   Text(
                     "$progress%",
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo, fontSize: 12),
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF006565), fontSize: 12),
                   )
                 ],
               ),
@@ -284,8 +287,8 @@ class _ManageTasksScreenState extends State<ManageTasksScreen> {
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
                   value: progress / 100.0,
-                  backgroundColor: Colors.indigo.shade50,
-                  color: Colors.indigo,
+                  backgroundColor: const Color(0xFF006565).withOpacity(0.1),
+                  color: const Color(0xFF006565),
                   minHeight: 6,
                 ),
               ),
@@ -295,9 +298,9 @@ class _ManageTasksScreenState extends State<ManageTasksScreen> {
                 children: [
                   Text(
                     "Click to View Submissions",
-                    style: TextStyle(color: Colors.indigo.shade300, fontSize: 12, fontStyle: FontStyle.italic),
+                    style: TextStyle(color: const Color(0xFF006565).withOpacity(0.6), fontSize: 12, fontStyle: FontStyle.italic),
                   ),
-                  const Icon(Icons.arrow_forward_ios, size: 12, color: Colors.indigo),
+                  const Icon(Icons.arrow_forward_ios, size: 12, color: Color(0xFF006565)),
                 ],
               ),
             ],
@@ -347,7 +350,7 @@ class _ManageTasksScreenState extends State<ManageTasksScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                border: Border.all(color: Colors.indigo.shade200, width: 2),
+                                border: Border.all(color: const Color(0xFFBDC9C8), width: 2),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: const Column(
@@ -373,7 +376,7 @@ class _ManageTasksScreenState extends State<ManageTasksScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                border: Border.all(color: Colors.indigo.shade200, width: 2),
+                                border: Border.all(color: const Color(0xFFBDC9C8), width: 2),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: const Column(
@@ -408,8 +411,8 @@ class _ManageTasksScreenState extends State<ManageTasksScreen> {
                         )),
                     const Divider(),
                     ListTile(
-                      leading: const Icon(Icons.add, color: Colors.indigo),
-                      title: const Text("Add New Client", style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold)),
+                      leading: const Icon(Icons.add, color: Color(0xFF006565)),
+                      title: const Text("Add New Client", style: TextStyle(color: Color(0xFF006565), fontWeight: FontWeight.bold)),
                       onTap: () {
                         final clientController = TextEditingController();
                         showDialog(

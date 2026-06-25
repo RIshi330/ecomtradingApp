@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../Database/Database.dart';
 import '../model/module_model.dart';
+import '../core/theme/app_theme.dart';
 
 class PaymentScreen extends StatefulWidget {
   const PaymentScreen({super.key});
@@ -196,9 +197,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(
+      builder: (_) => Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff7C83FD)),
+          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
         ),
       ),
     );
@@ -220,8 +221,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
       if (!mounted) return;
       Navigator.pop(context); // Close loader
 
-      if (res['success'] == true || res['status'] == 200 || res.containsKey('razorpay_order_id') || res.containsKey('order_id')) {
-        final String? orderId = res['razorpay_order_id']?.toString() ?? res['order_id']?.toString();
+      if (res['success'] == true || res['status'] == 200 || res.containsKey('razorpay_order_id') || res.containsKey('order_id') || res.containsKey('id')) {
+        final String? orderId = res['razorpay_order_id']?.toString() ?? res['order_id']?.toString() ?? res['id']?.toString();
         
         if (orderId != null && remainingAmount > 0.0) {
           _showVerifyPurchaseDialog(orderId);
@@ -268,7 +269,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
             child: const Text("Cancel"),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff7C83FD)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primary,
+              minimumSize: const Size(0, 40),
+            ),
             onPressed: () {
               Navigator.pop(ctx);
               _verifyPurchaseOnBackend(orderId);
@@ -334,7 +338,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
         content: Text(message),
         actions: [
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff7C83FD)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primary,
+              minimumSize: const Size(0, 40),
+            ),
             onPressed: () {
               Navigator.pop(ctx); // Close dialog
               Navigator.pop(context); // Pop payment screen
@@ -368,7 +375,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF1F2FF),
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
         title: const Text("Complete Payment"),
         leading: IconButton(
@@ -389,7 +396,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         child: ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
             minimumSize: const Size(double.infinity, 55),
-            backgroundColor: const Color(0xff7C83FD),
+            backgroundColor: AppTheme.primary,
           ),
           onPressed: _isPaying ? null : _handlePayment,
           icon: const Icon(
@@ -417,13 +424,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             width: 80,
                             height: 80,
                             decoration: BoxDecoration(
-                              color: const Color(0xffF1F2FF),
+                              color: AppTheme.primary.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(
                               module.icon,
                               size: 40,
-                              color: const Color(0xff7C83FD),
+                              color: AppTheme.primary,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -440,13 +447,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                 const SizedBox(height: 4),
                                 const Text("Standard License"),
                                 const SizedBox(height: 6),
-                                Text(
-                                  module.discountPrice,
-                                  style: const TextStyle(
-                                    color: Color(0xff7C83FD),
-                                    fontWeight: FontWeight.bold,
+                                  Text(
+                                    module.discountPrice,
+                                    style: TextStyle(
+                                      color: AppTheme.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
                               ],
                             ),
                           ),
@@ -478,6 +485,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       ),
                       const SizedBox(width: 10),
                       ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(0, 48),
+                          backgroundColor: AppTheme.primary,
+                          foregroundColor: Colors.white,
+                        ),
                         onPressed: _recalculateRemaining,
                         child: const Text("Apply"),
                       ),
@@ -607,13 +619,13 @@ class WalletCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  backgroundColor: const Color(0xffF1F2FF),
-                  child: Icon(
-                    icon,
-                    color: const Color(0xff7C83FD),
-                  ),
-                ),
+                 CircleAvatar(
+                   backgroundColor: AppTheme.primary.withOpacity(0.1),
+                   child: Icon(
+                     icon,
+                     color: AppTheme.primary,
+                   ),
+                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

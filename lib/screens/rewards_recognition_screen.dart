@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class RewardsRecognitionScreen extends StatefulWidget {
-  const RewardsRecognitionScreen({super.key});
+  final bool isEmbedded;
+  const RewardsRecognitionScreen({super.key, this.isEmbedded = false});
 
   @override
   State<RewardsRecognitionScreen> createState() => _RewardsRecognitionScreenState();
@@ -54,7 +55,7 @@ class _RewardsRecognitionScreenState extends State<RewardsRecognitionScreen> {
       'name': 'Arjun Patel',
       'points': 3950,
       'badge': 'Code Ninja',
-      'badgeColor': Colors.purple,
+      'badgeColor': Color(0xFF008080),
       'avatar': 'https://i.pravatar.cc/100?img=33',
     },
     {
@@ -88,7 +89,7 @@ class _RewardsRecognitionScreenState extends State<RewardsRecognitionScreen> {
       'action': 'earned 450 points for completing "Stitch Integration UI"',
       'time': '1 day ago',
       'icon': Icons.military_tech_rounded,
-      'color': Colors.indigo,
+      'color': const Color(0xFF006565),
     },
     {
       'member': 'Riya Mehta',
@@ -117,6 +118,26 @@ class _RewardsRecognitionScreenState extends State<RewardsRecognitionScreen> {
       SnackBar(
         content: Text("Payout of ₹${amount.toStringAsFixed(0)} to $name approved!"),
         backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  void _rejectPayout(String id, double amount, String name, String reason) {
+    setState(() {
+      _pendingPayouts.removeWhere((item) => item['id'] == id);
+      _activities.insert(0, {
+        'member': name,
+        'action': 'payout request of ₹${amount.toStringAsFixed(0)} rejected: "$reason"',
+        'time': 'Just now',
+        'icon': Icons.cancel_outlined,
+        'color': Colors.red,
+      });
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Payout request of ₹${amount.toStringAsFixed(0)} for $name was rejected."),
+        backgroundColor: Colors.red,
       ),
     );
   }
@@ -164,16 +185,18 @@ class _RewardsRecognitionScreenState extends State<RewardsRecognitionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF4F6FB),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text(
-          "Rewards & Recognition",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
-        iconTheme: const IconThemeData(color: Colors.black),
-      ),
+      backgroundColor: const Color(0xffFCF9F8),
+      appBar: widget.isEmbedded
+          ? null
+          : AppBar(
+              elevation: 0,
+              backgroundColor: Colors.white,
+              title: const Text(
+                "Rewards & Recognition",
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              ),
+              iconTheme: const IconThemeData(color: Colors.black),
+            ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -219,13 +242,13 @@ class _RewardsRecognitionScreenState extends State<RewardsRecognitionScreen> {
           "Active Contributors",
           "$_activeContributors Members",
           Icons.people_alt,
-          const [Colors.indigo, Colors.blue],
+          const [Color(0xFF006565), Color(0xFF008080)],
         ),
         _buildStatCard(
           "Leaderboard Points",
           "14.8k Coins",
           Icons.stars,
-          const [Colors.purple, Colors.pink],
+          const [Color(0xFF516161), Color(0xFFBDC9C8)],
         ),
       ],
     );
@@ -284,7 +307,7 @@ class _RewardsRecognitionScreenState extends State<RewardsRecognitionScreen> {
           Expanded(
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo,
+                backgroundColor: const Color(0xFF006565),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 minimumSize: const Size(0, 45),
@@ -328,35 +351,53 @@ class _RewardsRecognitionScreenState extends State<RewardsRecognitionScreen> {
                 separatorBuilder: (context, index) => const Divider(height: 12),
                 itemBuilder: (context, index) {
                   final item = _pendingPayouts[index];
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: CircleAvatar(
-                      backgroundImage: NetworkImage(item['avatar']),
-                    ),
-                    title: Text(item['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: Text("Requested ${item['date']}", style: const TextStyle(fontSize: 12)),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          "₹${item['amount'].toStringAsFixed(0)}",
-                          style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 14),
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: CircleAvatar(
+                          backgroundImage: NetworkImage(item['avatar']),
                         ),
-                        const SizedBox(width: 12),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.teal.shade50,
-                            foregroundColor: Colors.teal.shade800,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                            minimumSize: const Size(0, 32),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        title: Text(item['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        subtitle: Text("Requested ${item['date']}", style: const TextStyle(fontSize: 12)),
+                        trailing: Text(
+                          "₹${item['amount'].toStringAsFixed(0)}",
+                          style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.teal.shade50,
+                              foregroundColor: Colors.teal.shade800,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              minimumSize: const Size(0, 32),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                            ),
+                            onPressed: () => _showPayoutApprovalConfirmation(item),
+                            child: const Text("Approve", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                           ),
-                          onPressed: () => _showPayoutApprovalConfirmation(item),
-                          child: const Text("Approve", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                        )
-                      ],
-                    ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red.shade50,
+                              foregroundColor: Colors.red.shade800,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              minimumSize: const Size(0, 32),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                            ),
+                            onPressed: () => _showPayoutRejectionDialog(item),
+                            child: const Text("Reject", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                   );
                 },
               )
@@ -448,7 +489,7 @@ class _RewardsRecognitionScreenState extends State<RewardsRecognitionScreen> {
                             onTap: () => _showQuickRecognizeDialog(member['name']),
                             child: const Text(
                               "Recognize",
-                              style: TextStyle(color: Colors.indigo, fontSize: 10, fontWeight: FontWeight.bold),
+                              style: TextStyle(color: Color(0xFF006565), fontSize: 10, fontWeight: FontWeight.bold),
                             ),
                           )
                         ],
@@ -551,6 +592,60 @@ class _RewardsRecognitionScreenState extends State<RewardsRecognitionScreen> {
     );
   }
 
+  void _showPayoutRejectionDialog(Map<String, dynamic> payout) {
+    final reasonController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text(
+            "Reason for Rejection",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: TextField(
+            controller: reasonController,
+            maxLines: 4,
+            decoration: InputDecoration(
+              hintText: "Enter the reason why this payout request is rejected...",
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              contentPadding: const EdgeInsets.all(12),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              onPressed: () {
+                final reason = reasonController.text.trim();
+                if (reason.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Rejection reason is required"),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                Navigator.pop(context);
+                _rejectPayout(payout['id'], payout['amount'], payout['name'], reason);
+              },
+              child: const Text("Reject Payout", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showSendPayoutDialog() {
     final nameController = TextEditingController();
     final amountController = TextEditingController();
@@ -600,7 +695,7 @@ class _RewardsRecognitionScreenState extends State<RewardsRecognitionScreen> {
                   child: const Text("Cancel"),
                 ),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF006565)),
                   onPressed: () {
                     final name = nameController.text.trim();
                     final amt = double.tryParse(amountController.text.trim()) ?? 0.0;

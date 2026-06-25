@@ -71,50 +71,50 @@ class AppTheme {
     // Typography
     textTheme: const TextTheme(
       displayLarge: TextStyle(
-        fontSize: 40,
+        fontSize: 32,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.8,
         height: 1.2,
       ),
 
       headlineLarge: TextStyle(
-        fontSize: 32,
+        fontSize: 24,
         fontWeight: FontWeight.w600,
         height: 1.3,
       ),
 
       headlineMedium: TextStyle(
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: FontWeight.w600,
         height: 1.4,
       ),
 
       bodyLarge: TextStyle(
-        fontSize: 18,
+        fontSize: 15,
         fontWeight: FontWeight.w400,
         height: 1.6,
       ),
 
       bodyMedium: TextStyle(
-        fontSize: 16,
+        fontSize: 13,
         fontWeight: FontWeight.w400,
         height: 1.6,
       ),
 
       bodySmall: TextStyle(
-        fontSize: 14,
+        fontSize: 11,
         fontWeight: FontWeight.w400,
         height: 1.5,
       ),
 
       labelLarge: TextStyle(
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: FontWeight.w500,
         letterSpacing: 0.16,
       ),
 
       labelSmall: TextStyle(
-        fontSize: 12,
+        fontSize: 10,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.6,
       ),

@@ -14,11 +14,11 @@ class _MembershipScreenState extends State<MembershipScreen> {
   bool _isLoading = true;
   List<dynamic> _membershipPlans = [];
 
-  static const Color primary = Color(0xFF474DC5);
-  static const Color primaryContainer = Color(0xFF6067DF);
-  static const Color surfaceSoft = Color(0xFFF1F2FF);
-  static const Color borderColor = Color(0xFFE6E6F0);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color primary = Color(0xFF006565); // Teal Primary
+  static const Color primaryContainer = Color(0xFF008080); // Teal Container
+  static const Color surfaceSoft = Color(0xFFFCF9F8); // Theme Background
+  static const Color borderColor = Color(0xFFBDC9C8); // Theme outline/border
+  static const Color textMuted = Color(0xFF3E4949); // Muted theme text
 
   @override
   void initState() {
@@ -80,7 +80,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.white,
         leading: IconButton(
-          icon: const Icon(Icons.menu, color: Color(0xFF7C83FD)),
+          icon: const Icon(Icons.menu, color: primary),
           onPressed: () {},
         ),
         title: const Text(
@@ -94,7 +94,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
           IconButton(
             icon: const Icon(
               Icons.account_circle,
-              color: Color(0xFF7C83FD),
+              color: primary,
             ),
             onPressed: () {},
           ),
@@ -250,7 +250,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
         height: 80,
         selectedIndex: selectedIndex,
         backgroundColor: Colors.white,
-        indicatorColor: const Color(0xFFE7EAFE),
+        indicatorColor: const Color(0xFFD4E6E5),
         onDestinationSelected: (index) {
           setState(() {
             selectedIndex = index;

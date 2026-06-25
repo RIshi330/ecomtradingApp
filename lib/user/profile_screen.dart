@@ -9,10 +9,10 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:share_plus/share_plus.dart';
 
-const _kPrimary = Color(0xFF7C83FD);
+const _kPrimary = Color(0xFF006565); // Teal Primary
 const _kBorder = AppTheme.border;
 const _kMuted = AppTheme.muted;
-const _kGrad = [Color(0xFF7C83FD), Color(0xFF9B8FFF)];
+const _kGrad = [Color(0xFF006565), Color(0xFF008080)]; // Teal Primary to Teal Container
 
 List<Post> _userPhotoPosts = [];
 

@@ -536,11 +536,13 @@ class _SellerOrderScreenState extends State<SellerOrderScreen> {
                   style: TextStyle(
                     color: isSelected ? Colors.white : AppTheme.primary,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 13,
                   ),
                 ),
                 selected: isSelected,
                 selectedColor: AppTheme.primary,
                 backgroundColor: AppTheme.secondaryContainer,
+                side: BorderSide.none,
                 onSelected: (val) {
                   setState(() {
                     selectedFilter = filter;

@@ -34,8 +34,8 @@ class OtpScreen extends StatefulWidget {
 class _OtpScreenState extends State<OtpScreen> {
   static const Color white = Colors.white;
   static const Color black = Color(0xFF1A1A1A);
-  static const Color lavender = Color(0xFF7C83FD);
-  static const Color lavenderLight = Color(0xFFEEEFFF);
+  static const Color lavender = Color(0xFF006565); // Teal Primary
+  static const Color lavenderLight = Color(0xFFD4E6E5); // Light Teal Container
   static const Color grey = Color(0xFF757575);
 
   static const String _apiUrl = '${baseUrl}new_apis/sign_up_API.php';
@@ -116,7 +116,8 @@ class _OtpScreenState extends State<OtpScreen> {
       if (!mounted) return;
 
       if (data['success'] == true || data['status'] == 200) {
-        final vendorId = int.tryParse(data['vendor_id']?.toString() ?? '0') ?? 0;
+        final vendorId =
+            int.tryParse(data['vendor_id']?.toString() ?? '0') ?? 0;
         await AuthService.saveLoginSession(
           vendorId: vendorId,
           userData: data is Map ? Map<String, dynamic>.from(data) : null,
@@ -276,9 +277,8 @@ class _OtpScreenState extends State<OtpScreen> {
                       decoration: InputDecoration(
                         counterText: '',
                         filled: true,
-                        fillColor: filled
-                            ? lavenderLight
-                            : const Color(0xFFF5F5F5),
+                        fillColor:
+                            filled ? lavenderLight : const Color(0xFFF5F5F5),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide.none,

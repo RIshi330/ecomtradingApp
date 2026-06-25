@@ -192,7 +192,7 @@ class _ManageOpportunitiesScreenState extends State<ManageOpportunitiesScreen> {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF474DC5),
+                    backgroundColor: const Color(0xff006565),
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () async {
@@ -245,28 +245,30 @@ class _ManageOpportunitiesScreenState extends State<ManageOpportunitiesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9FF),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          "My Opportunities",
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list, color: Color(0xFF474DC5)),
-            onPressed: _showFilterBottomSheet,
-          ),
-        ],
-      ),
+      backgroundColor: const Color(0xFFFCF9F8),
+      appBar: widget.isTab
+          ? null
+          : AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              title: const Text(
+                "My Opportunities",
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.filter_list, color: Color(0xff006565)),
+                  onPressed: _showFilterBottomSheet,
+                ),
+              ],
+            ),
 
       floatingActionButton: widget.isTab
           ? null
           : FloatingActionButton(
-              backgroundColor: const Color(0xFF474DC5),
+              backgroundColor: const Color(0xff006565),
               foregroundColor: Colors.white,
               onPressed: () {
                 Navigator.pushNamed(context, AppRoutes.createOpportunity).then((didCreate) {
@@ -299,41 +301,62 @@ class _ManageOpportunitiesScreenState extends State<ManageOpportunitiesScreen> {
               const SizedBox(height: 24),
 
               // Search Bar
-              TextField(
-                controller: searchController,
-                onChanged: (val) {
-                  setState(() {
-                    searchQuery = val;
-                  });
-                  _fetchOpportunities();
-                },
-                decoration: InputDecoration(
-                  hintText: "Search title or reference...",
-                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                  suffixIcon: searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, color: Colors.grey),
-                          onPressed: () {
-                            setState(() {
-                              searchController.clear();
-                              searchQuery = "";
-                            });
-                            _fetchOpportunities();
-                          },
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Color(0xFFE6E6F0)),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: searchController,
+                      onChanged: (val) {
+                        setState(() {
+                          searchQuery = val;
+                        });
+                        _fetchOpportunities();
+                      },
+                      decoration: InputDecoration(
+                        hintText: "Search title or reference...",
+                        prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                        suffixIcon: searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, color: Colors.grey),
+                                onPressed: () {
+                                  setState(() {
+                                    searchController.clear();
+                                    searchQuery = "";
+                                  });
+                                  _fetchOpportunities();
+                                },
+                              )
+                            : null,
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: Color(0xFFE6E6F0)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: Color(0xFFE6E6F0)),
+                        ),
+                      ),
+                    ),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Color(0xFFE6E6F0)),
-                  ),
-                ),
+                  if (widget.isTab) ...[
+                    const SizedBox(width: 10),
+                    GestureDetector(
+                      onTap: _showFilterBottomSheet,
+                      child: Container(
+                        height: 48,
+                        width: 48,
+                        decoration: BoxDecoration(
+                          color: const Color(0xff006565).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(Icons.tune, color: Color(0xff006565)),
+                      ),
+                    )
+                  ]
+                ],
               ),
               const SizedBox(height: 20),
 
@@ -393,8 +416,8 @@ class _ManageOpportunitiesScreenState extends State<ManageOpportunitiesScreen> {
               if (_isLoading)
                 const Center(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 48),
-                    child: CircularProgressIndicator(color: Color(0xFF474DC5)),
+                    padding: const EdgeInsets.symmetric(vertical: 48),
+                    child: CircularProgressIndicator(color: const Color(0xff006565)),
                   ),
                 )
               else if (opportunitiesList.isEmpty)
