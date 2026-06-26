@@ -9,6 +9,7 @@ import 'package:trading_ecommerce_admin/common/industries_screen.dart';
 import 'package:trading_ecommerce_admin/app_constants.dart';
 import 'package:trading_ecommerce_admin/otp_screen.dart';
 import 'package:trading_ecommerce_admin/admin/Community_Admin_Dashboard.dart';
+import 'package:trading_ecommerce_admin/admin/business_user_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -85,9 +86,47 @@ class _LoginScreenState extends State<LoginScreen> {
               '0',
             ) ?? 0;
 
+        // Fetch full profile to get the actual vendor_type if missing
+        Map<String, dynamic> fullUserData = response is Map ? Map<String, dynamic>.from(response) : {};
+        String? vendorType = response['vendor_type']?.toString() ??
+            response['data']?['vendor_type']?.toString() ??
+            response['full_data']?['vendor_type']?.toString() ??
+            response['LOGIN_RESPONSE']?['vendor_type']?.toString() ??
+            response['LOGIN_RESPONSE']?['full_data']?['vendor_type']?.toString();
+
+        if (vendorType == null && vendorId != 0 && selectedRole != 'Admin') {
+          try {
+            print('loginscreen: vendor_type missing from login response. Fetching profile for vendor $vendorId...');
+            final profileRes = await database.getData({
+              'action': 'profile',
+              'vendor_id': vendorId.toString(),
+            });
+            if (profileRes['success'] == true || profileRes['status'] == 200) {
+              final profile = profileRes['data']?['profile'];
+              if (profile != null && profile is Map) {
+                vendorType = profile['vendor_type']?.toString();
+                fullUserData.addAll(Map<String, dynamic>.from(profile));
+              }
+            }
+          } catch (e) {
+            print('Error fetching profile for login check: $e');
+          }
+        }
+
+        if (vendorType == null && response['redirect'] != null) {
+          final redirect = response['redirect'].toString().toLowerCase();
+          if (redirect.contains('dashboard')) {
+            print('loginscreen: Inferring vendor_type as 2 based on redirect dashboard: $redirect');
+            vendorType = '2';
+            fullUserData['vendor_type'] = '2';
+          }
+        }
+        
+        vendorType ??= '500'; // Default fallback
+
         await AuthService.saveLoginSession(
           vendorId: vendorId,
-          userData: response is Map ? Map<String, dynamic>.from(response) : null,
+          userData: fullUserData,
         );
         _requestLocationInBackground();
         _showSuccessBanner('Login successful! Redirecting...');
@@ -108,6 +147,26 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const CommunityAdminDashboard()),
+            (route) => false,
+          );
+          return;
+        }
+
+        if (selectedRole == 'Business' && (vendorType == '500' || vendorType == '1')) {
+          _showError('This account is not registered as a Business User.');
+          await AuthService.clearSession();
+          return;
+        }
+        if (selectedRole == 'Normal' && (vendorType != '500' && vendorType != '1')) {
+          _showError('This is a Business User account. Please select Business User role.');
+          await AuthService.clearSession();
+          return;
+        }
+
+        if (vendorType != '500' && vendorType != '1') {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const BusinessUserDashboard()),
             (route) => false,
           );
           return;
@@ -218,14 +277,73 @@ class _LoginScreenState extends State<LoginScreen> {
         final vendorId = int.tryParse(
               response['vendor_id']?.toString() ?? '0',
             ) ?? 0;
+
+        // Fetch full profile to get the actual vendor_type if missing
+        Map<String, dynamic> fullUserData = response is Map ? Map<String, dynamic>.from(response) : {};
+        String? vendorType = response['vendor_type']?.toString() ??
+            response['data']?['vendor_type']?.toString() ??
+            response['full_data']?['vendor_type']?.toString() ??
+            response['LOGIN_RESPONSE']?['vendor_type']?.toString() ??
+            response['LOGIN_RESPONSE']?['full_data']?['vendor_type']?.toString();
+
+        if (vendorType == null && vendorId != 0 && selectedRole != 'Admin') {
+          try {
+            print('loginscreen: vendor_type missing from login response. Fetching profile for vendor $vendorId...');
+            final profileRes = await database.getData({
+              'action': 'profile',
+              'vendor_id': vendorId.toString(),
+            });
+            if (profileRes['success'] == true || profileRes['status'] == 200) {
+              final profile = profileRes['data']?['profile'];
+              if (profile != null && profile is Map) {
+                vendorType = profile['vendor_type']?.toString();
+                fullUserData.addAll(Map<String, dynamic>.from(profile));
+              }
+            }
+          } catch (e) {
+            print('Error fetching profile for login check: $e');
+          }
+        }
+
+        if (vendorType == null && response['redirect'] != null) {
+          final redirect = response['redirect'].toString().toLowerCase();
+          if (redirect.contains('dashboard')) {
+            print('loginscreen: Inferring vendor_type as 2 based on redirect dashboard: $redirect');
+            vendorType = '2';
+            fullUserData['vendor_type'] = '2';
+          }
+        }
+
+        vendorType ??= '500'; // Default fallback
+
         await AuthService.saveLoginSession(
           vendorId: vendorId,
-          userData: response is Map ? Map<String, dynamic>.from(response) : null,
+          userData: fullUserData,
         );
         _requestLocationInBackground();
         _showSuccessBanner('Login successful! Redirecting...');
         await Future.delayed(const Duration(milliseconds: 1500));
         if (!mounted) return;
+
+        if (selectedRole == 'Business' && (vendorType == '500' || vendorType == '1')) {
+          _showError('This account is not registered as a Business User.');
+          await AuthService.clearSession();
+          return;
+        }
+        if (selectedRole == 'Normal' && (vendorType != '500' && vendorType != '1')) {
+          _showError('This is a Business User account. Please select Business User role.');
+          await AuthService.clearSession();
+          return;
+        }
+
+        if (vendorType != '500' && vendorType != '1') {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const BusinessUserDashboard()),
+            (route) => false,
+          );
+          return;
+        }
 
         final hasInterests = await _checkUserHasInterests(vendorId);
         if (!mounted) return;
@@ -279,15 +397,10 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final response = await http.post(
-        Uri.parse('${baseUrl}new_apis/sign_up_API.php'),
-        body: {
-          'action': 'send_signup_otp',
-          'email': email,
-        },
-      );
-
-      final data = jsonDecode(response.body);
+      final data = await Database().getData({
+        'action': 'send_signup_otp',
+        'email': email,
+      }, endpoint: 'new_apis/sign_up_API.php');
 
       if (!mounted) return;
 

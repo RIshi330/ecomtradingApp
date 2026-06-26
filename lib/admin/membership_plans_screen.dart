@@ -413,7 +413,7 @@ class MembershipCard extends StatelessWidget {
                       ),
                     ),
                   Text(
-                    newPrice,
+                     newPrice,
                     style: const TextStyle(
                       fontSize: 28,
                       color: primaryColor,

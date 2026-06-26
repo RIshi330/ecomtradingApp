@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:trading_ecommerce_admin/app_constants.dart';
 import 'package:trading_ecommerce_admin/otp_screen.dart';
+import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -44,15 +45,10 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final response = await http.post(
-        Uri.parse(_apiUrl),
-        body: {
-          'action': 'send_signup_otp',
-          'email': _email.text.trim(),
-        },
-      );
-
-      final data = jsonDecode(response.body);
+      final data = await Database().getData({
+        'action': 'send_signup_otp',
+        'email': _email.text.trim(),
+      }, endpoint: 'new_apis/sign_up_API.php');
 
       if (!mounted) return;
 

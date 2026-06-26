@@ -717,6 +717,16 @@ class _ProfileScreenState extends State<ProfileScreen>
     return tap != null ? GestureDetector(onTap: tap, child: w) : w;
   }
 
+  String _stripHtml(String htmlString) {
+    return htmlString
+        .replaceAll(RegExp(r'<[^>]*>'), '')
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&quot;', '"');
+  }
+
   Widget _buildBioButtons() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 52, 16, 12),
@@ -725,12 +735,12 @@ class _ProfileScreenState extends State<ProfileScreen>
         children: [
           if (_bio1.isNotEmpty)
             Text(
-              _bio1,
+              _stripHtml(_bio1),
               style: const TextStyle(color: Colors.black87, fontSize: 13),
             ),
           if (_bio2.isNotEmpty)
             Text(
-              _bio2,
+              _stripHtml(_bio2),
               style: const TextStyle(color: Colors.black87, fontSize: 13),
             ),
           const SizedBox(height: 10),

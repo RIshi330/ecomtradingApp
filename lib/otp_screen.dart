@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'package:trading_ecommerce_admin/app_constants.dart';
 import 'package:trading_ecommerce_admin/user/create_profile_screen.dart';
 import 'package:trading_ecommerce_admin/admin/Community_Admin_Dashboard.dart';
+import 'package:trading_ecommerce_admin/admin/business_user_dashboard_screen.dart';
 import 'package:trading_ecommerce_admin/services/auth_service.dart';
 import 'package:trading_ecommerce_admin/common/industries_screen.dart';
+import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -99,19 +101,14 @@ class _OtpScreenState extends State<OtpScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final response = await http.post(
-        Uri.parse(_apiUrl),
-        body: {
-          'action': 'verify_signup_otp',
-          'otp': _otpValue,
-          'name': widget.name ?? '',
-          'mobile': widget.mobile ?? '',
-          'vendor_type': widget.vendorType ?? (widget.isRecruiter ? '1' : '20'),
-          'password': widget.password ?? '',
-        },
-      );
-
-      final data = jsonDecode(response.body);
+      final data = await Database().getData({
+        'action': 'verify_signup_otp',
+        'otp': _otpValue,
+        'name': widget.name ?? '',
+        'mobile': widget.mobile ?? '',
+        'vendor_type': widget.vendorType ?? (widget.isRecruiter ? '1' : '20'),
+        'password': widget.password ?? '',
+      }, endpoint: 'new_apis/sign_up_API.php');
 
       if (!mounted) return;
 
@@ -122,6 +119,22 @@ class _OtpScreenState extends State<OtpScreen> {
           vendorId: vendorId,
           userData: data is Map ? Map<String, dynamic>.from(data) : null,
         );
+
+        final vendorType = data['vendor_type']?.toString() ??
+            data['data']?['vendor_type']?.toString() ??
+            data['full_data']?['vendor_type']?.toString() ??
+            data['LOGIN_RESPONSE']?['vendor_type']?.toString() ??
+            data['LOGIN_RESPONSE']?['full_data']?['vendor_type']?.toString() ??
+            (widget.isRecruiter ? '1' : '20');
+
+        if (vendorType != '500' && vendorType != '1') {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const BusinessUserDashboard()),
+            (route) => false,
+          );
+          return;
+        }
 
         if (widget.isRecruiter) {
           Navigator.pushAndRemoveUntil(
@@ -172,13 +185,10 @@ class _OtpScreenState extends State<OtpScreen> {
     setState(() {});
 
     try {
-      await http.post(
-        Uri.parse(_apiUrl),
-        body: {
-          'action': 'send_signup_otp',
-          'email': widget.email,
-        },
-      );
+      await Database().getData({
+        'action': 'send_signup_otp',
+        'email': widget.email,
+      }, endpoint: 'new_apis/sign_up_API.php');
     } catch (e) {
       // silent fail on resend
     }

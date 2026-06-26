@@ -1,9 +1,12 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 import '../app_constants.dart';
+import '../index.dart';
+import '../services/auth_service.dart';
 
 /// Database class for handling API communication
 /// Centralized API client with session management and secure storage
@@ -45,6 +48,8 @@ class Database {
         headers: {
           'APP_ID': (appIdOverride ?? appId).toString(),
           'SESSION-ID': existingSessionId?.toString() ?? '',
+          if (existingSessionId != null && existingSessionId.isNotEmpty)
+            'Cookie': 'PHPSESSID=$existingSessionId',
         },
       );
 
@@ -99,6 +104,38 @@ class Database {
             },
           };
         }
+      }
+
+      // Check for 401 Unauthorized or unauthorized messages in response
+      bool isUnauthorized = false;
+      if (response.statusCode == 401) {
+        isUnauthorized = true;
+      } else if (result is Map) {
+        final message = result['message']?.toString() ?? '';
+        final error = result['error']?.toString() ?? '';
+        if (message.contains('Unauthorized') || error.contains('Unauthorized')) {
+          isUnauthorized = true;
+        }
+      }
+
+      if (isUnauthorized) {
+        print('Database [getData]: Unauthorized response detected (401 or Unauthorized message). Logging out.');
+        _cachedSessionId = null;
+        final storage = FlutterSecureStorage(aOptions: _getAndroidOptions());
+        await storage.deleteAll();
+        await AuthService.clearSession();
+        
+        AppRoutes.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          AppRoutes.login,
+          (route) => false,
+        );
+        
+        return {
+          'success': false,
+          'message': 'Session expired. Please log in again.',
+          'status': 401,
+          'data': [],
+        };
       }
 
       // Store Razorpay key if present
@@ -222,6 +259,8 @@ class Database {
           'Content-Type': 'application/json',
           'APP_ID': appId.toString(),
           'SESSION-ID': existingSessionId?.toString() ?? '',
+          if (existingSessionId != null && existingSessionId.isNotEmpty)
+            'Cookie': 'PHPSESSID=$existingSessionId',
         },
       );
 
@@ -276,6 +315,38 @@ class Database {
             },
           };
         }
+      }
+
+      // Check for 401 Unauthorized or unauthorized messages in response
+      bool isUnauthorized = false;
+      if (response.statusCode == 401) {
+        isUnauthorized = true;
+      } else if (result is Map) {
+        final message = result['message']?.toString() ?? '';
+        final error = result['error']?.toString() ?? '';
+        if (message.contains('Unauthorized') || error.contains('Unauthorized')) {
+          isUnauthorized = true;
+        }
+      }
+
+      if (isUnauthorized) {
+        print('Database [getJsonData]: Unauthorized response detected (401 or Unauthorized message). Logging out.');
+        _cachedSessionId = null;
+        final storage = FlutterSecureStorage(aOptions: _getAndroidOptions());
+        await storage.deleteAll();
+        await AuthService.clearSession();
+        
+        AppRoutes.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          AppRoutes.login,
+          (route) => false,
+        );
+        
+        return {
+          'success': false,
+          'message': 'Session expired. Please log in again.',
+          'status': 401,
+          'data': [],
+        };
       }
 
       // Store Razorpay key if present

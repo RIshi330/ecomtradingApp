@@ -6,6 +6,7 @@ import 'package:trading_ecommerce_admin/index.dart';
 import 'package:trading_ecommerce_admin/services/auth_service.dart';
 import 'package:trading_ecommerce_admin/common/industries_screen.dart';
 import 'package:trading_ecommerce_admin/admin/Community_Admin_Dashboard.dart';
+import 'package:trading_ecommerce_admin/admin/business_user_dashboard_screen.dart';
 import 'package:trading_ecommerce_admin/common/shell.dart';
 
 void main() {
@@ -106,6 +107,22 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
       if (isUserValid) {
         final vendorId = await AuthService.getVendorId();
         if (vendorId != null && vendorId != 0) {
+          final userData = await AuthService.getCachedUserData();
+          final vendorType = userData?['vendor_type']?.toString() ??
+              userData?['data']?['vendor_type']?.toString() ??
+              userData?['full_data']?['vendor_type']?.toString() ??
+              userData?['LOGIN_RESPONSE']?['vendor_type']?.toString() ??
+              userData?['LOGIN_RESPONSE']?['full_data']?['vendor_type']?.toString() ??
+              '500';
+
+          if (vendorType != '500' && vendorType != '1') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const BusinessUserDashboard()),
+            );
+            return;
+          }
+
           final hasInterests = await AuthService.hasSelectedInterests();
           if (hasInterests) {
             Navigator.pushReplacement(

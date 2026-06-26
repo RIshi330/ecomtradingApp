@@ -128,6 +128,16 @@ class AuthService {
     if (data != null) {
       return jsonDecode(data);
     }
+    // Fallback: check FlutterSecureStorage from Database (e.g., after auto_login)
+    try {
+      final db = Database();
+      final userData = await db.getUserData();
+      if (userData != null) {
+        return Map<String, dynamic>.from(userData);
+      }
+    } catch (e) {
+      print('Fallback cached user data error: $e');
+    }
     return null;
   }
 

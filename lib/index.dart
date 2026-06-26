@@ -6,11 +6,14 @@ import 'signupscreen.dart';
 import 'otp_screen.dart';
 import 'auth_screen.dart';
 import 'admin/Community_Admin_Dashboard.dart';
+import 'admin/business_user_dashboard_screen.dart';
 import 'admin/profile_screen.dart' as admin;
 import 'admin/admin_profile_screen.dart';
 import 'admin/manage_items_screen.dart';
 import 'admin/membership_builder_screen.dart';
 import 'admin/membership_plans_screen.dart';
+import 'admin/memberships_and_plans_screen.dart';
+import 'admin/manage_vendors_screen.dart';
 import 'admin/platform_settings_screen.dart';
 import 'admin/seller_dashboard_screen.dart';
 import 'admin/seller_management_screen.dart';
@@ -64,6 +67,8 @@ import 'common/terms_conditions_screen.dart';
 
 /// AppRoutes provides route names and route builders for the application.
 class AppRoutes {
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   // Route Name Constants
   static const String splash = '/';
   static const String login = '/login';
@@ -80,6 +85,7 @@ class AppRoutes {
   static const String notification = '/common/notification';
   static const String setting = '/common/setting';
   static const String shell = '/shell';
+  static const String businessDashboard = '/business/dashboard';
 
   // New Admin Routes
   static const String walletAdmin = '/wallet';
@@ -91,6 +97,8 @@ class AppRoutes {
   static const String manageItems = '/manage_items';
   static const String platformSettings = '/platform_settings';
   static const String membershipPlans = '/membership_plans';
+  static const String manageVendors = '/manage_vendors';
+  static const String membershipsAndPlans = '/memberships_and_plans';
   static const String membershipBuilder = '/membership_builder';
   static const String marketplaceModules = '/marketplace_modules';
   static const String moduleDetails = '/module_details';
@@ -153,6 +161,7 @@ class AppRoutes {
         notification: (context) => const NotificationsScreen(),
         setting: (context) => const SettingsScreen(),
         shell: (context) => const AppShell(),
+        businessDashboard: (context) => const BusinessUserDashboard(),
 
         // New Admin Route Builders
         walletAdmin: (context) => const WalletAdminScreen(),
@@ -164,6 +173,8 @@ class AppRoutes {
         manageItems: (context) => const ManageItemsScreen(),
         platformSettings: (context) => const PlatformSettingsScreen(),
         membershipPlans: (context) => const MembershipPlansScreen(),
+        manageVendors: (context) => const ManageVendorsScreen(),
+        membershipsAndPlans: (context) => const MembershipsAndPlansScreen(),
         membershipBuilder: (context) => const MembershipBuilderScreen(),
         marketplaceModules: (context) => const MarketplaceModulesScreen(),
         moduleDetails: (context) => const ModuleDetailsScreen(),
