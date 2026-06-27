@@ -64,6 +64,10 @@ import 'common/splash_screen.dart';
 import 'common/shell.dart';
 import 'common/offers_screen.dart';
 import 'common/terms_conditions_screen.dart';
+import 'screens/marketplace_trainings_screen.dart';
+import 'screens/enrolled_trainings_screen.dart';
+import 'screens/training_details_screen.dart';
+import 'screens/enroll_payment_screen.dart';
 
 /// AppRoutes provides route names and route builders for the application.
 class AppRoutes {
@@ -136,6 +140,10 @@ class AppRoutes {
   static const String eventOpportunities = '/event_opportunities';
   static const String eventDetail = '/event_detail';
   static const String eventOppDetail = '/event_opp_detail';
+  static const String marketplaceTrainings = '/marketplace_trainings';
+  static const String enrolledTrainings = '/enrolled_trainings';
+  static const String trainingDetails = '/training_details';
+  static const String enrollPayment = '/enroll_payment';
 
   /// Named routes mapping for MaterialApp
   static Map<String, WidgetBuilder> get routes => {
@@ -229,5 +237,12 @@ class AppRoutes {
           final opportunity = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
           return EventOppDetailScreen(opportunity: opportunity);
         },
+        marketplaceTrainings: (context) => const MarketplaceTrainingsScreen(),
+        enrolledTrainings: (context) => const EnrolledTrainingsScreen(),
+        trainingDetails: (context) {
+          final training = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+          return TrainingDetailsScreen(training: training);
+        },
+        enrollPayment: (context) => const EnrollPaymentScreen(),
       };
 }

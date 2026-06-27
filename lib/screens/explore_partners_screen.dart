@@ -62,7 +62,7 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
         
         setState(() {
           _partners = list;
-          _topSkills = skillsMap.keys.map((k) => k.toString()).toList();
+          _topSkills = skillsMap.keys.map<String>((k) => k.toString()).toList();
         });
       }
     } catch (e) {
@@ -366,8 +366,8 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
     final label = partner['label'] ?? 'Partner';
     final rawSkills = partner['prof_skills'] ?? '';
     final List<String> skills = rawSkills.isNotEmpty
-        ? rawSkills.split(',').map((s) => s.trim()).toList()
-        : [];
+        ? rawSkills.split(',').map<String>((s) => s.trim().toString()).toList()
+        : <String>[];
     final avatar = partner['profile_pic'] ?? '';
 
     return Card(
@@ -473,8 +473,8 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
     final label = partner['label'] ?? 'Partner';
     final rawSkills = partner['prof_skills'] ?? '';
     final List<String> skills = rawSkills.isNotEmpty
-        ? rawSkills.split(',').map((s) => s.trim()).toList()
-        : [];
+        ? rawSkills.split(',').map<String>((s) => s.trim().toString()).toList()
+        : <String>[];
     final avatar = partner['profile_pic'] ?? '';
 
     return Card(
@@ -713,7 +713,7 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: rawSkills.split(',').map((s) => Chip(
+                    children: rawSkills.split(',').map<Widget>((s) => Chip(
                       label: Text(s.trim()),
                       backgroundColor: const Color(0xFF006565).withOpacity(0.1),
                       side: BorderSide.none,

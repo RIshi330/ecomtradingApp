@@ -19,6 +19,7 @@ import 'package:trading_ecommerce_admin/screens/selected_items_screen.dart';
 import 'package:trading_ecommerce_admin/screens/affiliate_orders_screen.dart';
 import 'package:trading_ecommerce_admin/admin/platform_settings_screen.dart';
 import 'package:trading_ecommerce_admin/common/setting_screen.dart';
+import 'package:trading_ecommerce_admin/admin/site_settings_screen.dart';
 import 'package:trading_ecommerce_admin/admin/taxonomy_manager_screen.dart';
 import 'package:trading_ecommerce_admin/admin/manage_items_screen.dart';
 import 'package:trading_ecommerce_admin/screens/seller_profile_screen.dart';
@@ -33,6 +34,9 @@ import 'package:trading_ecommerce_admin/services/location_service.dart';
 import 'package:trading_ecommerce_admin/admin/business_user_profile_screen.dart';
 import 'package:trading_ecommerce_admin/admin/financial_command_center_screen.dart';
 import 'package:trading_ecommerce_admin/admin/manage_vendors_screen.dart';
+import 'package:trading_ecommerce_admin/user/seller_bank_accounts_screen.dart';
+import 'package:trading_ecommerce_admin/screens/marketplace_trainings_screen.dart';
+import 'package:trading_ecommerce_admin/screens/enrolled_trainings_screen.dart';
 
 class BusinessUserDashboard extends StatefulWidget {
   const BusinessUserDashboard({super.key});
@@ -679,7 +683,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       case 6: titleText = "Package Builder"; break;
       case 7: titleText = "Project Management"; break;
       case 8: titleText = "My Wallet"; break;
-      case 9: titleText = "Bank Accounts"; break;
+      case 9: titleText = "Payment Settings"; break;
       case 10: titleText = "My Addresses"; break;
       case 11: titleText = "Orders Central"; break;
       case 26: titleText = "Withdrawals"; break;
@@ -692,10 +696,10 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       case 18: titleText = "Trading Marketplace"; break;
       case 19: titleText = "Selected Items"; break;
       case 20: titleText = "Affiliate Orders"; break;
-      case 21: titleText = "Platform Settings"; break;
-      case 22: titleText = "Settings Manager"; break;
-      case 23: titleText = "Category Management"; break;
-      case 24: titleText = "Item Manager"; break;
+      case 21: titleText = "Platform Setting"; break;
+      case 22: titleText = "Site Setting"; break;
+      case 23: titleText = "Category Settings"; break;
+      case 24: titleText = "Item Setting"; break;
       case 25: titleText = "My Profile"; break;
       case 27: titleText = "Team Management"; break;
       case 28: titleText = "Explore Partners"; break;
@@ -703,6 +707,8 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       case 30: titleText = "Rewards & Recognition"; break;
       case 31: titleText = "Charity Marketplace"; break;
       case 32: titleText = "Membership Builder"; break;
+      case 33: titleText = "Marketplace Trainings"; break;
+      case 34: titleText = "Enrolled Trainings"; break;
     }
 
     return AppBar(
@@ -881,6 +887,22 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                 ),
 
                 const Divider(height: 16),
+                _buildDrawerHeaderLabel("SKILLS & LEARNING"),
+                Theme(
+                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+                    leading: const Icon(Icons.school_rounded, color: textLight),
+                    title: const Text("Upgrade your Skills", style: TextStyle(fontSize: 14, color: textDark)),
+                    childrenPadding: const EdgeInsets.only(left: 12),
+                    children: [
+                      _buildDrawerItem(33, Icons.storefront_outlined, "Marketplace Training", isSubItem: true),
+                      _buildDrawerItem(34, Icons.collections_bookmark_rounded, "Enrolled Trainings", isSubItem: true),
+                    ],
+                  ),
+                ),
+
+                const Divider(height: 16),
                 _buildDrawerHeaderLabel("INTEGRATIONS"),
                 _buildDrawerItem(13, Icons.storefront_rounded, "Module Marketplace"),
                 _buildDrawerItem(14, Icons.extension_rounded, "Module Manager"),
@@ -891,14 +913,15 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                   child: ExpansionTile(
                     tilePadding: const EdgeInsets.symmetric(horizontal: 16),
                     leading: const Icon(Icons.settings_rounded, color: textLight),
-                    title: const Text("General Settings", style: TextStyle(fontSize: 14, color: textDark)),
+                    title: const Text("Platform Settings", style: TextStyle(fontSize: 14, color: textDark)),
                     childrenPadding: const EdgeInsets.only(left: 12),
                     children: [
-                      _buildDrawerItem(21, Icons.settings_applications_rounded, "Platform Settings", isSubItem: true),
+                      _buildDrawerItem(22, Icons.settings_rounded, "Site Setting", isSubItem: true),
+                      _buildDrawerItem(23, Icons.category_rounded, "Category Settings", isSubItem: true),
+                      _buildDrawerItem(24, Icons.manage_accounts_rounded, "Item Setting", isSubItem: true),
+                      _buildDrawerItem(21, Icons.settings_applications_rounded, "Platform Setting", isSubItem: true),
+                      _buildDrawerItem(9, Icons.payment_rounded, "Payment Settings", isSubItem: true),
                       _buildDrawerItem(32, Icons.build_circle_rounded, "Membership Builder", isSubItem: true),
-                      _buildDrawerItem(22, Icons.settings_rounded, "Payment & Site Settings", isSubItem: true),
-                      _buildDrawerItem(23, Icons.category_rounded, "Category Management", isSubItem: true),
-                      _buildDrawerItem(24, Icons.manage_accounts_rounded, "Item Management", isSubItem: true),
                     ],
                   ),
                 ),
@@ -973,7 +996,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       case 6: return const ComboPackagesScreen(isEmbedded: true);
       case 7: return const ManageTasksScreen(isEmbedded: true);
       case 8: return const FinancialCommandCenterScreen(isEmbedded: true);
-      case 9: return _buildBankDetailsView();
+      case 9: return const SellerBankAccountsScreen();
       case 10: return _buildMyAddressesView();
       case 11: return const SellerOrderScreen(isEmbedded: true);
       case 26: return _buildWithdrawalsView();
@@ -987,7 +1010,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       case 19: return const SelectedItemsScreen(isEmbedded: true);
       case 20: return const AffiliateOrdersScreen(isEmbedded: true);
       case 21: return const PlatformSettingsScreen(isEmbedded: true);
-      case 22: return const SettingsScreen();
+      case 22: return const SiteSettingsScreen(isEmbedded: true);
       case 23: return const TaxonomyManagerScreen(isEmbedded: true);
       case 24: return const ManageItemsScreen(isEmbedded: true);
       case 25: return BusinessUserProfileScreen(
@@ -1001,6 +1024,8 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       case 30: return const RewardsRecognitionScreen(isEmbedded: true);
       case 31: return const CharityMarketplaceScreen(isEmbedded: true);
       case 32: return const MembershipBuilderScreen(isEmbedded: true);
+      case 33: return const MarketplaceTrainingsScreen(isEmbedded: true);
+      case 34: return const EnrolledTrainingsScreen(isEmbedded: true);
       default: return _buildDashboardView();
     }
   }
