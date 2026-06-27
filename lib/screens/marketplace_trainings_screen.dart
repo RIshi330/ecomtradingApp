@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'training_details_screen.dart';
+import 'create_training_screen.dart';
 
 class MarketplaceTrainingsScreen extends StatefulWidget {
   final bool isEmbedded;
@@ -439,6 +440,7 @@ class _MarketplaceTrainingsScreenState extends State<MarketplaceTrainingsScreen>
                       avatar: const Icon(Icons.tune, color: textDark, size: 16),
                       label: const Text("Filters", style: TextStyle(fontWeight: FontWeight.bold, color: textDark)),
                       backgroundColor: outlineVariant.withOpacity(0.2),
+                      side: BorderSide.none,
                     ),
                     const SizedBox(width: 8),
 
@@ -451,6 +453,7 @@ class _MarketplaceTrainingsScreenState extends State<MarketplaceTrainingsScreen>
                         style: const TextStyle(fontWeight: FontWeight.bold, color: textDark),
                       ),
                       backgroundColor: outlineVariant.withOpacity(0.2),
+                      side: BorderSide.none,
                     ),
                     const SizedBox(width: 8),
 
@@ -463,6 +466,7 @@ class _MarketplaceTrainingsScreenState extends State<MarketplaceTrainingsScreen>
                         selected: _selectedCategory == '',
                         selectedColor: primaryTeal,
                         labelStyle: TextStyle(color: _selectedCategory == '' ? Colors.white : textLight),
+                        side: BorderSide.none,
                         onSelected: (selected) {
                           if (selected) {
                             setState(() {
@@ -483,6 +487,7 @@ class _MarketplaceTrainingsScreenState extends State<MarketplaceTrainingsScreen>
                             selected: _selectedCategory == cat,
                             selectedColor: primaryTeal,
                             labelStyle: TextStyle(color: _selectedCategory == cat ? Colors.white : textLight),
+                            side: BorderSide.none,
                             onSelected: (selected) {
                               setState(() {
                                 _selectedCategory = selected ? cat : '';
@@ -569,6 +574,17 @@ class _MarketplaceTrainingsScreenState extends State<MarketplaceTrainingsScreen>
         foregroundColor: Colors.white,
         elevation: 0,
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CreateTrainingScreen()),
+        ).then((_) => _fetchTrainings()),
+        backgroundColor: primaryTeal,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Add Training', style: TextStyle(fontWeight: FontWeight.bold)),
+        elevation: 6,
+      ),
       body: content,
     );
   }
@@ -605,7 +621,7 @@ class _MarketplaceTrainingsScreenState extends State<MarketplaceTrainingsScreen>
           children: [
             // Aspect ratio square image
             AspectRatio(
-              aspectRatio: 1,
+              aspectRatio: 16 / 9,
               child: Stack(
                 children: [
                   image.isNotEmpty
@@ -650,92 +666,63 @@ class _MarketplaceTrainingsScreenState extends State<MarketplaceTrainingsScreen>
                 padding: const EdgeInsets.all(8.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Category & Mode
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: outlineVariant.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            cat.toUpperCase(),
-                            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: textLight),
-                          ),
-                        ),
-                        const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            "• $mode",
-                            style: const TextStyle(fontSize: 10, color: textLight),
+                            "$cat • $mode",
+                            style: const TextStyle(fontSize: 9, color: textLight),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         )
                       ],
                     ),
-                    const SizedBox(height: 6),
 
                     // Title
                     Text(
                       title,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textDark, height: 1.2),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: textDark, height: 1.2),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const Spacer(),
 
                     // Star Rating
                     Row(
                       children: [
-                        const Icon(Icons.star, color: Colors.amber, size: 14),
+                        const Icon(Icons.star, color: Colors.amber, size: 12),
                         const SizedBox(width: 2),
                         Text(
                           rating > 0 ? rating.toStringAsFixed(1) : "4.8",
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textDark),
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textDark),
                         ),
                         const SizedBox(width: 2),
                         Text(
                           "(${reviews > 0 ? reviews : 420})",
-                          style: const TextStyle(fontSize: 10, color: textLight),
+                          style: const TextStyle(fontSize: 9, color: textLight),
                         )
                       ],
                     ),
-                    const SizedBox(height: 6),
 
-                    // Price lines
+                    // Price row
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.baseline,
                       textBaseline: TextBaseline.alphabetic,
                       children: [
                         Text(
                           "₹${fee.toStringAsFixed(0)}",
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: primaryTeal),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: primaryTeal),
                         ),
                         const SizedBox(width: 4),
                         Text(
                           "₹${origFee.toStringAsFixed(0)}",
-                          style: const TextStyle(fontSize: 10, color: textLight, decoration: TextDecoration.lineThrough),
+                          style: const TextStyle(fontSize: 9, color: textLight, decoration: TextDecoration.lineThrough),
                         )
                       ],
                     ),
-
-                    // Savings Percent
-                    if (savingsPercent > 0)
-                      Container(
-                        margin: const EdgeInsets.only(top: 2),
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: Colors.teal.shade50,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          "Save ${savingsPercent.toStringAsFixed(0)}%",
-                          style: TextStyle(color: Colors.teal.shade700, fontSize: 9, fontWeight: FontWeight.bold),
-                        ),
-                      ),
                   ],
                 ),
               ),
