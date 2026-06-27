@@ -71,7 +71,9 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final database = Database();
       final response = await database.getData({
-        'action': selectedRole == 'Admin' ? 'admin_login_with_password' : 'login_with_password',
+        'action': selectedRole == 'Admin'
+            ? 'admin_login_with_password'
+            : 'login_with_password',
         'email': email,
         'password': password,
         'rememberMe': _rememberMe ? 'true' : 'false',
@@ -82,21 +84,25 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response['success'] == true || response['status'] == 200) {
         final vendorId = int.tryParse(
               response['vendor_id']?.toString() ??
-              response['data']?['vendor_id']?.toString() ??
-              '0',
-            ) ?? 0;
+                  response['data']?['vendor_id']?.toString() ??
+                  '0',
+            ) ??
+            0;
 
         // Fetch full profile to get the actual vendor_type if missing
-        Map<String, dynamic> fullUserData = response is Map ? Map<String, dynamic>.from(response) : {};
+        Map<String, dynamic> fullUserData =
+            response is Map ? Map<String, dynamic>.from(response) : {};
         String? vendorType = response['vendor_type']?.toString() ??
             response['data']?['vendor_type']?.toString() ??
             response['full_data']?['vendor_type']?.toString() ??
             response['LOGIN_RESPONSE']?['vendor_type']?.toString() ??
-            response['LOGIN_RESPONSE']?['full_data']?['vendor_type']?.toString();
+            response['LOGIN_RESPONSE']?['full_data']?['vendor_type']
+                ?.toString();
 
         if (vendorType == null && vendorId != 0 && selectedRole != 'Admin') {
           try {
-            print('loginscreen: vendor_type missing from login response. Fetching profile for vendor $vendorId...');
+            print(
+                'loginscreen: vendor_type missing from login response. Fetching profile for vendor $vendorId...');
             final profileRes = await database.getData({
               'action': 'profile',
               'vendor_id': vendorId.toString(),
@@ -116,12 +122,13 @@ class _LoginScreenState extends State<LoginScreen> {
         if (vendorType == null && response['redirect'] != null) {
           final redirect = response['redirect'].toString().toLowerCase();
           if (redirect.contains('dashboard')) {
-            print('loginscreen: Inferring vendor_type as 2 based on redirect dashboard: $redirect');
+            print(
+                'loginscreen: Inferring vendor_type as 2 based on redirect dashboard: $redirect');
             vendorType = '2';
             fullUserData['vendor_type'] = '2';
           }
         }
-        
+
         vendorType ??= '500'; // Default fallback
 
         await AuthService.saveLoginSession(
@@ -130,35 +137,37 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         _requestLocationInBackground();
         _showSuccessBanner('Login successful! Redirecting...');
-        
+
         // Wait 1.5 seconds to show the toast banner before navigating
         await Future.delayed(const Duration(milliseconds: 1500));
         if (!mounted) return;
 
         if (selectedRole == 'Admin') {
-          final adminId = int.tryParse(
-            response['admin_id']?.toString() ?? 
-            '1'
-          ) ?? 1;
+          final adminId =
+              int.tryParse(response['admin_id']?.toString() ?? '1') ?? 1;
           final adminEmail = email;
-          
-          await AuthService.saveAdminSession(adminId: adminId, email: adminEmail);
-          
+
+          await AuthService.saveAdminSession(
+              adminId: adminId, email: adminEmail);
+
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const CommunityAdminDashboard()),
+            MaterialPageRoute(builder: (_) => const BusinessUserDashboard()),
             (route) => false,
           );
           return;
         }
 
-        if (selectedRole == 'Business' && (vendorType == '500' || vendorType == '1')) {
+        if (selectedRole == 'Business' &&
+            (vendorType == '500' || vendorType == '1')) {
           _showError('This account is not registered as a Business User.');
           await AuthService.clearSession();
           return;
         }
-        if (selectedRole == 'Normal' && (vendorType != '500' && vendorType != '1')) {
-          _showError('This is a Business User account. Please select Business User role.');
+        if (selectedRole == 'Normal' &&
+            (vendorType != '500' && vendorType != '1')) {
+          _showError(
+              'This is a Business User account. Please select Business User role.');
           await AuthService.clearSession();
           return;
         }
@@ -166,7 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (vendorType != '500' && vendorType != '1') {
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const BusinessUserDashboard()),
+            MaterialPageRoute(builder: (_) => const CommunityAdminDashboard()),
             (route) => false,
           );
           return;
@@ -195,8 +204,8 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         _showError(
           response['message'] ??
-          response['error'] ??
-          'Invalid email or password',
+              response['error'] ??
+              'Invalid email or password',
         );
       }
     } catch (e) {
@@ -221,7 +230,8 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final database = Database();
       final response = await database.getData({
-        'action': selectedRole == 'Admin' ? 'send_admin_login_otp' : 'send_login_otp',
+        'action':
+            selectedRole == 'Admin' ? 'send_admin_login_otp' : 'send_login_otp',
         'email': email,
       }, endpoint: 'new_apis/sign_up_API.php');
 
@@ -254,7 +264,9 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final database = Database();
       final response = await database.getData({
-        'action': selectedRole == 'Admin' ? 'verify_admin_login_otp' : 'verify_login_otp',
+        'action': selectedRole == 'Admin'
+            ? 'verify_admin_login_otp'
+            : 'verify_login_otp',
         'otp': otp,
         'rememberMe': _rememberMe ? 'true' : 'false',
       }, endpoint: 'new_apis/sign_up_API.php');
@@ -262,10 +274,12 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       if (response['success'] == true || response['status'] == 200) {
         if (selectedRole == 'Admin') {
-          final adminId = int.tryParse(response['admin_id']?.toString() ?? '1') ?? 1;
+          final adminId =
+              int.tryParse(response['admin_id']?.toString() ?? '1') ?? 1;
           final adminEmail = otpEmailController.text.trim();
-          await AuthService.saveAdminSession(adminId: adminId, email: adminEmail);
-          
+          await AuthService.saveAdminSession(
+              adminId: adminId, email: adminEmail);
+
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const CommunityAdminDashboard()),
@@ -276,19 +290,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
         final vendorId = int.tryParse(
               response['vendor_id']?.toString() ?? '0',
-            ) ?? 0;
+            ) ??
+            0;
 
         // Fetch full profile to get the actual vendor_type if missing
-        Map<String, dynamic> fullUserData = response is Map ? Map<String, dynamic>.from(response) : {};
+        Map<String, dynamic> fullUserData =
+            response is Map ? Map<String, dynamic>.from(response) : {};
         String? vendorType = response['vendor_type']?.toString() ??
             response['data']?['vendor_type']?.toString() ??
             response['full_data']?['vendor_type']?.toString() ??
             response['LOGIN_RESPONSE']?['vendor_type']?.toString() ??
-            response['LOGIN_RESPONSE']?['full_data']?['vendor_type']?.toString();
+            response['LOGIN_RESPONSE']?['full_data']?['vendor_type']
+                ?.toString();
 
         if (vendorType == null && vendorId != 0 && selectedRole != 'Admin') {
           try {
-            print('loginscreen: vendor_type missing from login response. Fetching profile for vendor $vendorId...');
+            print(
+                'loginscreen: vendor_type missing from login response. Fetching profile for vendor $vendorId...');
             final profileRes = await database.getData({
               'action': 'profile',
               'vendor_id': vendorId.toString(),
@@ -308,7 +326,8 @@ class _LoginScreenState extends State<LoginScreen> {
         if (vendorType == null && response['redirect'] != null) {
           final redirect = response['redirect'].toString().toLowerCase();
           if (redirect.contains('dashboard')) {
-            print('loginscreen: Inferring vendor_type as 2 based on redirect dashboard: $redirect');
+            print(
+                'loginscreen: Inferring vendor_type as 2 based on redirect dashboard: $redirect');
             vendorType = '2';
             fullUserData['vendor_type'] = '2';
           }
@@ -325,13 +344,16 @@ class _LoginScreenState extends State<LoginScreen> {
         await Future.delayed(const Duration(milliseconds: 1500));
         if (!mounted) return;
 
-        if (selectedRole == 'Business' && (vendorType == '500' || vendorType == '1')) {
+        if (selectedRole == 'Business' &&
+            (vendorType == '500' || vendorType == '1')) {
           _showError('This account is not registered as a Business User.');
           await AuthService.clearSession();
           return;
         }
-        if (selectedRole == 'Normal' && (vendorType != '500' && vendorType != '1')) {
-          _showError('This is a Business User account. Please select Business User role.');
+        if (selectedRole == 'Normal' &&
+            (vendorType != '500' && vendorType != '1')) {
+          _showError(
+              'This is a Business User account. Please select Business User role.');
           await AuthService.clearSession();
           return;
         }
@@ -456,7 +478,8 @@ class _LoginScreenState extends State<LoginScreen> {
             Expanded(
               child: Text(
                 msg,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -492,10 +515,11 @@ class _LoginScreenState extends State<LoginScreen> {
         final data = res['data'];
         if (data != null && data is List && data.isNotEmpty) {
           final ids = data
-              .map((i) => int.tryParse(
-                    i['interest_id']?.toString() ??
-                    i['id']?.toString() ?? '0',
-                  ) ?? 0)
+              .map((i) =>
+                  int.tryParse(
+                    i['interest_id']?.toString() ?? i['id']?.toString() ?? '0',
+                  ) ??
+                  0)
               .toList();
           await AuthService.saveUserInterests(ids.cast<int>());
           return true;
@@ -547,7 +571,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   _buildTabBar(),
                   Padding(
                     padding: const EdgeInsets.all(28.0),
-                    child: isSignUpTab ? _buildSignUpForm() : _buildSignInForm(),
+                    child:
+                        isSignUpTab ? _buildSignUpForm() : _buildSignInForm(),
                   ),
                 ],
               ),
@@ -563,13 +588,16 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         Expanded(
           child: GestureDetector(
-            onTap: _isLoading ? null : () => setState(() => isSignUpTab = false),
+            onTap:
+                _isLoading ? null : () => setState(() => isSignUpTab = false),
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 20),
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
-                    color: !isSignUpTab ? const Color(0xFF006565) : Colors.transparent,
+                    color: !isSignUpTab
+                        ? const Color(0xFF006565)
+                        : Colors.transparent,
                     width: 3,
                   ),
                 ),
@@ -579,7 +607,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: !isSignUpTab ? const Color(0xFF006565) : Colors.grey.shade400,
+                  color: !isSignUpTab
+                      ? const Color(0xFF006565)
+                      : Colors.grey.shade400,
                   fontSize: 16,
                 ),
               ),
@@ -594,7 +624,9 @@ class _LoginScreenState extends State<LoginScreen> {
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
-                    color: isSignUpTab ? const Color(0xFF006565) : Colors.transparent,
+                    color: isSignUpTab
+                        ? const Color(0xFF006565)
+                        : Colors.transparent,
                     width: 3,
                   ),
                 ),
@@ -604,7 +636,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: isSignUpTab ? const Color(0xFF006565) : Colors.grey.shade400,
+                  color: isSignUpTab
+                      ? const Color(0xFF006565)
+                      : Colors.grey.shade400,
                   fontSize: 16,
                 ),
               ),
@@ -634,7 +668,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        
+
         // Welcome Back Title
         const Text(
           "Welcome back",
@@ -645,7 +679,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        
+
         // Subtitle
         Text(
           "Join your community conversations today",
@@ -656,15 +690,15 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         const SizedBox(height: 24),
-        
+
         // Custom Role Selector
         _buildRoleSelector(),
         const SizedBox(height: 24),
-        
+
         // Password vs OTP Login inputs
         isPasswordLogin ? _buildPasswordLoginForm() : _buildOtpLoginForm(),
         const SizedBox(height: 28),
-        
+
         _buildTermsAndPrivacy(),
       ],
     );
@@ -691,7 +725,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final bool isSelected = selectedRole == roleType;
     return Expanded(
       child: GestureDetector(
-        onTap: _isLoading ? null : () => setState(() => selectedRole = roleType),
+        onTap:
+            _isLoading ? null : () => setState(() => selectedRole = roleType),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -780,7 +815,8 @@ class _LoginScreenState extends State<LoginScreen> {
           enabled: !_isLoading,
           style: const TextStyle(color: Colors.black),
           decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.person_outline_rounded, color: Colors.grey),
+            prefixIcon:
+                const Icon(Icons.person_outline_rounded, color: Colors.grey),
             hintText: "Full Name",
             hintStyle: const TextStyle(color: Colors.grey),
             filled: true,
@@ -800,7 +836,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        
+
         // Email Input field
         TextField(
           controller: signupEmailController,
@@ -864,13 +900,17 @@ class _LoginScreenState extends State<LoginScreen> {
           enabled: !_isLoading,
           style: const TextStyle(color: Colors.black),
           decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.lock_outline_rounded, color: Colors.grey),
+            prefixIcon:
+                const Icon(Icons.lock_outline_rounded, color: Colors.grey),
             suffixIcon: IconButton(
               icon: Icon(
-                signupObscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                signupObscurePassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
                 color: Colors.grey,
               ),
-              onPressed: () => setState(() => signupObscurePassword = !signupObscurePassword),
+              onPressed: () => setState(
+                  () => signupObscurePassword = !signupObscurePassword),
             ),
             hintText: "Password",
             hintStyle: const TextStyle(color: Colors.grey),
@@ -940,7 +980,9 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           Expanded(
             child: GestureDetector(
-              onTap: _isLoading ? null : () => setState(() => signupIsAdmin = false),
+              onTap: _isLoading
+                  ? null
+                  : () => setState(() => signupIsAdmin = false),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -971,7 +1013,9 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           Expanded(
             child: GestureDetector(
-              onTap: _isLoading ? null : () => setState(() => signupIsAdmin = true),
+              onTap: _isLoading
+                  ? null
+                  : () => setState(() => signupIsAdmin = true),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1014,7 +1058,8 @@ class _LoginScreenState extends State<LoginScreen> {
           enabled: !_isLoading,
           style: const TextStyle(color: Colors.black),
           decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.person_outline_rounded, color: Colors.grey),
+            prefixIcon:
+                const Icon(Icons.person_outline_rounded, color: Colors.grey),
             hintText: "Username or Email",
             hintStyle: const TextStyle(color: Colors.grey),
             filled: true,
@@ -1034,7 +1079,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        
+
         // Password Field
         TextField(
           controller: passwordController,
@@ -1042,13 +1087,17 @@ class _LoginScreenState extends State<LoginScreen> {
           enabled: !_isLoading,
           style: const TextStyle(color: Colors.black),
           decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.lock_outline_rounded, color: Colors.grey),
+            prefixIcon:
+                const Icon(Icons.lock_outline_rounded, color: Colors.grey),
             suffixIcon: IconButton(
               icon: Icon(
-                _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                _obscurePassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
                 color: Colors.grey,
               ),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
             ),
             hintText: "Password",
             hintStyle: const TextStyle(color: Colors.grey),
@@ -1069,7 +1118,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        
+
         Row(
           children: [
             SizedBox(
@@ -1098,7 +1147,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ],
         ),
         const SizedBox(height: 24),
-        
+
         // Main Sign In Button
         SizedBox(
           width: double.infinity,
@@ -1146,7 +1195,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         const SizedBox(height: 20),
-        
+
         // OR Divider
         Row(
           children: [
@@ -1166,7 +1215,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ],
         ),
         const SizedBox(height: 20),
-        
+
         // Sign In with OTP button
         SizedBox(
           width: double.infinity,
@@ -1189,7 +1238,8 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: const [
-                Icon(Icons.phonelink_lock_rounded, color: accentColor, size: 20),
+                Icon(Icons.phonelink_lock_rounded,
+                    color: accentColor, size: 20),
                 SizedBox(width: 8),
                 Text(
                   "Sign In with OTP",
@@ -1275,7 +1325,8 @@ class _LoginScreenState extends State<LoginScreen> {
             enabled: !_isLoading,
             style: const TextStyle(color: Colors.black),
             decoration: InputDecoration(
-              prefixIcon: const Icon(Icons.lock_outline_rounded, color: Colors.grey),
+              prefixIcon:
+                  const Icon(Icons.lock_outline_rounded, color: Colors.grey),
               hintText: "Enter OTP",
               hintStyle: const TextStyle(color: Colors.grey),
               filled: true,
@@ -1328,7 +1379,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ],
         const SizedBox(height: 20),
-        
+
         // OR Divider
         Row(
           children: [
@@ -1348,7 +1399,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ],
         ),
         const SizedBox(height: 20),
-        
+
         // Sign In with Password Button
         SizedBox(
           width: double.infinity,
@@ -1362,7 +1413,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            onPressed: _isLoading ? null : () => setState(() => isPasswordLogin = true),
+            onPressed: _isLoading
+                ? null
+                : () => setState(() => isPasswordLogin = true),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: const [
