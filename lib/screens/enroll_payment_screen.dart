@@ -732,6 +732,7 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                minimumSize: const Size(0, 0),
               ),
               onPressed: _recalculateRemaining,
               child: const Text("Apply"),

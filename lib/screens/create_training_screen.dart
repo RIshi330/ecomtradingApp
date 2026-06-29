@@ -1,7 +1,13 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:trading_ecommerce_admin/app_constants.dart';
+import 'package:flutter_quill/flutter_quill.dart';
+import 'package:vsc_quill_delta_to_html/vsc_quill_delta_to_html.dart';
 
 const Color _teal = Color(0xFF006565);
 const Color _tealLight = Color(0xFFE3FFFE);
@@ -31,12 +37,13 @@ class _CreateTrainingScreenState extends State<CreateTrainingScreen> {
     'pricing': false,
     'benefits': false,
     'curriculum': false,
+    'instructors': false,
   };
 
   // Program Info
   final _titleCtrl = TextEditingController();
   final _organizerCtrl = TextEditingController();
-  final _summaryCtrl = TextEditingController();
+  final _summaryQuillController = QuillController.basic();
 
   // Delivery
   String _mode = 'online';
@@ -63,11 +70,14 @@ class _CreateTrainingScreenState extends State<CreateTrainingScreen> {
   // Curriculum — Modules
   final List<_ModuleData> _modules = [_ModuleData()];
 
+  // Instructors
+  final List<_InstructorData> _instructors = [_InstructorData()];
+
   @override
   void dispose() {
     _titleCtrl.dispose();
     _organizerCtrl.dispose();
-    _summaryCtrl.dispose();
+    _summaryQuillController.dispose();
     _platformCtrl.dispose();
     _venueCtrl.dispose();
     _otherAudienceCtrl.dispose();
@@ -75,6 +85,10 @@ class _CreateTrainingScreenState extends State<CreateTrainingScreen> {
     _givesCtrl.dispose();
     _tagsCtrl.dispose();
     for (var c in _objectives) c.dispose();
+    for (var i in _instructors) {
+      i.nameCtrl.dispose();
+      i.bioCtrl.dispose();
+    }
     super.dispose();
   }
 
@@ -97,6 +111,12 @@ class _CreateTrainingScreenState extends State<CreateTrainingScreen> {
 
     setState(() => _isLoading = true);
     try {
+      final summaryHtml = _getHtmlFromQuill(_summaryQuillController);
+      if (summaryHtml.trim().isEmpty || summaryHtml == "<p></p>" || summaryHtml == "<p><br></p>") {
+        _showErr('Short Summary is required');
+        return;
+      }
+
       final modules = _modules.map((m) => {
         'title': m.titleCtrl.text.trim(),
         'description': m.descCtrl.text.trim(),
@@ -108,27 +128,67 @@ class _CreateTrainingScreenState extends State<CreateTrainingScreen> {
         }).toList(),
       }).toList();
 
-      final body = {
-        'action': 'save_training',
-        'training_title': _titleCtrl.text.trim(),
-        'organizer': _organizerCtrl.text.trim(),
-        'summary': _summaryCtrl.text.trim(),
-        'mode': _mode,
-        'platform': _platformCtrl.text.trim(),
-        'venue_address': _venueCtrl.text.trim(),
-        'suitable_for': _selectedAudience.toList(),
-        'suitable_other': _otherAudienceCtrl.text.trim(),
-        'paid': _paid,
-        'price': _paid == 'paid' ? (_priceCtrl.text.trim().isEmpty ? '0' : _priceCtrl.text.trim()) : '0',
-        'gives': _givesCtrl.text.trim(),
-        'tags': _tagsCtrl.text.trim(),
-        'objectives': _objectives.map((c) => c.text.trim()).where((t) => t.isNotEmpty).toList(),
-        'modules': modules,
-      };
+      final instructors = _instructors.map((i) => {
+        'name': i.nameCtrl.text.trim(),
+        'bio': i.bioCtrl.text.trim(),
+      }).toList();
 
-      final res = await Database().getData(body, endpoint: 'new_apis/training_form_API.php');
+      // Read Session ID from secure storage
+      const storage = FlutterSecureStorage(
+        aOptions: AndroidOptions(encryptedSharedPreferences: true),
+      );
+      final sessionId = await storage.read(key: "SESSION_ID");
+
+      // Construct Target URL
+      final targetUrl = Uri.parse('$baseUrl?endpoint=new_apis/training_form_API.php');
+
+      // Create MultipartRequest
+      final request = http.MultipartRequest('POST', targetUrl);
+      
+      // Set Headers
+      request.headers['APP_ID'] = appId.toString();
+      request.headers['SESSION-ID'] = sessionId ?? '';
+      if (sessionId != null && sessionId.isNotEmpty) {
+        request.headers['Cookie'] = 'PHPSESSID=$sessionId';
+      }
+
+      // Add Fields
+      request.fields['action'] = 'save_training';
+      request.fields['training_title'] = _titleCtrl.text.trim();
+      request.fields['organizer'] = _organizerCtrl.text.trim();
+      request.fields['summary'] = summaryHtml;
+      request.fields['mode'] = _mode;
+      request.fields['platform'] = _platformCtrl.text.trim();
+      request.fields['venue_address'] = _venueCtrl.text.trim();
+      request.fields['suitable_for'] = jsonEncode(_selectedAudience.toList());
+      request.fields['suitable_other'] = _otherAudienceCtrl.text.trim();
+      request.fields['paid'] = _paid;
+      request.fields['price'] = _paid == 'paid' ? (_priceCtrl.text.trim().isEmpty ? '0' : _priceCtrl.text.trim()) : '0';
+      request.fields['gives'] = _givesCtrl.text.trim();
+      request.fields['tags'] = _tagsCtrl.text.trim();
+      request.fields['objectives'] = jsonEncode(_objectives.map((c) => c.text.trim()).where((t) => t.isNotEmpty).toList());
+      request.fields['modules'] = jsonEncode(modules);
+      request.fields['instructors'] = jsonEncode(instructors);
+
+      // Add File if selected
+      if (_thumbnailFile != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath('thumbnail_image', _thumbnailFile!.path),
+        );
+      }
+
+      // Send Request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
 
       if (!mounted) return;
+
+      if (response.body.isEmpty) {
+        _showErr('Empty response from server');
+        return;
+      }
+
+      final res = jsonDecode(response.body);
       if (res['success'] == true) {
         _showSuccess();
       } else {
@@ -226,6 +286,8 @@ class _CreateTrainingScreenState extends State<CreateTrainingScreen> {
             _buildSection('benefits', Icons.card_giftcard_rounded, 'Benefits & Media', _buildBenefits()),
             const SizedBox(height: 12),
             _buildSection('curriculum', Icons.menu_book_rounded, 'Curriculum', _buildCurriculum()),
+            const SizedBox(height: 12),
+            _buildSection('instructors', Icons.person_add_alt_1_rounded, 'Instructors', _buildInstructors()),
           ],
         ),
       ),
@@ -297,14 +359,11 @@ class _CreateTrainingScreenState extends State<CreateTrainingScreen> {
         _field(_organizerCtrl, hint: 'Individual or Company', validator: (v) => v!.isEmpty ? 'Required' : null),
         const SizedBox(height: 12),
         _label('Short Summary *'),
-        _multiField(_summaryCtrl, hint: 'Briefly describe what this program is about...', maxLines: 3, validator: (v) => v!.length < 10 ? 'Min 10 characters' : null),
         const SizedBox(height: 4),
-        Align(
-          alignment: Alignment.centerRight,
-          child: ValueListenableBuilder(
-            valueListenable: _summaryCtrl,
-            builder: (_, __, ___) => Text('${_summaryCtrl.text.length} / 500', style: const TextStyle(fontSize: 10, color: _textLight)),
-          ),
+        _buildQuillField(
+          controller: _summaryQuillController,
+          hint: 'Briefly describe what this program is about...',
+          height: 160,
         ),
       ],
     );
@@ -721,6 +780,149 @@ class _CreateTrainingScreenState extends State<CreateTrainingScreen> {
       style: const TextStyle(color: _textDark, fontSize: 14),
       decoration: _inputDeco(hint: hint),
     );
+
+  Widget _buildInstructors() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ..._instructors.asMap().entries.map((e) => _buildInstructorCard(e.key, e.value)),
+        const SizedBox(height: 8),
+        TextButton.icon(
+          onPressed: () => setState(() => _instructors.add(_InstructorData())),
+          icon: const Icon(Icons.add, color: _teal, size: 18),
+          label: const Text('Add Another Instructor', style: TextStyle(color: _teal, fontWeight: FontWeight.bold, fontSize: 13)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInstructorCard(int idx, _InstructorData inst) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF4FF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _outline.withOpacity(0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text('Instructor ${(idx + 1).toString().padLeft(2, '0')}', style: const TextStyle(color: _teal, fontWeight: FontWeight.bold, fontSize: 13)),
+              const Spacer(),
+              if (_instructors.length > 1)
+                GestureDetector(
+                  onTap: () => setState(() {
+                    inst.nameCtrl.dispose();
+                    inst.bioCtrl.dispose();
+                    _instructors.removeAt(idx);
+                  }),
+                  child: const Icon(Icons.delete_outline, color: _error, size: 20),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: inst.nameCtrl,
+            style: const TextStyle(fontSize: 13, color: _textDark),
+            decoration: _inputDeco(hint: 'Instructor Name'),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: inst.bioCtrl,
+            maxLines: 2,
+            style: const TextStyle(fontSize: 13, color: _textDark),
+            decoration: _inputDeco(hint: 'Instructor Bio (20-500 chars)'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getHtmlFromQuill(QuillController controller) {
+    try {
+      final delta = controller.document.toDelta().toJson();
+      final converter = QuillDeltaToHtmlConverter(
+        List.castFrom(delta),
+        ConverterOptions.forEmail(),
+      );
+      return converter.convert();
+    } catch (e) {
+      debugPrint("Error converting Quill to HTML: $e");
+      return "";
+    }
+  }
+
+  Widget _buildQuillField({
+    required QuillController controller,
+    required String hint,
+    double height = 200,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: _outline),
+        borderRadius: BorderRadius.circular(10),
+        color: Colors.white,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          QuillSimpleToolbar(
+            controller: controller,
+            config: const QuillSimpleToolbarConfig(
+              showFontFamily: false,
+              showFontSize: false,
+              showBoldButton: true,
+              showItalicButton: true,
+              showSmallButton: false,
+              showUnderLineButton: true,
+              showStrikeThrough: false,
+              showInlineCode: false,
+              showColorButton: false,
+              showBackgroundColorButton: false,
+              showClearFormat: true,
+              showAlignmentButtons: true,
+              showLeftAlignment: true,
+              showCenterAlignment: true,
+              showRightAlignment: true,
+              showJustifyAlignment: true,
+              showHeaderStyle: false,
+              showListNumbers: true,
+              showListBullets: true,
+              showListCheck: false,
+              showCodeBlock: false,
+              showQuote: false,
+              showIndent: false,
+              showLink: true,
+              showUndo: true,
+              showRedo: true,
+              showDirection: false,
+              showSearchButton: false,
+              showSubscript: false,
+              showSuperscript: false,
+              multiRowsDisplay: false,
+            ),
+          ),
+          const Divider(height: 1, thickness: 1, color: _outline),
+          Container(
+            height: height,
+            padding: const EdgeInsets.all(8.0),
+            child: QuillEditor.basic(
+              controller: controller,
+              config: QuillEditorConfig(
+                placeholder: hint,
+                autoFocus: false,
+                expands: true,
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ── Data Models ────────────────────────────────────────────────────────────
@@ -734,4 +936,9 @@ class _SessionData {
   final titleCtrl = TextEditingController();
   final durationCtrl = TextEditingController();
   final timeCtrl = TextEditingController();
+}
+
+class _InstructorData {
+  final nameCtrl = TextEditingController();
+  final bioCtrl = TextEditingController();
 }

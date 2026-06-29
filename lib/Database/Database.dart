@@ -37,8 +37,8 @@ class Database {
           postBody.map((key, value) => MapEntry(key, value?.toString() ?? ''));
 
       final targetUrl = endpoint != null
-          ? Uri.parse(Uri.encodeFull('$baseUrlLegacy$endpoint'))
-          : Uri.parse(baseUrlLegacy);
+          ? Uri.parse(Uri.encodeFull('$baseUrl?endpoint=$endpoint'))
+          : Uri.parse(baseUrl);
 
       print('Database [getData]: Sending request to $targetUrl with SESSION-ID: $existingSessionId');
 
@@ -247,8 +247,8 @@ class Database {
 
     try {
       final targetUrl = endpoint != null
-          ? Uri.parse(Uri.encodeFull('$baseUrlLegacy$endpoint'))
-          : Uri.parse(baseUrlLegacy);
+          ? Uri.parse(Uri.encodeFull('$baseUrl?endpoint=$endpoint'))
+          : Uri.parse(baseUrl);
 
       print('Database [getJsonData]: Sending request to $targetUrl with SESSION-ID: $existingSessionId');
 

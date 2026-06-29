@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
+import '../index.dart';
 import 'create_training_screen.dart';
 
 class MomTrainingsScreen extends StatefulWidget {
@@ -187,7 +188,9 @@ class _MomTrainingsScreenState extends State<MomTrainingsScreen> {
               ),
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.pushNamed(context, AppRoutes.marketplaceTrainings);
+              },
               child: const Text(
                 "View all",
                 style: TextStyle(
@@ -223,153 +226,169 @@ class _MomTrainingsScreenState extends State<MomTrainingsScreen> {
     final mode = prog['mode'] ?? 'Live';
     final slots = int.tryParse(prog['slots']?.toString() ?? '0') ?? 0;
     final rating = double.tryParse(prog['avg_rating']?.toString() ?? '0.0') ?? 0.0;
+    final fee = prog['fee']?.toString() ?? '24,999';
 
-    return Container(
-      width: 250,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: outlineVariant.withOpacity(0.4)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image header
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                child: Image.network(
-                  imageUrl,
-                  height: 110,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(
+          context,
+          AppRoutes.trainingDetails,
+          arguments: Map<String, dynamic>.from(prog),
+        );
+      },
+      child: Container(
+        width: 250,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: outlineVariant.withOpacity(0.4)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image header
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  child: Image.network(
+                    imageUrl,
                     height: 110,
-                    color: Colors.grey.shade200,
-                    child: const Icon(Icons.school, color: Colors.grey),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 8,
-                left: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: primaryTeal,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    mode,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 110,
+                      color: Colors.grey.shade200,
+                      child: const Icon(Icons.school, color: Colors.grey),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: textDark,
-                        ),
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: primaryTeal,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      mode,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Row(
-                      children: [
-                        const Icon(Icons.star, color: Colors.amber, size: 12),
-                        const SizedBox(width: 2),
-                        Text(
-                          rating > 0 ? rating.toStringAsFixed(1) : "N/A",
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 10,
+                            fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: textDark,
                           ),
                         ),
+                      ),
+                      Row(
+                        children: [
+                          const Icon(Icons.star, color: Colors.amber, size: 12),
+                          const SizedBox(width: 2),
+                          Text(
+                            rating > 0 ? rating.toStringAsFixed(1) : "N/A",
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: textDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    desc,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: textLight,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (slots > 0)
+                    Row(
+                      children: [
+                        const Icon(Icons.group, color: coralAlert, size: 12),
+                        const SizedBox(width: 4),
+                        Text(
+                          "$slots Slots Left",
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: coralAlert,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  desc,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: textLight,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                if (slots > 0)
+                  const SizedBox(height: 12),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(Icons.group, color: coralAlert, size: 12),
-                      const SizedBox(width: 4),
                       Text(
-                        "$slots Slots Left",
+                        "₹$fee",
                         style: const TextStyle(
-                          fontSize: 10,
-                          color: coralAlert,
+                          fontSize: 13,
                           fontWeight: FontWeight.bold,
+                          color: primaryTeal,
+                        ),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryTeal,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.trainingDetails,
+                            arguments: Map<String, dynamic>.from(prog),
+                          );
+                        },
+                        child: const Text(
+                          "Enroll",
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
                   ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      "₹24,999",
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: primaryTeal,
-                      ),
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryTeal,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                      onPressed: () {},
-                      child: const Text(
-                        "Enroll",
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -525,33 +544,38 @@ class _MomTrainingsScreenState extends State<MomTrainingsScreen> {
   Widget _buildCategoryChip(dynamic cat) {
     final name = cat['name'] ?? '';
     final count = cat['count'] ?? 0;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: outlineVariant.withOpacity(0.4)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            name,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: textDark,
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, AppRoutes.marketplaceTrainings);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: outlineVariant.withOpacity(0.4)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              name,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: textDark,
+              ),
             ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            "$count Programs",
-            style: const TextStyle(
-              fontSize: 9,
-              color: textLight,
+            const SizedBox(height: 2),
+            Text(
+              "$count Programs",
+              style: const TextStyle(
+                fontSize: 9,
+                color: textLight,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

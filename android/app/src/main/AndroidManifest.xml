@@ -3,7 +3,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
-        android:label="trading_ecommerce_admin"
+        android:label="CCBUL Master App"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

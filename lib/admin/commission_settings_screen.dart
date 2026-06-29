@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trading_ecommerce_admin/Database/Database.dart';
 
 class CommissionSettingsScreen extends StatefulWidget {
   final bool isEmbedded;
@@ -12,13 +13,36 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
   // Navigation/Step State
   int _activeStep = 1;
   
+  // Loading flags
+  bool _loadingSites = false;
+  bool _loadingStakeholders = false;
+  bool _loadingMemberships = false;
+  bool _loadingProducts = false;
+  bool _submittingCommission = false;
+
+  // Lists loaded from backend
+  List<Map<String, dynamic>> _sites = [];
+  List<Map<String, dynamic>> _stakeholdersList = [];
+  List<Map<String, dynamic>> _membershipsList = [];
+  List<Map<String, dynamic>> _productsList = [];
+
   // Form Values
-  String _selectedSite = "Global Enterprise Portal";
+  int? _selectedSiteId;
+  String _selectedSite = "";
+  
   final Set<String> _selectedStakeholders = {};
-  String _selectedTier = "Gold";
-  String _selectedProductSource = "Legacy Inventory Hub";
-  String _selectedDeliverable = "Digital";
-  String _selectedProduct = "Core API Module";
+  
+  int? _selectedMembershipId;
+  String _selectedTier = "";
+  
+  int? _selectedProductSiteId;
+  String _selectedProductSource = "";
+  
+  String _selectedDeliverable = "Digital"; // Digital (37), Services (16), Physical (5)
+  
+  int? _selectedProductId;
+  String _selectedProduct = "";
+  
   String _commissionType = "fixed"; // fixed or slab
   final TextEditingController _fixedRateController = TextEditingController(text: "12.5");
   bool _confirmedCompliance = false;
@@ -42,7 +66,6 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
 
   // Color constants (Theme aligned)
   static const Color primaryTeal = Color(0xFF006565);
-  static const Color darkTeal = Color(0xFF004D40);
   static const Color containerTeal = Color(0xFFE3FFFE);
   static const Color bgLight = Color(0xFFF9F9F9);
   static const Color textDark = Color(0xFF1C1B1B);
@@ -51,12 +74,216 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
   static const Color secondaryContainer = Color(0xFFB0EEED);
 
   @override
+  void initState() {
+    super.initState();
+    _fetchSites();
+  }
+
+  @override
   void dispose() {
     _fixedRateController.dispose();
     _siteSearchController.dispose();
     _productSearchController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // BACKEND API CALLS
+  // ══════════════════════════════════════════════════════════
+
+  Future<void> _fetchSites() async {
+    setState(() => _loadingSites = true);
+    try {
+      final response = await Database().getData({
+        'api': '1',
+        'loadSites': '1',
+      }, endpoint: 'new_apis/membership-commission-helper.php');
+      
+      if (response['success'] == true && response['data'] != null) {
+        setState(() {
+          _sites = List<Map<String, dynamic>>.from(response['data']);
+          if (_sites.isNotEmpty && _selectedSiteId == null) {
+            _selectedSiteId = int.tryParse(_sites[0]['id'].toString());
+            _selectedSite = _sites[0]['site_name'].toString();
+            // Automatically pre-load stakeholders
+            _fetchStakeholders();
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint("Error loading sites: $e");
+    } finally {
+      if (mounted) setState(() => _loadingSites = false);
+    }
+  }
+
+  Future<void> _fetchStakeholders() async {
+    if (_selectedSiteId == null) return;
+    setState(() => _loadingStakeholders = true);
+    try {
+      final response = await Database().getData({
+        'api': '1',
+        'loadSiteVendors': _selectedSiteId.toString(),
+      }, endpoint: 'new_apis/membership-commission-helper.php');
+      
+      if (response['success'] == true && response['data'] != null) {
+        final data = response['data'] as List;
+        final List<Map<String, dynamic>> temp = [];
+        for (var group in data) {
+          final vendors = group['vendors'] as List;
+          for (var v in vendors) {
+            temp.add({
+              'id': v['id'].toString(),
+              'title': v['title'].toString(),
+              'parent_title': group['parent_title'].toString(),
+            });
+          }
+        }
+        setState(() {
+          _stakeholdersList = temp;
+          _selectedStakeholders.clear();
+        });
+      }
+    } catch (e) {
+      debugPrint("Error loading stakeholders: $e");
+    } finally {
+      if (mounted) setState(() => _loadingStakeholders = false);
+    }
+  }
+
+  Future<void> _fetchMemberships() async {
+    if (_selectedStakeholders.isEmpty) return;
+    setState(() => _loadingMemberships = true);
+    try {
+      final vendorIds = _selectedStakeholders.join(",");
+      final response = await Database().getData({
+        'api': '1',
+        'loadVendorMemberships': '1',
+        'vendor_ids': vendorIds,
+      }, endpoint: 'new_apis/membership-commission-helper.php');
+      
+      if (response['success'] == true && response['data'] != null) {
+        setState(() {
+          _membershipsList = List<Map<String, dynamic>>.from(response['data']);
+          if (_membershipsList.isNotEmpty) {
+            _selectedMembershipId = int.tryParse(_membershipsList[0]['id'].toString());
+            _selectedTier = _membershipsList[0]['title'].toString();
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint("Error loading memberships: $e");
+    } finally {
+      if (mounted) setState(() => _loadingMemberships = false);
+    }
+  }
+
+  Future<void> _fetchProducts() async {
+    if (_selectedSiteId == null || _selectedProductSiteId == null || _selectedMembershipId == null) return;
+    setState(() => _loadingProducts = true);
+    
+    // Map deliverable visually selected back to backend marketplace_ids
+    final int mkpId = _selectedDeliverable == "Digital" ? 37 : (_selectedDeliverable == "Services" ? 16 : 5);
+    
+    try {
+      final Map<String, String> body = {
+        'api': '1',
+        'site_id': _selectedProductSiteId.toString(),
+        'membership_site_id': _selectedSiteId.toString(),
+        'membership_id': _selectedMembershipId.toString(),
+        'marketplace_id': mkpId.toString(),
+        'offset': '0',
+        'limit': '50',
+      };
+      
+      dynamic response;
+      if (mkpId == 37) {
+        body['loadProductMemberships'] = '1';
+        body['stakeholder_types'] = _selectedStakeholders.join(",");
+        response = await Database().getData(body, endpoint: 'new_apis/membership-commission-helper.php');
+      } else {
+        body['loadProductMkpProduct'] = '1';
+        body['product_type'] = '3'; // Item level
+        response = await Database().getData(body, endpoint: 'new_apis/membership-commission-helper.php');
+      }
+      
+      if (response['success'] == true && response['data'] != null) {
+        setState(() {
+          _productsList = List<Map<String, dynamic>>.from(response['data']);
+          if (_productsList.isNotEmpty) {
+            _selectedProductId = int.tryParse(_productsList[0]['id'].toString());
+            _selectedProduct = _productsList[0]['title']?.toString() ?? _productsList[0]['product_title']?.toString() ?? "";
+          } else {
+            _selectedProductId = null;
+            _selectedProduct = "";
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint("Error loading products: $e");
+    } finally {
+      if (mounted) setState(() => _loadingProducts = false);
+    }
+  }
+
+  Future<void> _submitCommissionSetup() async {
+    if (_selectedSiteId == null || _selectedProductSiteId == null || _selectedMembershipId == null || _selectedProductId == null) return;
+    setState(() => _submittingCommission = true);
+    
+    final int mkpId = _selectedDeliverable == "Digital" ? 37 : (_selectedDeliverable == "Services" ? 16 : 5);
+    
+    try {
+      final Map<String, String> body = {
+        'api': '1',
+        'setCommission': '1',
+        'membership_site_id': _selectedSiteId.toString(),
+        'product_site_id': _selectedProductSiteId.toString(),
+        'membership_id': _selectedMembershipId.toString(),
+        'marketplace_id': mkpId.toString(),
+        'product_id': _selectedProductId.toString(),
+        'commission_type': _commissionType.toUpperCase(),
+        'inclusive_tax': '1',
+      };
+      
+      if (_commissionType == 'fixed') {
+        body['fixed_type'] = 'PERCENTAGE';
+        body['fixed_rate'] = _fixedRateController.text;
+      } else {
+        body['comm_type'] = '["PERCENTAGE", "PERCENTAGE"]';
+        body['min_order'] = '[0, 5000]';
+        body['max_order'] = '[5000, 25000]';
+        body['comm_rate'] = '[5, 8.5]';
+        body['continue_commission'] = '1';
+      }
+      
+      final response = await Database().getData(body, endpoint: 'new_apis/membership-commission-helper.php');
+      if (response['success'] == true) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Commission configuration successfully submitted!"),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Error: ${response['message'] ?? 'Submission failed'}"),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint("Error submitting commission: $e");
+    } finally {
+      if (mounted) setState(() => _submittingCommission = false);
+    }
   }
 
   void _completeStep(int stepNumber) {
@@ -227,13 +454,13 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: isActive ? primaryTeal : outlineVariant.withOpacity(0.5),
+              color: isActive ? primaryTeal : outlineVariant.withValues(alpha: 0.5),
               width: isActive ? 1.5 : 1.0,
             ),
             boxShadow: isActive
                 ? [
                     BoxShadow(
-                      color: primaryTeal.withOpacity(0.08),
+                      color: primaryTeal.withValues(alpha: 0.08),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     )
@@ -317,14 +544,19 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
 
   // Step 1: Select Membership Site
   Widget _buildSiteSelectionWidget() {
-    final sites = [
-      {"name": "Global Enterprise Portal", "id": "ENT-992", "icon": Icons.hub},
-      {"name": "Regional Partner Hub", "id": "RGN-441", "icon": Icons.lan},
-    ];
+    if (_loadingSites && _sites.isEmpty) {
+      return const Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(primaryTeal)),
+        ),
+      );
+    }
 
-    final filteredSites = sites
-        .where((s) => s["name"]!.toLowerCase().contains(_siteSearchController.text.toLowerCase()) ||
-            s["id"]!.toLowerCase().contains(_siteSearchController.text.toLowerCase()))
+    final filteredSites = _sites
+        .where((s) => (s["site_name"] as String).toLowerCase().contains(_siteSearchController.text.toLowerCase()) ||
+            (s["id"] as String).toLowerCase().contains(_siteSearchController.text.toLowerCase()))
         .toList();
 
     return Column(
@@ -354,12 +586,14 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
         const SizedBox(height: 10),
         // Site list
         ...filteredSites.map((site) {
-          final isSelected = _selectedSite == site["name"];
+          final isSelected = _selectedSiteId == int.tryParse(site["id"].toString());
           return GestureDetector(
             onTap: () {
               setState(() {
-                _selectedSite = site["name"] as String;
+                _selectedSiteId = int.tryParse(site["id"].toString());
+                _selectedSite = site["site_name"] as String;
               });
+              _fetchStakeholders();
               _completeStep(1);
             },
             child: Container(
@@ -369,7 +603,7 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
                 color: isSelected ? containerTeal : Colors.white,
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
-                  color: isSelected ? primaryTeal : outlineVariant.withOpacity(0.5),
+                  color: isSelected ? primaryTeal : outlineVariant.withValues(alpha: 0.5),
                 ),
               ),
               child: Row(
@@ -382,7 +616,7 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Icon(
-                      site["icon"] as IconData,
+                      Icons.hub,
                       color: isSelected ? primaryTeal : textLight,
                       size: 16,
                     ),
@@ -393,7 +627,7 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          site["name"] as String,
+                          site["site_name"] as String,
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -407,15 +641,17 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
                       ],
                     ),
                   ),
-                  Radio<String>(
-                    value: site["name"] as String,
-                    groupValue: _selectedSite,
+                  Radio<int>(
+                    value: int.tryParse(site["id"].toString()) ?? 0,
+                    groupValue: _selectedSiteId,
                     activeColor: primaryTeal,
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     onChanged: (val) {
                       setState(() {
-                        _selectedSite = val!;
+                        _selectedSiteId = val;
+                        _selectedSite = site["site_name"] as String;
                       });
+                      _fetchStakeholders();
                       _completeStep(1);
                     },
                   ),
@@ -430,7 +666,22 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
 
   // Step 2: Choose Stakeholders
   Widget _buildStakeholdersWidget() {
-    final stakeholders = ["Platform Owners", "Vendors", "Team Leads", "Affiliates"];
+    if (_loadingStakeholders && _stakeholdersList.isEmpty) {
+      return const Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(primaryTeal)),
+        ),
+      );
+    }
+
+    if (_stakeholdersList.isEmpty) {
+      return const Text(
+        "No stakeholders available for the selected site.",
+        style: TextStyle(fontSize: 11, color: textLight),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,11 +689,12 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
         Wrap(
           spacing: 6,
           runSpacing: 6,
-          children: stakeholders.map((s) {
-            final isSelected = _selectedStakeholders.contains(s);
+          children: _stakeholdersList.map((s) {
+            final id = s['id'] as String;
+            final isSelected = _selectedStakeholders.contains(id);
             return FilterChip(
               label: Text(
-                s,
+                s['title'] as String,
                 style: TextStyle(
                   fontSize: 11,
                   color: isSelected ? Colors.white : textLight,
@@ -454,7 +706,7 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
               checkmarkColor: Colors.white,
               backgroundColor: Colors.white,
               side: BorderSide(
-                color: isSelected ? primaryTeal : outlineVariant.withOpacity(0.8),
+                color: isSelected ? primaryTeal : outlineVariant.withValues(alpha: 0.8),
               ),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -462,9 +714,9 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
               onSelected: (val) {
                 setState(() {
                   if (val) {
-                    _selectedStakeholders.add(s);
+                    _selectedStakeholders.add(id);
                   } else {
-                    _selectedStakeholders.remove(s);
+                    _selectedStakeholders.remove(id);
                   }
                 });
               },
@@ -475,7 +727,10 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
-            onPressed: () => _completeStep(2),
+            onPressed: () {
+              _fetchMemberships();
+              _completeStep(2);
+            },
             icon: const Icon(Icons.arrow_downward, size: 14, color: primaryTeal),
             label: const Text(
               "CONTINUE",
@@ -498,20 +753,35 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
 
   // Step 3: Tier Selection
   Widget _buildTierSelectionWidget() {
-    final tiers = [
-      {"name": "Silver", "badge": "Basic", "rate": "5.0% Max", "isFeatured": false},
-      {"name": "Gold", "badge": "Standard", "rate": "12.5% Max", "isFeatured": true},
-    ];
+    if (_loadingMemberships && _membershipsList.isEmpty) {
+      return const Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(primaryTeal)),
+        ),
+      );
+    }
+
+    if (_membershipsList.isEmpty) {
+      return const Text(
+        "Please complete Step 2 first or no memberships were found.",
+        style: TextStyle(fontSize: 11, color: textLight),
+      );
+    }
 
     return Column(
-      children: tiers.map((tier) {
-        final isSelected = _selectedTier == tier["name"];
-        final isFeatured = tier["isFeatured"] as bool;
+      children: _membershipsList.map((tier) {
+        final id = int.tryParse(tier["id"].toString());
+        final isSelected = _selectedMembershipId == id;
+        final name = tier["title"] as String;
+        final price = tier["price"]?.toString() ?? "0";
 
         return GestureDetector(
           onTap: () {
             setState(() {
-              _selectedTier = tier["name"] as String;
+              _selectedMembershipId = id;
+              _selectedTier = name;
             });
             _completeStep(3);
           },
@@ -521,13 +791,13 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: isSelected ? primaryTeal : outlineVariant.withOpacity(0.5),
+                color: isSelected ? primaryTeal : outlineVariant.withValues(alpha: 0.5),
                 width: isSelected ? 1.8 : 1.0,
               ),
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: primaryTeal.withOpacity(0.06),
+                        color: primaryTeal.withValues(alpha: 0.06),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       )
@@ -544,18 +814,18 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.between,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              (tier["badge"] as String).toUpperCase(),
+                              "TIER",
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
-                                color: isFeatured ? Colors.amber[800] : Colors.grey[400],
+                                color: isSelected ? Colors.amber[800] : Colors.grey[400],
                               ),
                             ),
                             Text(
-                              tier["rate"] as String,
+                              "₹ $price",
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
@@ -566,9 +836,9 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          tier["name"] as String,
+                          name,
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: textDark,
                           ),
@@ -576,25 +846,6 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
                       ],
                     ),
                   ),
-                  if (isFeatured)
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: primaryTeal,
-                          borderRadius: BorderRadius.only(
-                            bottomLeft: Radius.circular(6),
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.star,
-                          size: 10,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -606,24 +857,23 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
 
   // Step 4: Product Source
   Widget _buildProductSourceWidget() {
-    final sources = [
-      {
-        "name": "Legacy Inventory Hub",
-        "desc": "Primary warehouse management",
-      },
-      {
-        "name": "Digital Assets Cloud",
-        "desc": "Software and licensing node",
-      }
-    ];
+    if (_sites.isEmpty) {
+      return const Text(
+        "No sites loaded.",
+        style: TextStyle(fontSize: 11, color: textLight),
+      );
+    }
 
     return Column(
-      children: sources.map((source) {
-        final isSelected = _selectedProductSource == source["name"];
+      children: _sites.map((source) {
+        final id = int.tryParse(source["id"].toString());
+        final isSelected = _selectedProductSiteId == id;
+        final name = source["site_name"] as String;
         return GestureDetector(
           onTap: () {
             setState(() {
-              _selectedProductSource = source["name"]!;
+              _selectedProductSiteId = id;
+              _selectedProductSource = name;
             });
             _completeStep(4);
           },
@@ -634,7 +884,7 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                color: isSelected ? primaryTeal : outlineVariant.withOpacity(0.5),
+                color: isSelected ? primaryTeal : outlineVariant.withValues(alpha: 0.5),
               ),
             ),
             child: Row(
@@ -644,7 +894,7 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        source["name"]!,
+                        name,
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -652,20 +902,21 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
                         ),
                       ),
                       Text(
-                        source["desc"]!,
+                        "Internal ID: $id",
                         style: const TextStyle(fontSize: 10, color: textLight),
                       ),
                     ],
                   ),
                 ),
-                Radio<String>(
-                  value: source["name"]!,
-                  groupValue: _selectedProductSource,
+                Radio<int>(
+                  value: id ?? 0,
+                  groupValue: _selectedProductSiteId,
                   activeColor: primaryTeal,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   onChanged: (val) {
                     setState(() {
-                      _selectedProductSource = val!;
+                      _selectedProductSiteId = val;
+                      _selectedProductSource = name;
                     });
                     _completeStep(4);
                   },
@@ -700,6 +951,7 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
             setState(() {
               _selectedDeliverable = d["name"] as String;
             });
+            _fetchProducts();
             _completeStep(5);
           },
           child: Container(
@@ -707,7 +959,7 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
               color: isSelected ? primaryTeal : Colors.white,
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                color: isSelected ? primaryTeal : outlineVariant.withOpacity(0.5),
+                color: isSelected ? primaryTeal : outlineVariant.withValues(alpha: 0.5),
               ),
             ),
             child: Column(
@@ -737,21 +989,25 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
 
   // Step 6: Browse Products
   Widget _buildBrowseProductsWidget() {
-    final products = [
-      {
-        "name": "Core API Module",
-        "price": "\$499.00",
-        "image": "https://lh3.googleusercontent.com/aida-public/AB6AXuBOaEtrlfIS1IfWnI4KByvkQZUA0ToGxAWHcjdRwoA5Fg7HO54TGbsakfDmHPfQX40alF-J83gry5UGPQnMFISymg41FiM8ZnvXdYMNOlGsQttyq2P7qXp5UCXGrKVxsrGzcU7QmxLv2DH33WUoyzMj30gkIEvTjrT-OkwFx6N9E3QEwf4sXzJRcPG9tWGycqqL88NU5HSaTj0bC6YglOJARu87eLaTAzCosSsJIPQfroqKd4laviJ9"
-      },
-      {
-        "name": "Cloud Connector",
-        "price": "\$120.00",
-        "image": "https://lh3.googleusercontent.com/aida-public/AB6AXuBjL-RbW4Jy1sDg8X3EhqAFz1bUVBYbsH_oOoDamZPGYtE7aOZxFFPItlXOanFoPUR4z4qyew_w8RDufUL9JqY_2DJHsue8NPvUTSWuDvWBoT0vskfz_Myx2dO3nyvko_U-6tedyqvM30BpFWJckP_j91Q_cQaufru33FixP8tSQohpaV6n8UdjInxWnUtCLou8cs41Pp6hlqN_OP_LhaA45sWKUkepFHzrDKhOSdSp0XvKB22nSVTa"
-      }
-    ];
+    if (_loadingProducts && _productsList.isEmpty) {
+      return const Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(primaryTeal)),
+        ),
+      );
+    }
 
-    final filteredProducts = products
-        .where((p) => p["name"]!.toLowerCase().contains(_productSearchController.text.toLowerCase()))
+    if (_productsList.isEmpty) {
+      return const Text(
+        "No products available. Please ensure previous steps are completed.",
+        style: TextStyle(fontSize: 11, color: textLight),
+      );
+    }
+
+    final filteredProducts = _productsList
+        .where((p) => (p["title"]?.toString() ?? p["product_title"]?.toString() ?? "").toLowerCase().contains(_productSearchController.text.toLowerCase()))
         .toList();
 
     return Column(
@@ -788,11 +1044,17 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
           mainAxisSpacing: 8,
           childAspectRatio: 0.85,
           children: filteredProducts.map((p) {
-            final isSelected = _selectedProduct == p["name"];
+            final id = int.tryParse(p["id"].toString());
+            final isSelected = _selectedProductId == id;
+            final title = p["title"]?.toString() ?? p["product_title"]?.toString() ?? "";
+            final price = p["price"]?.toString() ?? "0";
+            final image = p["banner"]?.toString() ?? "";
+
             return GestureDetector(
               onTap: () {
                 setState(() {
-                  _selectedProduct = p["name"]!;
+                  _selectedProductId = id;
+                  _selectedProduct = title;
                 });
               },
               child: Container(
@@ -800,7 +1062,7 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: isSelected ? primaryTeal : outlineVariant.withOpacity(0.5),
+                    color: isSelected ? primaryTeal : outlineVariant.withValues(alpha: 0.5),
                     width: isSelected ? 1.5 : 1.0,
                   ),
                 ),
@@ -816,32 +1078,36 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
                             child: Container(
                               color: Colors.grey[100],
                               width: double.infinity,
-                              child: Image.network(
-                                p["image"]!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (c, e, s) => const Center(
-                                  child: Icon(Icons.image, color: textLight, size: 24),
-                                ),
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return const Center(
-                                    child: SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(primaryTeal),
+                              child: image.isNotEmpty
+                                  ? Image.network(
+                                      image,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (c, e, s) => const Center(
+                                        child: Icon(Icons.image, color: textLight, size: 24),
                                       ),
+                                      loadingBuilder: (context, child, loadingProgress) {
+                                        if (loadingProgress == null) return child;
+                                        return const Center(
+                                          child: SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor: AlwaysStoppedAnimation<Color>(primaryTeal),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    )
+                                  : const Center(
+                                      child: Icon(Icons.image, color: textLight, size: 24),
                                     ),
-                                  );
-                                },
-                              ),
                             ),
                           ),
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          (p["name"]!).toUpperCase(),
+                          title.toUpperCase(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -851,7 +1117,7 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
                           ),
                         ),
                         Text(
-                          p["price"]!,
+                          "₹ $price",
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -931,7 +1197,7 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
                       boxShadow: _commissionType == "fixed"
                           ? [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 2,
                                 offset: const Offset(0, 1),
                               )
@@ -961,7 +1227,7 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
                       boxShadow: _commissionType == "slab"
                           ? [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 2,
                                 offset: const Offset(0, 1),
                               )
@@ -992,7 +1258,7 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: outlineVariant.withOpacity(0.5)),
+              border: Border.all(color: outlineVariant.withValues(alpha: 0.5)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1039,7 +1305,7 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
           // Slab Based Table UI
           Container(
             decoration: BoxDecoration(
-              border: Border.all(color: outlineVariant.withOpacity(0.5)),
+              border: Border.all(color: outlineVariant.withValues(alpha: 0.5)),
               borderRadius: BorderRadius.circular(6),
             ),
             clipBehavior: Clip.antiAlias,
@@ -1079,7 +1345,7 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
           decoration: BoxDecoration(
             color: containerTeal,
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: primaryTeal.withOpacity(0.15)),
+            border: Border.all(color: primaryTeal.withValues(alpha: 0.15)),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1156,7 +1422,7 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: outlineVariant.withOpacity(0.5)),
+          border: Border.all(color: outlineVariant.withValues(alpha: 0.5)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1204,6 +1470,14 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
                   _buildSummaryRow("Site:", _selectedSite),
                   const SizedBox(height: 6),
                   _buildSummaryRow("Membership:", "$_selectedTier Tier"),
+                  if (_selectedProductSource.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    _buildSummaryRow("Product Source:", _selectedProductSource),
+                  ],
+                  if (_selectedProduct.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    _buildSummaryRow("Product:", _selectedProduct),
+                  ],
                   const SizedBox(height: 6),
                   _buildSummaryRow(
                     "Commission:",
@@ -1223,7 +1497,7 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
 
   Widget _buildSummaryRow(String label, String value, {bool isCommission = false}) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.between,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
@@ -1255,7 +1529,7 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, -4),
           ),
@@ -1299,75 +1573,80 @@ class _CommissionSettingsScreenState extends State<CommissionSettingsScreen> {
             child: SizedBox(
               height: 40,
               child: ElevatedButton(
-                onPressed: () {
-                  if (!_confirmedCompliance) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Please confirm compliance standards checkbox to proceed."),
-                        backgroundColor: Colors.red,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                    return;
-                  }
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      title: const Text(
-                        "Confirm Commission Setup",
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textDark),
-                      ),
-                      content: const Text(
-                        "Are you sure you want to finalize and submit this commission configuration?",
-                        style: TextStyle(fontSize: 12, color: textLight),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text(
-                            "Cancel",
-                            style: TextStyle(color: textLight, fontSize: 12),
-                          ),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Commission configuration successfully submitted!"),
-                                backgroundColor: Colors.green,
-                                behavior: SnackBarBehavior.floating,
+                onPressed: _submittingCommission
+                    ? null
+                    : () {
+                        if (!_confirmedCompliance) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Please confirm compliance standards checkbox to proceed."),
+                              backgroundColor: Colors.red,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                          return;
+                        }
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            title: const Text(
+                              "Confirm Commission Setup",
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textDark),
+                            ),
+                            content: const Text(
+                              "Are you sure you want to finalize and submit this commission configuration?",
+                              style: TextStyle(fontSize: 12, color: textLight),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text(
+                                  "Cancel",
+                                  style: TextStyle(color: textLight, fontSize: 12),
+                                ),
                               ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryTeal,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  _submitCommissionSetup();
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: primaryTeal,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                ),
+                                child: const Text(
+                                  "Finalize",
+                                  style: TextStyle(color: Colors.white, fontSize: 12),
+                                ),
+                              ),
+                            ],
                           ),
-                          child: const Text(
-                            "Finalize",
-                            style: TextStyle(color: Colors.white, fontSize: 12),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                        );
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryTeal,
                   foregroundColor: Colors.white,
                   elevation: 2,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                 ),
-                child: const Text(
-                  "FINALIZE COMMISSION",
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
+                child: _submittingCommission
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        "FINALIZE COMMISSION",
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
               ),
             ),
           ),

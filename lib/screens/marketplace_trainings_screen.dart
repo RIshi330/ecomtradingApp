@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'training_details_screen.dart';
 import 'create_training_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MarketplaceTrainingsScreen extends StatefulWidget {
   final bool isEmbedded;
@@ -559,31 +560,26 @@ class _MarketplaceTrainingsScreenState extends State<MarketplaceTrainingsScreen>
       ],
     );
 
-    if (widget.isEmbedded) {
-      return Container(
-        color: background,
-        child: content,
-      );
-    }
-
     return Scaffold(
       backgroundColor: background,
-      appBar: AppBar(
-        title: const Text("Marketplace Trainings", style: TextStyle(fontWeight: FontWeight.bold)),
+      appBar: widget.isEmbedded
+          ? null
+          : AppBar(
+              title: const Text("Marketplace Trainings", style: TextStyle(fontWeight: FontWeight.bold)),
+              backgroundColor: primaryTeal,
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+      floatingActionButton: FloatingActionButton(
+        mini: true,
         backgroundColor: primaryTeal,
         foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const CreateTrainingScreen()),
         ).then((_) => _fetchTrainings()),
-        backgroundColor: primaryTeal,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Add Training', style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 6,
+        child: const Icon(Icons.add),
       ),
       body: content,
     );

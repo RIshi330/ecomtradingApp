@@ -1064,19 +1064,30 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                 _buildDrawerItem(36, Icons.percent_rounded, "Commission Settings"),
                 _buildDrawerItem(1, Icons.storefront_rounded, "Manage Vendors"),
                 Theme(
-                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                    leading: const Icon(Icons.task_rounded, color: textLight),
-                    title: const Text("Project Management", style: TextStyle(fontSize: 14, color: textDark)),
-                    childrenPadding: const EdgeInsets.only(left: 12),
-                    children: [
-                      _buildDrawerItem(7, Icons.task_outlined, "Manage Tasks", isSubItem: true),
-                      _buildDrawerItem(27, Icons.people_outline_rounded, "Manage Team", isSubItem: true),
-                      _buildDrawerItem(28, Icons.handshake_outlined, "Explore Partners", isSubItem: true),
-                      _buildDrawerItem(29, Icons.work_outline_rounded, "Explore Talent", isSubItem: true),
-                      _buildDrawerItem(30, Icons.emoji_events_outlined, "Rewards & Recognition", isSubItem: true),
-                    ],
+                  data: Theme.of(context).copyWith(
+                    dividerColor: Colors.transparent,
+                    listTileTheme: const ListTileThemeData(
+                      horizontalTitleGap: 8,
+                      dense: true,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                  child: Container(
+                    margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                    child: ExpansionTile(
+                      shape: const Border(),
+                      collapsedShape: const Border(),
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                      leading: const Icon(Icons.task_rounded, color: textLight, size: 24),
+                      title: const Text("Project Management", style: TextStyle(fontSize: 14, color: textDark)),
+                      children: [
+                        _buildDrawerItem(7, Icons.task_outlined, "Manage Tasks", isSubItem: true),
+                        _buildDrawerItem(27, Icons.people_outline_rounded, "Manage Team", isSubItem: true),
+                        _buildDrawerItem(28, Icons.handshake_outlined, "Explore Partners", isSubItem: true),
+                        _buildDrawerItem(29, Icons.work_outline_rounded, "Explore Talent", isSubItem: true),
+                        _buildDrawerItem(30, Icons.emoji_events_outlined, "Rewards & Recognition", isSubItem: true),
+                      ],
+                    ),
                   ),
                 ),
                 _buildDrawerItem(11, Icons.shopping_bag_rounded, "Order Management"),
@@ -1088,16 +1099,27 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                 _buildDrawerItem(3, Icons.work_outline_rounded, "Jobs Board", isSubItem: true),
                 _buildDrawerItem(4, Icons.event_rounded, "Events & Charity", isSubItem: true),
                 Theme(
-                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                    leading: const Icon(Icons.volunteer_activism_rounded, color: textLight),
-                    title: const Text("Support a Cause", style: TextStyle(fontSize: 14, color: textDark)),
-                    childrenPadding: const EdgeInsets.only(left: 12),
-                    children: [
-                      _buildDrawerItem(5, Icons.explore_outlined, "Explore Charity Projects", isSubItem: true),
-                      _buildDrawerItem(31, Icons.storefront_outlined, "Charity Marketplace", isSubItem: true),
-                    ],
+                  data: Theme.of(context).copyWith(
+                    dividerColor: Colors.transparent,
+                    listTileTheme: const ListTileThemeData(
+                      horizontalTitleGap: 8,
+                      dense: true,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                  child: Container(
+                    margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                    child: ExpansionTile(
+                      shape: const Border(),
+                      collapsedShape: const Border(),
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                      leading: const Icon(Icons.volunteer_activism_rounded, color: textLight, size: 24),
+                      title: const Text("Support a Cause", style: TextStyle(fontSize: 14, color: textDark)),
+                      children: [
+                        _buildDrawerItem(5, Icons.explore_outlined, "Explore Charity Projects", isSubItem: true),
+                        _buildDrawerItem(31, Icons.storefront_outlined, "Charity Marketplace", isSubItem: true),
+                      ],
+                    ),
                   ),
                 ),
                 _buildDrawerItem(6, Icons.layers_outlined, "Packages Builder", isSubItem: true),
@@ -1109,48 +1131,81 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                 const Divider(height: 16),
                 _buildDrawerHeaderLabel("OPPORTUNITIES"),
                 Theme(
-                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                    leading: const Icon(Icons.business_center_rounded, color: textLight),
-                    title: const Text("Opportunity Marketplace", style: TextStyle(fontSize: 14, color: textDark)),
-                    childrenPadding: const EdgeInsets.only(left: 12),
-                    children: [
-                      _buildDrawerItem(15, Icons.storefront_rounded, "Marketplace", isSubItem: true),
-                      _buildDrawerItem(16, Icons.list_alt_rounded, "My Listings", isSubItem: true),
-                      _buildDrawerItem(17, Icons.assignment_turned_in_rounded, "My Submissions", isSubItem: true),
-                    ],
+                  data: Theme.of(context).copyWith(
+                    dividerColor: Colors.transparent,
+                    listTileTheme: const ListTileThemeData(
+                      horizontalTitleGap: 8,
+                      dense: true,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                  child: Container(
+                    margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                    child: ExpansionTile(
+                      shape: const Border(),
+                      collapsedShape: const Border(),
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                      leading: const Icon(Icons.business_center_rounded, color: textLight, size: 24),
+                      title: const Text("Opportunity Marketplace", style: TextStyle(fontSize: 14, color: textDark)),
+                      children: [
+                        _buildDrawerItem(15, Icons.storefront_rounded, "Marketplace", isSubItem: true),
+                        _buildDrawerItem(16, Icons.list_alt_rounded, "My Listings", isSubItem: true),
+                        _buildDrawerItem(17, Icons.assignment_turned_in_rounded, "My Submissions", isSubItem: true),
+                      ],
+                    ),
                   ),
                 ),
                 Theme(
-                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                    leading: const Icon(Icons.swap_horiz_rounded, color: textLight),
-                    title: const Text("Trading Opportunities", style: TextStyle(fontSize: 14, color: textDark)),
-                    childrenPadding: const EdgeInsets.only(left: 12),
-                    children: [
-                      _buildDrawerItem(18, Icons.explore_rounded, "Explore Marketplace", isSubItem: true),
-                      _buildDrawerItem(19, Icons.bookmark_added_rounded, "Selected Items", isSubItem: true),
-                      _buildDrawerItem(20, Icons.receipt_long_rounded, "Affiliate Orders", isSubItem: true),
-                    ],
+                  data: Theme.of(context).copyWith(
+                    dividerColor: Colors.transparent,
+                    listTileTheme: const ListTileThemeData(
+                      horizontalTitleGap: 8,
+                      dense: true,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                  child: Container(
+                    margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                    child: ExpansionTile(
+                      shape: const Border(),
+                      collapsedShape: const Border(),
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                      leading: const Icon(Icons.swap_horiz_rounded, color: textLight, size: 24),
+                      title: const Text("Trading Opportunities", style: TextStyle(fontSize: 14, color: textDark)),
+                      children: [
+                        _buildDrawerItem(18, Icons.explore_rounded, "Explore Marketplace", isSubItem: true),
+                        _buildDrawerItem(19, Icons.bookmark_added_rounded, "Selected Items", isSubItem: true),
+                        _buildDrawerItem(20, Icons.receipt_long_rounded, "Affiliate Orders", isSubItem: true),
+                      ],
+                    ),
                   ),
                 ),
 
                 const Divider(height: 16),
                 _buildDrawerHeaderLabel("SKILLS & LEARNING"),
                 Theme(
-                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                    leading: const Icon(Icons.school_rounded, color: textLight),
-                    title: const Text("Upgrade your Skills", style: TextStyle(fontSize: 14, color: textDark)),
-                    childrenPadding: const EdgeInsets.only(left: 12),
-                    children: [
-                      _buildDrawerItem(33, Icons.storefront_outlined, "Marketplace Training", isSubItem: true),
-                      _buildDrawerItem(34, Icons.collections_bookmark_rounded, "Enrolled Trainings", isSubItem: true),
-                      _buildDrawerItem(35, Icons.psychology_outlined, "MOM Training", isSubItem: true),
-                    ],
+                  data: Theme.of(context).copyWith(
+                    dividerColor: Colors.transparent,
+                    listTileTheme: const ListTileThemeData(
+                      horizontalTitleGap: 8,
+                      dense: true,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                  child: Container(
+                    margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                    child: ExpansionTile(
+                      shape: const Border(),
+                      collapsedShape: const Border(),
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                      leading: const Icon(Icons.school_rounded, color: textLight, size: 24),
+                      title: const Text("Upgrade your Skills", style: TextStyle(fontSize: 14, color: textDark)),
+                      children: [
+                        _buildDrawerItem(33, Icons.storefront_outlined, "Marketplace Training", isSubItem: true),
+                        _buildDrawerItem(34, Icons.collections_bookmark_rounded, "Enrolled Trainings", isSubItem: true),
+                        _buildDrawerItem(35, Icons.psychology_outlined, "MOM Training", isSubItem: true),
+                      ],
+                    ),
                   ),
                 ),
 
@@ -1161,20 +1216,31 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
 
                 const Divider(height: 16),
                 Theme(
-                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                    leading: const Icon(Icons.settings_rounded, color: textLight),
-                    title: const Text("Platform Settings", style: TextStyle(fontSize: 14, color: textDark)),
-                    childrenPadding: const EdgeInsets.only(left: 12),
-                    children: [
-                      _buildDrawerItem(22, Icons.settings_rounded, "Site Setting", isSubItem: true),
-                      _buildDrawerItem(23, Icons.category_rounded, "Category Settings", isSubItem: true),
-                      _buildDrawerItem(24, Icons.manage_accounts_rounded, "Item Setting", isSubItem: true),
-                      _buildDrawerItem(21, Icons.settings_applications_rounded, "Platform Setting", isSubItem: true),
-                      _buildDrawerItem(9, Icons.payment_rounded, "Payment Settings", isSubItem: true),
-                      _buildDrawerItem(32, Icons.build_circle_rounded, "Membership Builder", isSubItem: true),
-                    ],
+                  data: Theme.of(context).copyWith(
+                    dividerColor: Colors.transparent,
+                    listTileTheme: const ListTileThemeData(
+                      horizontalTitleGap: 8,
+                      dense: true,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                  child: Container(
+                    margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                    child: ExpansionTile(
+                      shape: const Border(),
+                      collapsedShape: const Border(),
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                      leading: const Icon(Icons.settings_rounded, color: textLight, size: 24),
+                      title: const Text("Platform Settings", style: TextStyle(fontSize: 14, color: textDark)),
+                      children: [
+                        _buildDrawerItem(22, Icons.settings_rounded, "Site Setting", isSubItem: true),
+                        _buildDrawerItem(23, Icons.category_rounded, "Category Settings", isSubItem: true),
+                        _buildDrawerItem(24, Icons.manage_accounts_rounded, "Item Setting", isSubItem: true),
+                        _buildDrawerItem(21, Icons.settings_applications_rounded, "Platform Setting", isSubItem: true),
+                        _buildDrawerItem(9, Icons.payment_rounded, "Payment Settings", isSubItem: true),
+                        _buildDrawerItem(32, Icons.build_circle_rounded, "Membership Builder", isSubItem: true),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -1211,7 +1277,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
   Widget _buildDrawerItem(int index, IconData icon, String title, {bool isSubItem = false}) {
     final bool isSelected = _currentIndex == index;
     return Container(
-      margin: EdgeInsets.only(left: isSubItem ? 16 : 8, right: 8, top: 2, bottom: 2),
+      margin: EdgeInsets.only(left: isSubItem ? 16 : 8, right: 8, top: 4, bottom: 4),
       decoration: BoxDecoration(
         color: isSelected ? selectedBg : Colors.transparent,
         borderRadius: BorderRadius.circular(10),
@@ -1219,7 +1285,9 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       child: ListTile(
         dense: true,
         visualDensity: VisualDensity.compact,
-        leading: Icon(icon, color: isSelected ? primaryTeal : textLight, size: isSubItem ? 20 : 22),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+        horizontalTitleGap: 8,
+        leading: Icon(icon, color: isSelected ? primaryTeal : textLight, size: isSubItem ? 20 : 24),
         title: Text(
           title,
           style: TextStyle(

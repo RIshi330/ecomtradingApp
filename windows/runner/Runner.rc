@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.trading.ecommerce.admin" "\0"
-            VALUE "FileDescription", "trading_ecommerce_admin" "\0"
+            VALUE "FileDescription", "CCBUL Master App" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "trading_ecommerce_admin" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.trading.ecommerce.admin. All rights reserved." "\0"
             VALUE "OriginalFilename", "trading_ecommerce_admin.exe" "\0"
-            VALUE "ProductName", "trading_ecommerce_admin" "\0"
+            VALUE "ProductName", "CCBUL Master App" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
