@@ -25,7 +25,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     {
       'title': 'Future of Design 2024',
       'category': 'DESIGN',
-      'price': '\$199.00',
+      'price': '₹199.00',
       'date': 'Nov 12',
       'location': 'San Francisco, CA',
       'imageUrl': 'https://lh3.googleusercontent.com/aida-public/AB6AXuBvWSqjdBv4GtYU6hL74Sf0UqdKO8QUlzhZWEsPtTqgr6Sm_XJJlUzzMOk8L_4JE84NScRp-v1Bj8SQgE3FUKtaJo9HAnIh7COV_-wut9LJOqGjPlA4-Gw5uNv4R-JgcorJvSkAsdA1gBXVh8Gj02bpEkzVfYid5-xWo2KMeSAzXxxj8nd5tZCFmcai6EWHnLarV3CiSWT6fd_D1oNP8NCn-524uRDO6_gTpI_cXLjCRsLROyTDtnlbMJZHCt76inRDtVUsAq7-3Jo',
@@ -33,7 +33,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     {
       'title': 'Data Science Workshop',
       'category': 'SCIENCE',
-      'price': '\$89.00',
+      'price': '₹89.00',
       'date': 'Nov 18',
       'location': 'Online',
       'imageUrl': 'https://lh3.googleusercontent.com/aida-public/AB6AXuBsaKkkyuutP5N79ueU5NjQ2e-redxsMRmEj7XiuetFBV4lbqZ7iBOLyoQrenUIMXBGFjun1Fc5Y2L6NR4ByztifvqGXRvGN40HiHiLKUCLuinw8Vkz05qb7a1hwQR2HhzI1pgH2E1acmNIN06mbkWH1Xb3jYn7ZCYCG0-f7ATobA4QWQF5fcIGk7Z9a1q0rtXvn4HdJoZmaLjMkOB6x7IIOh357ebaE5IQxWkh67Qq4jfCvA08P-PnobgtgQSm5VqggQsWNQ3prj4',
@@ -100,7 +100,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              isFree ? "FREE" : "\$${price.toStringAsFixed(2)}",
+                              isFree ? "FREE" : "₹${price.toStringAsFixed(2)}",
                               style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 15),
                             ),
                           ],
@@ -143,7 +143,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: Text(
-                      isFree ? "Confirm Reservation" : "Checkout (\$${totalPrice.toStringAsFixed(2)})",
+                      isFree ? "Confirm Reservation" : "Checkout (₹${totalPrice.toStringAsFixed(2)})",
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -182,7 +182,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text("Total Amount:", style: TextStyle(color: AppTheme.textSecondary)),
-                        Text("\$${totalPrice.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary, fontSize: 16)),
+                        Text("₹${totalPrice.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary, fontSize: 16)),
                       ],
                     ),
                   ),

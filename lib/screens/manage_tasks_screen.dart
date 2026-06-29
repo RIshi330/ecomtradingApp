@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../Database/Database.dart';
+import '../widgets/stat_card.dart';
 import 'task_submissions_screen.dart';
 
 class ManageTasksScreen extends StatefulWidget {
@@ -204,106 +205,118 @@ class _ManageTasksScreenState extends State<ManageTasksScreen> {
       priorityColor = Colors.blue;
     }
 
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => TaskSubmissionsScreen(
-                taskId: task['id']?.toString() ?? '',
-                taskTitle: title,
-              ),
-            ),
-          ).then((_) => _fetchData());
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: priorityColor.withAlpha(25),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      priority,
-                      style: TextStyle(
-                        color: priorityColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      const Icon(Icons.calendar_month, size: 14, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Text(
-                        deadline,
-                        style: const TextStyle(color: Colors.grey, fontSize: 12),
-                      ),
-                    ],
-                  )
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                desc,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Progress",
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                  ),
-                  Text(
-                    "$progress%",
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF006565), fontSize: 12),
-                  )
-                ],
-              ),
-              const SizedBox(height: 6),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: progress / 100.0,
-                  backgroundColor: const Color(0xFF006565).withOpacity(0.1),
-                  color: const Color(0xFF006565),
-                  minHeight: 6,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: HoverableCard(
+        borderRadius: 16.0,
+        borderColor: const Color(0xff006565),
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => TaskSubmissionsScreen(
+                  taskId: task['id']?.toString() ?? '',
+                  taskTitle: title,
                 ),
               ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Click to View Submissions",
-                    style: TextStyle(color: const Color(0xFF006565).withOpacity(0.6), fontSize: 12, fontStyle: FontStyle.italic),
+            ).then((_) => _fetchData());
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: priorityColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        priority,
+                        style: TextStyle(
+                          color: priorityColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 9,
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        const Icon(Icons.calendar_month_outlined, size: 12, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Text(
+                          deadline,
+                          style: const TextStyle(color: Colors.grey, fontSize: 10),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold, 
+                    fontSize: 14,
+                    color: Color(0xFF1C1B1B),
                   ),
-                  const Icon(Icons.arrow_forward_ios, size: 12, color: Color(0xFF006565)),
-                ],
-              ),
-            ],
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  desc,
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Progress",
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 10),
+                    ),
+                    Text(
+                      "$progress%",
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF006565), fontSize: 10),
+                    )
+                  ],
+                ),
+                const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: LinearProgressIndicator(
+                    value: progress / 100.0,
+                    backgroundColor: const Color(0xFF006565).withOpacity(0.1),
+                    color: const Color(0xFF006565),
+                    minHeight: 4,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Click to View Submissions",
+                      style: TextStyle(
+                        color: const Color(0xFF006565).withOpacity(0.8),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios_rounded, size: 10, color: Color(0xFF006565)),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -172,23 +172,23 @@ class _HomeScreenState extends State<HomeScreen> {
                     tag: "B2B Request",
                     title: "Bulk Supply: Eco-friendly Packaging",
                     desc: "Inquiry for 5000+ custom branded units for a startup in Berlin.",
-                    value: "\$12,000 Est.",
-                    color: Color(0xFF4F378A),
+                    value: "₹12,000 Est.",
+                    color: const Color(0xFF4F378A),
                   ),
-                  SizedBox(width: 16),
-                  OpportunityCard(
+                  const SizedBox(width: 16),
+                  const OpportunityCard(
                     tag: "Partnership",
                     title: "Affiliate Program Invite",
                     desc: "GreenLife Retailer wants to list your products in marketplace.",
                     value: "20% Comm.",
                     color: Color(0xFF625B71),
                   ),
-                  SizedBox(width: 16),
-                  OpportunityCard(
+                  const SizedBox(width: 16),
+                  const OpportunityCard(
                     tag: "Lead",
                     title: "Wholesale Quote Required",
                     desc: "Corporate gifting company interested in luxury leather series.",
-                    value: "\$4,500 Est.",
+                    value: "₹4,500 Est.",
                     color: Color(0xFF7D5260),
                   ),
                 ],
@@ -334,7 +334,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: const [
                   OrderTile(
                     orderId: "#ORD-99210",
-                    amount: "\$124.00",
+                    amount: "₹124.00",
                     items: "2 items",
                     status: "Out for Delivery",
                     icon: Icons.local_shipping,
@@ -343,7 +343,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Divider(height: 1),
                   OrderTile(
                     orderId: "#ORD-99208",
-                    amount: "\$452.10",
+                    amount: "₹452.10",
                     items: "5 items",
                     status: "Processing",
                     icon: Icons.sync_alt,
@@ -428,7 +428,7 @@ class SalesCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "\$4,280.50",
+                "₹4,280.50",
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 30,
@@ -606,7 +606,7 @@ class MembershipDialog extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    "\$149.99 / Year",
+                    "₹149.99 / Year",
                     style: TextStyle(
                       fontSize: 26,
                       color: Color(0xFF4F378A),

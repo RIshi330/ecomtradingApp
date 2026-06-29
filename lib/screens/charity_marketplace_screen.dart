@@ -32,7 +32,6 @@ class _CharityMarketplaceScreenState extends State<CharityMarketplaceScreen> {
     try {
       final response = await Database().getJsonData({
         'action': 'get_charities',
-        'type': 'goods',
       }, endpoint: 'new_apis/donation_shop_api.php');
 
       if (response['success'] == true && response['data'] != null) {

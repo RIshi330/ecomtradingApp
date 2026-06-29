@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 
 class PlatformSettingsScreen extends StatefulWidget {
@@ -198,7 +199,7 @@ class _PlatformSettingsScreenState
       child: Theme(
         data: tabTheme,
         child: Scaffold(
-          backgroundColor: const Color(0xffFCF9F8),
+          backgroundColor: const Color(0xfff5f7fa),
           appBar: widget.isEmbedded
               ? PreferredSize(
                   preferredSize: const Size.fromHeight(48),
@@ -316,15 +317,11 @@ class _PlatformSettingsScreenState
           const SizedBox(height: 12),
           const Divider(),
           const SizedBox(height: 12),
-          Card(
-            color: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.grey.shade200),
-            ),
+          HoverableCard(
+            borderRadius: 16.0,
+            borderColor: const Color(0xff006565),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -338,48 +335,92 @@ class _PlatformSettingsScreenState
                       Text(
                         "Automation Controls",
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  SwitchListTile(
-                    value: autoUserApproval,
-                    activeColor: const Color(0xff006565),
-                    title: const Text(
-                      "User Account Auto Approval",
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                    ),
-                    subtitle: const Text(
-                      "Automatically approve new users based on trust score.",
-                      style: TextStyle(fontSize: 11),
-                    ),
-                    onChanged: (value) {
-                      setState(() {
-                        autoUserApproval = value;
-                      });
-                    },
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "User Account Auto Approval",
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1C1B1B)),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Automatically approve new users based on trust score.",
+                              style: TextStyle(fontSize: 11, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Switch(
+                        value: autoUserApproval,
+                        activeColor: const Color(0xff006565),
+                        activeTrackColor: const Color(0xff006565).withOpacity(0.3),
+                        inactiveThumbColor: Colors.black,
+                        inactiveTrackColor: Colors.transparent,
+                        trackOutlineColor: WidgetStateProperty.resolveWith<Color?>((states) {
+                          if (states.contains(WidgetState.selected)) {
+                            return null;
+                          }
+                          return Colors.black;
+                        }),
+                        onChanged: (value) {
+                          setState(() {
+                            autoUserApproval = value;
+                          });
+                        },
+                      ),
+                    ],
                   ),
-                  const Divider(),
-                  SwitchListTile(
-                    value: autoCommunityApproval,
-                    activeColor: const Color(0xff006565),
-                    title: const Text(
-                      "Community Status Auto Approval",
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                    ),
-                    subtitle: const Text(
-                      "Instant verification for trusted partners.",
-                      style: TextStyle(fontSize: 11),
-                    ),
-                    onChanged: (value) {
-                      setState(() {
-                        autoCommunityApproval = value;
-                      });
-                      _updateAutoApproval(value);
-                    },
+                  const Divider(height: 24, thickness: 1, color: Color(0xFFE6E6F0)),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Community Status Auto Approval",
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1C1B1B)),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Instant verification for trusted partners.",
+                              style: TextStyle(fontSize: 11, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Switch(
+                        value: autoCommunityApproval,
+                        activeColor: const Color(0xff006565),
+                        activeTrackColor: const Color(0xff006565).withOpacity(0.3),
+                        inactiveThumbColor: Colors.black,
+                        inactiveTrackColor: Colors.transparent,
+                        trackOutlineColor: WidgetStateProperty.resolveWith<Color?>((states) {
+                          if (states.contains(WidgetState.selected)) {
+                            return null;
+                          }
+                          return Colors.black;
+                        }),
+                        onChanged: (value) {
+                          setState(() {
+                            autoCommunityApproval = value;
+                          });
+                          _updateAutoApproval(value);
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -683,21 +724,56 @@ class _PlatformSettingsScreenState
   }
 
   Widget _buildSettingsSwitchTile(String title, String subtitle, bool isEnabled, ValueChanged<bool> onChanged) {
-    return Card(
-      color: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      child: SwitchListTile(
-        activeTrackColor: const Color(0xff006565).withAlpha(120),
-        activeColor: const Color(0xff006565),
-        value: isEnabled,
-        onChanged: onChanged,
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-        subtitle: Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+      child: HoverableCard(
+        borderRadius: 16.0,
+        borderColor: const Color(0xff006565),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: Color(0xFF1C1B1B),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Switch(
+                value: isEnabled,
+                onChanged: onChanged,
+                activeColor: const Color(0xff006565),
+                activeTrackColor: const Color(0xff006565).withOpacity(0.3),
+                inactiveThumbColor: Colors.black,
+                inactiveTrackColor: Colors.transparent,
+                trackOutlineColor: WidgetStateProperty.resolveWith<Color?>((states) {
+                  if (states.contains(WidgetState.selected)) {
+                    return null;
+                  }
+                  return Colors.black;
+                }),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -377,6 +377,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                                           ),
                                         ),
                                         PopupMenuButton<String>(
+                                          padding: EdgeInsets.zero,
                                           icon: const Icon(Icons.more_vert, color: AppTheme.textSecondary),
                                           onSelected: (action) {
                                             final eId = event['event_id']?.toString() ?? '';
@@ -422,7 +423,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 4),
+                                    const SizedBox(height: 2),
                                     Text(
                                       event['description'] ?? 'No description',
                                       maxLines: 2,

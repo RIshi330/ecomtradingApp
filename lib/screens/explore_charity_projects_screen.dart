@@ -286,7 +286,7 @@ class _ExploreCharityProjectsScreenState
                           crossAxisCount: 2,
                           crossAxisSpacing: 16,
                           mainAxisSpacing: 16,
-                          childAspectRatio: 0.65,
+                          childAspectRatio: 0.75,
                         ),
                         itemCount: _filteredProjects.length,
                         itemBuilder: (context, idx) {
@@ -410,7 +410,7 @@ class _ExploreCharityProjectsScreenState
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
                                           ),
-                                          const Spacer(),
+                                          const SizedBox(height: 8),
                                           // Progress
                                           Row(
                                             mainAxisAlignment:

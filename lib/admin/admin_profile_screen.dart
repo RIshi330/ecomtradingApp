@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 
 class AdminProfileScreen extends StatefulWidget {
   const AdminProfileScreen({super.key});
@@ -307,17 +308,17 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
                 mainAxisSpacing: 10,
                 childAspectRatio: 1.1,
                 children: const [
-                  ProfileStatCard(
+                  StatCard(
                     title: "Communities",
                     value: "24",
                     icon: Icons.hub,
                   ),
-                  ProfileStatCard(
+                  StatCard(
                     title: "Active Users",
                     value: "12.8K",
                     icon: Icons.group,
                   ),
-                  ProfileStatCard(
+                  StatCard(
                     title: "Score",
                     value: "98.4%",
                     icon: Icons.speed,
@@ -480,46 +481,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
   }
 }
 
-class ProfileStatCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
 
-  const ProfileStatCard({
-    super.key,
-    required this.title,
-    required this.value,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: const Color(0xff006565)),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          ),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class InfoTile extends StatelessWidget {
   final String label;

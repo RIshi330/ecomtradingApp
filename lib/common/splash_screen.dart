@@ -97,7 +97,7 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
       if (isAdmin) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const CommunityAdminDashboard()),
+          MaterialPageRoute(builder: (_) => const BusinessUserDashboard()),
         );
         return;
       }
@@ -118,7 +118,7 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
           if (vendorType != '500' && vendorType != '1') {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => const BusinessUserDashboard()),
+              MaterialPageRoute(builder: (_) => const CommunityAdminDashboard()),
             );
             return;
           }

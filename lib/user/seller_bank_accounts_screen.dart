@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-// ⚠️ Update these imports to match your actual project structure
+import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 import '../core/theme/app_theme.dart';
 import '../Database/Database.dart';
 
@@ -38,15 +38,15 @@ class BankAccount {
     return BankAccount(
       id: json['id']?.toString(),
       bankName: json['bank_name'] ?? '',
-      accountHolder: json['account_name'] ?? '',
+      accountHolder: json['account_name'] ?? json['account_holder'] ?? '',
       accountNumber: json['account_number'] ?? '',
       ifsc: json['ifsc'] ?? '',
       branch: json['branch_name'] ?? '',
       city: json['city'] ?? '',
       state: json['state'] ?? '',
-      micr: json['MICR_code'] ?? '',
+      micr: json['MICR_code'] ?? json['micr'] ?? '',
       accountType: json['account_type'] ?? 'Savings',
-      isDefault: json['default'] == "1",
+      isDefault: json['default'] == "1" || json['is_default'] == true,
     );
   }
 }
@@ -84,14 +84,14 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
       
       final response = await _db.getData({
         'action': 'fetch_all',
-      }, endpoint: 'new_apis/bank_details_API 1.php');
+      });
 
       debugPrint(" Bank accounts API response: ${response['success']}");
       
       if ((response['success'] == true || response['status'] == 200) && response['data'] != null) {
         debugPrint(" Bank accounts fetched successfully");
         final List data = response['data'];
-        return data.map((e) => BankAccount.fromMap(e)).toList();
+        return data.map((e) => BankAccount.fromMap(Map<String, dynamic>.from(e))).toList();
       } else {
         debugPrint(" Failed to fetch bank accounts: ${response['message']}");
         return null;
@@ -110,6 +110,7 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
     required String branchName,
     required String city,
     required String state,
+    String? branchCode,
     String? micr,
     String? accountType,
     bool isApiData = false,
@@ -117,16 +118,26 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
     try {
       debugPrint("🔄 Adding bank account...");
       
-      final response = await _db.getData({
-        'User_Data': 'true',
-        'enter_acc2': accountNumber,
-        'name2': accountHolder,
-        'ifsc_code2': ifsc,
-        'bank_name2': bankName,
-        'branch_name2': branchName,
-        'acc_type2': accountType ?? 'Savings',
-      }, endpoint: 'new_apis/bank_details_API 1.php');
+      final Map<String, dynamic> requestData = {
+        'action': 'add_bank',
+        'is_api': isApiData,
+        'bank_data': {
+          'account_holder': accountHolder,
+          'account_number': accountNumber,
+          'ifsc': ifsc,
+          'bank_name': bankName,
+          'branch_name': branchName,
+          'branch_code': branchCode ?? '',
+          'city': city,
+          'state': state,
+          'micr': micr ?? '',
+          'account_type': accountType ?? 'SAVINGS',
+        }
+      };
 
+      final response = await _db.getData(requestData);
+
+      debugPrint("📡 Add bank account response: ${response['success']}");
       return response['success'] == true || response['status'] == 200;
     } catch (e) {
       debugPrint("💥 Error adding bank account: $e");
@@ -152,16 +163,24 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
       debugPrint("🔄 Updating bank account...");
       
       final response = await _db.getData({
-        'User_Data': 'true',
-        'edit_bank_id': id,
-        'enter_acc2': accountNumber,
-        'name2': accountHolder,
-        'ifsc_code2': ifsc,
-        'bank_name2': bankName,
-        'branch_name2': branchName,
-        'acc_type2': accountType ?? 'Savings',
-      }, endpoint: 'new_apis/bank_details_API 1.php');
+        'action': 'edit_bank',
+        'is_api': isApiData,
+        'bank_id': id,
+        'bank_data': {
+          'account_holder': accountHolder,
+          'account_number': accountNumber,
+          'ifsc': ifsc,
+          'bank_name': bankName,
+          'branch_name': branchName,
+          'branch_code': branchCode ?? '',
+          'city': city,
+          'state': state,
+          'micr': micr ?? '',
+          'account_type': accountType ?? 'SAVINGS',
+        }
+      });
 
+      debugPrint("📡 Update bank account response: ${response['success']}");
       return response['success'] == true || response['status'] == 200;
     } catch (e) {
       debugPrint("💥 Error updating bank account: $e");
@@ -174,9 +193,11 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
       debugPrint("🔄 Deleting bank account...");
       
       final response = await _db.getData({
-        'delete': id,
-      }, endpoint: 'new_apis/bank_details_API 1.php');
+        'action': 'delete_bank',
+        'bank_id': id,
+      });
 
+      debugPrint("📡 Delete bank account response: ${response['success']}");
       return response['success'] == true || response['status'] == 200;
     } catch (e) {
       debugPrint("💥 Error deleting bank account: $e");
@@ -189,10 +210,12 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
       debugPrint("🔄 Setting default bank account...");
       
       final response = await _db.getData({
-        'default': id,
+        'action': 'set_default',
+        'bank_id': id,
         'status': isDefault ? '1' : '0',
-      }, endpoint: 'new_apis/bank_details_API 1.php');
+      });
 
+      debugPrint("📡 Set default bank account response: ${response['success']}");
       return response['success'] == true || response['status'] == 200;
     } catch (e) {
       debugPrint("💥 Error setting default bank account: $e");
@@ -205,14 +228,17 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
       debugPrint("🔄 Looking up IFSC code: $ifsc");
       
       final response = await _db.getData({
-        'IFSC': ifsc,
-      }, endpoint: 'new_apis/bank_details_API 1.php');
+        'action': 'ifsc_lookup',
+        'ifsc': ifsc,
+      });
 
-      if (response['success'] == true && response['data'] != null) {
+      debugPrint("📡 IFSC lookup response: ${response['success']}");
+      
+      if ((response['success'] == true || response['status'] == 200) && response['data'] != null) {
+        debugPrint("✅ IFSC data fetched successfully");
         return Map<String, dynamic>.from(response['data']);
-      } else if (response.containsKey('bank') || response.containsKey('bank_name')) {
-        return Map<String, dynamic>.from(response);
       } else {
+        debugPrint("❌ Failed to lookup IFSC: ${response['message']}");
         return null;
       }
     } catch (e) {
@@ -249,6 +275,7 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
     }
   }
 
+  /// 🔹 DELETE ACCOUNT
   Future<void> _deleteAccount(String accountId) async {
     bool? confirm = await showDialog(
       context: context,
@@ -273,18 +300,22 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
     _showLoader();
 
     try {
-      final success = await deleteBankAccount(accountId);
+      final response = await _db.getData({
+        "module": "bank",
+        "submodule": "remove_account",
+        "id": accountId,
+      });
 
       if (mounted) Navigator.pop(context); // Close Loader
 
-      if (success) {
+      if (response['status'] == 200 || response['success'] == true) {
         _showSuccess("Account deleted successfully");
         setState(() {
           accounts.removeWhere((acc) => acc.id == accountId);
         });
         _fetchAccounts();
       } else {
-        _showError("Failed to delete account");
+        _showError(response['message'] ?? "Failed to delete account");
       }
     } catch (e) {
       if (mounted) Navigator.pop(context);
@@ -292,6 +323,7 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
     }
   }
 
+  /// 🔹 CHANGE DEFAULT
   Future<void> _setDefaultAccount(String accountId) async {
     _showLoader();
 
@@ -347,10 +379,14 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("My Bank Details"),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
-        titleTextStyle: const TextStyle(color: Colors.white),
+        title: const Text(
+          "My Bank Details",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF1C1B1B),
+        elevation: 0.5,
+        centerTitle: true,
       ),
       backgroundColor: const Color(0xfff5f7fa),
       body: isLoading
@@ -360,10 +396,10 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
               child: accounts.isEmpty
                   ? _buildEmptyState()
                   : ListView(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(16),
                       children: [
                         ...accounts.map(_bankCard).toList(),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
                         _buildAddButton(),
                       ],
                     ),
@@ -372,15 +408,22 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
   }
 
   Widget _buildAddButton() {
-    return ElevatedButton.icon(
-      icon: const Icon(Icons.add),
-      label: const Text("Add New Bank Account"),
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        icon: const Icon(Icons.add),
+        label: const Text("Add New Bank Account"),
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          backgroundColor: AppTheme.primaryColor,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        onPressed: () => _openAddBankModal(),
       ),
-      onPressed: _openAddBankModal,
     );
   }
 
@@ -409,101 +452,145 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
   ========================================================= */
 
   Widget _bankCard(BankAccount acc) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    acc.bankName.isNotEmpty ? acc.bankName : "Bank Account",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (acc.isDefault) ...[
-                  const SizedBox(width: 8),
-                  const Icon(Icons.verified, size: 20, color: Colors.green),
-                ],
-                const SizedBox(width: 4),
-                // Actions Menu
-                PopupMenuButton(
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'edit',
-                      child: Text("Edit"),
-                    ),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Text("Delete", style: TextStyle(color: Colors.red)),
-                    ),
-                  ],
-                  onSelected: (val) {
-                    if (val == 'edit') _openAddBankModal(edit: acc);
-                    if (val == 'delete') {
-                      if (acc.id != null) {
-                        _deleteAccount(acc.id!);
-                      } else {
-                        _showError("Cannot delete account without ID");
-                      }
-                    }
-                  },
-                )
-              ],
-            ),
-            const Divider(),
-            const SizedBox(height: 8),
-            _infoRow("Holder Name", acc.accountHolder),
-            _infoRow("Account Type", acc.accountType),
-            _infoRow("Account No.", acc.accountNumber),
-            _infoRow("IFSC Code", acc.ifsc),
-            if (acc.branch.isNotEmpty) _infoRow("Branch", acc.branch),
-            
-            const SizedBox(height: 12),
-            Container(
-              decoration: BoxDecoration(
-                color: acc.isDefault
-                    ? Colors.green.withValues(alpha: 0.1)
-                    : Colors.grey.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+    final bool isDefault = acc.isDefault;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: HoverableCard(
+        borderRadius: 20.0,
+        borderColor: isDefault ? Colors.green : AppTheme.primaryColor,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(
+                color: isDefault ? Colors.green : AppTheme.primaryColor.withOpacity(0.3),
+                width: 5,
               ),
-              child: Row(
+            ),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Switch(
-                    value: acc.isDefault,
-                    activeColor: Colors.green,
-                    onChanged: (val) {
-                      if (!acc.isDefault && acc.id != null) {
-                         _setDefaultAccount(acc.id!);
-                      }
-                    },
-                  ),
+                  const Icon(Icons.account_balance, color: Color(0xff006565), size: 24),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      acc.isDefault
-                          ? "Default Payment Account"
-                          : "Set as default",
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: acc.isDefault ? Colors.green : Colors.black87,
+                      acc.bankName.isNotEmpty ? acc.bankName : "Bank Account",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Color(0xFF1C1B1B),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (isDefault) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.check_circle, size: 14, color: Colors.green),
+                          SizedBox(width: 4),
+                          Text(
+                            "Primary",
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                  ],
+                  const SizedBox(width: 4),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, color: Colors.grey),
+                    onSelected: (val) {
+                      if (val == 'edit') _openAddBankModal(edit: acc);
+                      if (val == 'delete') {
+                        if (acc.id != null) {
+                          _deleteAccount(acc.id!);
+                        } else {
+                          _showError("Cannot delete account without ID");
+                        }
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Text("Edit"),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Text("Delete", style: TextStyle(color: Colors.red)),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ),
-          ],
+              const Divider(height: 24, thickness: 1, color: Color(0xFFE6E6F0)),
+              _infoRow("Holder Name", acc.accountHolder),
+              _infoRow("Account Type", acc.accountType),
+              _infoRow("Account No.", acc.accountNumber),
+              _infoRow("IFSC Code", acc.ifsc),
+              if (acc.branch.isNotEmpty) _infoRow("Branch", acc.branch),
+              
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: () {
+                  if (!isDefault && acc.id != null) {
+                    _setDefaultAccount(acc.id!);
+                  }
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isDefault
+                        ? Colors.green.withOpacity(0.08)
+                        : Colors.grey.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDefault
+                          ? Colors.green.withOpacity(0.2)
+                          : Colors.grey.withOpacity(0.15),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isDefault ? Icons.radio_button_checked : Icons.radio_button_off,
+                        color: isDefault ? Colors.green : Colors.grey,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          isDefault
+                              ? "Primary Payout Account"
+                              : "Set as primary payout account",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDefault ? Colors.green : Colors.black87,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -511,25 +598,29 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
 
   Widget _infoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100,
+            width: 110,
             child: Text(
-              "$label:",
-              style: const TextStyle(
+              label,
+              style: TextStyle(
                 fontWeight: FontWeight.w500,
-                color: Colors.grey,
-                fontSize: 13,
+                color: Colors.grey.shade600,
+                fontSize: 12,
               ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                color: Color(0xFF1C1B1B),
+              ),
             ),
           ),
         ],
@@ -558,24 +649,39 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (_) {
         return StatefulBuilder(builder: (c, setM) {
           return Padding(
             padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 16,
-              bottom: MediaQuery.of(c).viewInsets.bottom + 16,
+              left: 20,
+              right: 20,
+              top: 20,
+              bottom: MediaQuery.of(c).viewInsets.bottom + 20,
             ),
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Center(
+                    child: Container(
+                      width: 50,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Text(
                       edit == null ? "Enter Bank Details" : "Edit Bank Details",
                       style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 18)),
-                  const SizedBox(height: 12),
+                          fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1C1B1B))),
+                  const SizedBox(height: 16),
 
                   // Toggle Fetch / Manual
                   Row(
@@ -583,17 +689,31 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
                       ChoiceChip(
                         label: const Text("Fetch using IFSC"),
                         selected: !manual,
+                        selectedColor: const Color(0xff006565).withOpacity(0.15),
+                        disabledColor: Colors.grey.shade100,
+                        labelStyle: TextStyle(
+                          color: !manual ? const Color(0xff006565) : Colors.black87,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
                         onSelected: (_) => setM(() => manual = false),
                       ),
                       const SizedBox(width: 8),
                       ChoiceChip(
                         label: const Text("Enter Manually"),
                         selected: manual,
+                        selectedColor: const Color(0xff006565).withOpacity(0.15),
+                        disabledColor: Colors.grey.shade100,
+                        labelStyle: TextStyle(
+                          color: manual ? const Color(0xff006565) : Colors.black87,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
                         onSelected: (_) => setM(() => manual = true),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
                   // Basic Fields
                   _field("Account Number", accountNumber, isNumber: true),
@@ -601,20 +721,31 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
                     _field("Re-enter Account Number", reAccountNumber, isNumber: true),
                   _field("Account Holder Name", holder),
 
-                  // Account Type Radio
-                  Row(
-                    children: [
-                      Radio(
-                          value: "Savings",
-                          groupValue: accountType,
-                          onChanged: (v) => setM(() => accountType = v!)),
-                      const Text("Savings"),
-                      Radio(
-                          value: "Current",
-                          groupValue: accountType,
-                          onChanged: (v) => setM(() => accountType = v!)),
-                      const Text("Current"),
-                    ],
+                  // Account Type Selection
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      children: [
+                        const Text(
+                          "Account Type:",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF3E4949)),
+                        ),
+                        const SizedBox(width: 16),
+                        Radio<String>(
+                            value: "Savings",
+                            activeColor: const Color(0xff006565),
+                            groupValue: accountType,
+                            onChanged: (v) => setM(() => accountType = v!)),
+                        const Text("Savings", style: TextStyle(fontSize: 13)),
+                        const SizedBox(width: 16),
+                        Radio<String>(
+                            value: "Current",
+                            activeColor: const Color(0xff006565),
+                            groupValue: accountType,
+                            onChanged: (v) => setM(() => accountType = v!)),
+                        const Text("Current", style: TextStyle(fontSize: 13)),
+                      ],
+                    ),
                   ),
 
                   _field("IFSC Code", ifsc),
@@ -623,27 +754,39 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
                   if (!manual)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16),
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          if (ifsc.text.isEmpty) {
-                            _showError("Please enter IFSC code");
-                            return;
-                          }
-                          _showLoader();
-                          final data = await lookupIfsc(ifsc.text);
-                          if (mounted) Navigator.pop(context); // Close loader
-                          if (data != null) {
-                            setM(() {
-                              bank.text = data['bank_name']?.toString() ?? data['bank']?.toString() ?? '';
-                              branch.text = data['branch_name']?.toString() ?? data['branch']?.toString() ?? '';
-                              city.text = data['city']?.toString() ?? '';
-                              state.text = data['state']?.toString() ?? '';
-                            });
-                          } else {
-                            _showError("IFSC lookup failed");
-                          }
-                        },
-                        child: const Text("Fetch Bank Details"),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.search),
+                          label: const Text("Fetch Bank Details"),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xff006565),
+                            side: const BorderSide(color: Color(0xff006565)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: () async {
+                            if (ifsc.text.isEmpty) {
+                              _showError("Please enter IFSC code");
+                              return;
+                            }
+                            _showLoader();
+                            final data = await lookupIfsc(ifsc.text);
+                            if (mounted) Navigator.pop(context); // Close loader
+                            if (data != null) {
+                              setM(() {
+                                bank.text = data['bank_name']?.toString() ?? data['bank']?.toString() ?? '';
+                                branch.text = data['branch_name']?.toString() ?? data['branch']?.toString() ?? '';
+                                city.text = data['city']?.toString() ?? '';
+                                state.text = data['state']?.toString() ?? '';
+                              });
+                            } else {
+                              _showError("IFSC lookup failed");
+                            }
+                          },
+                        ),
                       ),
                     ),
 
@@ -659,92 +802,100 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
                   const SizedBox(height: 16),
                   
                   // SAVE BUTTON
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 45)),
-                    onPressed: () async {
-                      // 1. Validation
-                      if (edit == null &&
-                          accountNumber.text != reAccountNumber.text) {
-                        _showError("Account numbers do not match");
-                        return;
-                      }
-                      
-                      if (ifsc.text.length < 5) {
-                        _showError("Please enter valid IFSC");
-                        return;
-                      }
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryColor,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          minimumSize: const Size(double.infinity, 45)),
+                      onPressed: () async {
+                        // 1. Validation
+                        if (edit == null &&
+                            accountNumber.text != reAccountNumber.text) {
+                          _showError("Account numbers do not match");
+                          return;
+                        }
+                        
+                        if (ifsc.text.length < 5) {
+                          _showError("Please enter valid IFSC");
+                          return;
+                        }
 
-                      if (holder.text.isEmpty ||
-                          accountNumber.text.isEmpty ||
-                          ifsc.text.isEmpty) {
-                        _showError("Please fill all mandatory fields");
-                        return;
-                      }
+                        if (holder.text.isEmpty ||
+                            accountNumber.text.isEmpty ||
+                            ifsc.text.isEmpty) {
+                          _showError("Please fill all mandatory fields");
+                          return;
+                        }
 
-                      // 2. Logic: Add vs Edit
-                      if (edit == null) {
-                        // ADD - Use new API method
-                        _showLoader();
-                        
-                        final success = await addBankAccount(
-                          accountNumber: accountNumber.text,
-                          accountHolder: holder.text,
-                          ifsc: ifsc.text,
-                          bankName: bank.text,
-                          branchName: branch.text,
-                          city: city.text,
-                          state: state.text,
-                          micr: micr.text,
-                          accountType: accountType,
-                          isApiData: false,
-                        );
-                        
-                        if (mounted) Navigator.pop(context); // Close Loader
-                        
-                        if (success) {
-                          _showSuccess("Bank account added successfully!");
-                          Navigator.pop(context);
-                          _fetchAccounts();
+                        // 2. Logic: Add vs Edit
+                        if (edit == null) {
+                          // ADD - Use new API method
+                          _showLoader();
+                          
+                          final success = await addBankAccount(
+                            accountNumber: accountNumber.text,
+                            accountHolder: holder.text,
+                            ifsc: ifsc.text,
+                            bankName: bank.text,
+                            branchName: branch.text,
+                            city: city.text,
+                            state: state.text,
+                            micr: micr.text,
+                            accountType: accountType,
+                            isApiData: false,
+                          );
+                          
+                          if (mounted) Navigator.pop(context); // Close Loader
+                          
+                          if (success) {
+                            _showSuccess("Bank account added successfully!");
+                            Navigator.pop(context);
+                            _fetchAccounts();
+                          } else {
+                            _showError("Failed to add bank account");
+                          }
                         } else {
-                          _showError("Failed to add bank account");
+                          // EDIT - Use new API method
+                          if (edit.id == null) {
+                             _showError("Cannot edit account without ID");
+                             return;
+                          }
+                          _showLoader();
+                          
+                          final success = await updateBankAccount(
+                            id: edit.id!,
+                            accountNumber: accountNumber.text,
+                            accountHolder: holder.text,
+                            ifsc: ifsc.text,
+                            bankName: bank.text,
+                            branchName: branch.text,
+                            city: city.text,
+                            state: state.text,
+                            micr: micr.text,
+                            accountType: accountType,
+                            isApiData: false,
+                          );
+                          
+                          if (mounted) Navigator.pop(context); // Close Loader
+                          
+                          if (success) {
+                            _showSuccess("Bank account updated successfully!");
+                            Navigator.pop(context);
+                            _fetchAccounts();
+                          } else {
+                            _showError("Failed to update bank account");
+                          }
                         }
-                      } else {
-                        // EDIT - Use new API method
-                        if (edit.id == null) {
-                           _showError("Cannot edit account without ID");
-                           return;
-                        }
-                        _showLoader();
-                        
-                        final success = await updateBankAccount(
-                          id: edit.id!,
-                          accountNumber: accountNumber.text,
-                          accountHolder: holder.text,
-                          ifsc: ifsc.text,
-                          bankName: bank.text,
-                          branchName: branch.text,
-                          city: city.text,
-                          state: state.text,
-                          micr: micr.text,
-                          accountType: accountType,
-                          isApiData: false,
-                        );
-                        
-                        if (mounted) Navigator.pop(context); // Close Loader
-                        
-                        if (success) {
-                          _showSuccess("Bank account updated successfully!");
-                          Navigator.pop(context);
-                          _fetchAccounts();
-                        } else {
-                          _showError("Failed to update bank account");
-                        }
-                      }
-                    },
-                    child: const Text("Save Bank Account"),
+                      },
+                      child: const Text("Save Bank Account", style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
                   )
                 ],
               ),
@@ -757,15 +908,30 @@ class _SellerBankAccountsScreenState extends State<SellerBankAccountsScreen> {
 
   Widget _field(String label, TextEditingController c, {bool isNumber = false}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: TextField(
         controller: c,
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
         decoration: InputDecoration(
           labelText: label,
-          border: const OutlineInputBorder(),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          labelStyle: const TextStyle(color: Color(0xFF3E4949), fontSize: 13),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xffE6E6F0)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xff006565), width: 1.5),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.red),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.red, width: 2),
+          ),
         ),
       ),
     );

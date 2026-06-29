@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 import '../Database/Database.dart';
 import '../model/module_model.dart';
 import '../core/theme/app_theme.dart';
@@ -177,13 +178,21 @@ class _ModuleManagerScreenState
                 )
               else
                 SizedBox(
-                  height: 90,
+                  height: 120,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: stats.length,
                     separatorBuilder: (_, __) => const SizedBox(width: 12),
                     itemBuilder: (context, index) {
-                      return StatCard(stat: stats[index]);
+                      final stat = stats[index];
+                      return SizedBox(
+                        width: 140,
+                        child: StatCard(
+                          title: stat.title,
+                          value: stat.value,
+                          icon: stat.icon,
+                        ),
+                      );
                     },
                   ),
                 ),
@@ -324,68 +333,7 @@ class DashboardStat {
   });
 }
 
-class StatCard extends StatelessWidget {
-  final DashboardStat stat;
 
-  const StatCard({
-    super.key,
-    required this.stat,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 140,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        boxShadow: AppTheme.cardShadow,
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppTheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppTheme.radius),
-            ),
-            child: Icon(
-              stat.icon,
-              size: 20,
-              color: AppTheme.primary,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  stat.value,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                Text(
-                  stat.title,
-                  style: const TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class InstalledModuleCard extends StatelessWidget {
   final String title;

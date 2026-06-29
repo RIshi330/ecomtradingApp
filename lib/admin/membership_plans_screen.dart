@@ -391,7 +391,7 @@ class MembershipCard extends StatelessWidget {
                     Text(
                       planName,
                       style: const TextStyle(
-                        fontSize: 24,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF1C1B1B),
                       ),
@@ -415,7 +415,7 @@ class MembershipCard extends StatelessWidget {
                   Text(
                      newPrice,
                     style: const TextStyle(
-                      fontSize: 28,
+                      fontSize: 22,
                       color: primaryColor,
                       fontWeight: FontWeight.bold,
                     ),
@@ -451,27 +451,29 @@ class MembershipCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isPurchased
-                    ? Colors.grey[300]
-                    : (highlighted ? primaryColor : secondaryColor),
-                foregroundColor: isPurchased ? Colors.grey[600] : Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
+          Center(
+            child: SizedBox(
+              width: 180,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isPurchased
+                      ? Colors.grey[300]
+                      : (highlighted ? primaryColor : secondaryColor),
+                  foregroundColor: isPurchased ? Colors.grey[600] : Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: isPurchased ? null : onBuyPressed,
-              child: Text(
-                isPurchased ? "Active Plan" : "Buy Now",
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                onPressed: isPurchased ? null : onBuyPressed,
+                child: Text(
+                  isPurchased ? "Active Plan" : "Buy Now",
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),

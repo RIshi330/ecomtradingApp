@@ -6,6 +6,17 @@ import 'package:trading_ecommerce_admin/Database/Database.dart';
 /// LocationService - Handles real-time location permission and fetching
 /// Requests permission on login and stores location in DB + locally
 class LocationService {
+  /// Check if location permission is denied
+  static Future<bool> isPermissionDenied() async {
+    try {
+      final permission = await Geolocator.checkPermission();
+      return permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever;
+    } catch (_) {
+      return true;
+    }
+  }
+
   /// Request location permission and get current location
   /// Returns a map with latitude, longitude, and address
   /// Returns null if permission denied or location unavailable

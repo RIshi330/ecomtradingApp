@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 import '../Database/Database.dart';
 import 'package_builder_screen.dart';
 
@@ -42,11 +43,15 @@ class ComboPack {
         .where((url) => url.isNotEmpty)
         .toList();
     if (imageUrls.isEmpty) {
-      imageUrls.add("https://images.unsplash.com/photo-1496171367470-9ed9a91ea931");
+      imageUrls
+          .add("https://images.unsplash.com/photo-1496171367470-9ed9a91ea931");
     }
 
-    final double price = double.tryParse(json['combo_price']?.toString() ?? '0.0') ?? 0.0;
-    final double oldPrice = double.tryParse(json['combo_original_price']?.toString() ?? '0.0') ?? 0.0;
+    final double price =
+        double.tryParse(json['combo_price']?.toString() ?? '0.0') ?? 0.0;
+    final double oldPrice =
+        double.tryParse(json['combo_original_price']?.toString() ?? '0.0') ??
+            0.0;
 
     return ComboPack(
       id: json['id']?.toString() ?? '',
@@ -256,7 +261,8 @@ class _ComboPackagesScreenState extends State<ComboPackagesScreen> {
                                   children: [
                                     Text(
                                       "Commission Rule #${index + 1}",
-                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold),
                                     ),
                                     const Spacer(),
                                     IconButton(
@@ -278,14 +284,24 @@ class _ComboPackagesScreenState extends State<ComboPackagesScreen> {
                                   value: rule.role,
                                   decoration: InputDecoration(
                                     labelText: "Target Role",
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
                                   ),
                                   items: const [
-                                    DropdownMenuItem(value: "Affiliate", child: Text("Affiliate")),
-                                    DropdownMenuItem(value: "Partner", child: Text("Partner")),
-                                    DropdownMenuItem(value: "Agent", child: Text("Agent")),
-                                    DropdownMenuItem(value: "Reseller", child: Text("Reseller")),
+                                    DropdownMenuItem(
+                                        value: "Affiliate",
+                                        child: Text("Affiliate")),
+                                    DropdownMenuItem(
+                                        value: "Partner",
+                                        child: Text("Partner")),
+                                    DropdownMenuItem(
+                                        value: "Agent", child: Text("Agent")),
+                                    DropdownMenuItem(
+                                        value: "Reseller",
+                                        child: Text("Reseller")),
                                   ],
                                   onChanged: (v) {
                                     modalSetState(() {
@@ -301,12 +317,20 @@ class _ComboPackagesScreenState extends State<ComboPackagesScreen> {
                                         value: rule.type,
                                         decoration: InputDecoration(
                                           labelText: "Payout Type",
-                                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal: 16, vertical: 8),
+                                          border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12)),
                                         ),
                                         items: const [
-                                          DropdownMenuItem(value: "%", child: Text("% Percentage")),
-                                          DropdownMenuItem(value: "Flat", child: Text("Flat Rate")),
+                                          DropdownMenuItem(
+                                              value: "%",
+                                              child: Text("% Percentage")),
+                                          DropdownMenuItem(
+                                              value: "Flat",
+                                              child: Text("Flat Rate")),
                                         ],
                                         onChanged: (v) {
                                           modalSetState(() {
@@ -322,8 +346,12 @@ class _ComboPackagesScreenState extends State<ComboPackagesScreen> {
                                         initialValue: rule.value,
                                         decoration: InputDecoration(
                                           labelText: "Value",
-                                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal: 16, vertical: 8),
+                                          border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12)),
                                         ),
                                         keyboardType: TextInputType.number,
                                         onChanged: (v) {
@@ -343,7 +371,8 @@ class _ComboPackagesScreenState extends State<ComboPackagesScreen> {
                     OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: themeColor),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: () {
                         modalSetState(() {
@@ -357,8 +386,10 @@ class _ComboPackagesScreenState extends State<ComboPackagesScreen> {
                         });
                         setState(() {});
                       },
-                      icon: const Icon(Icons.add_circle_outline, color: themeColor),
-                      label: const Text("Add More", style: TextStyle(color: themeColor)),
+                      icon: const Icon(Icons.add_circle_outline,
+                          color: themeColor),
+                      label: const Text("Add More",
+                          style: TextStyle(color: themeColor)),
                     ),
                     const SizedBox(height: 20),
                     Row(
@@ -366,7 +397,8 @@ class _ComboPackagesScreenState extends State<ComboPackagesScreen> {
                         Expanded(
                           child: TextButton(
                             onPressed: () => Navigator.pop(context),
-                            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+                            child: const Text("Cancel",
+                                style: TextStyle(color: Colors.grey)),
                           ),
                         ),
                         Expanded(
@@ -374,13 +406,15 @@ class _ComboPackagesScreenState extends State<ComboPackagesScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: themeColor,
                               foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
                             ),
                             onPressed: () {
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text("Commission rules saved successfully!"),
+                                  content: Text(
+                                      "Commission rules saved successfully!"),
                                   backgroundColor: themeColor,
                                 ),
                               );
@@ -441,7 +475,8 @@ class _ComboPackagesScreenState extends State<ComboPackagesScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.block_outlined, color: Colors.red),
-                title: const Text("Suspend Package", style: TextStyle(color: Colors.red)),
+                title: const Text("Suspend Package",
+                    style: TextStyle(color: Colors.red)),
                 onTap: () {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -501,13 +536,15 @@ class _ComboPackagesScreenState extends State<ComboPackagesScreen> {
 
                   // STATS ROW
                   SizedBox(
-                    height: 100,
+                    height: 110,
                     child: ListView(
                       scrollDirection: Axis.horizontal,
                       children: [
                         statCard(Icons.auto_graph, "Total Views", "14.2k"),
-                        statCard(Icons.inventory_2_outlined, "Total Items", "24"),
-                        statCard(Icons.layers_outlined, "Active Packs", "${combos.length}"),
+                        statCard(
+                            Icons.inventory_2_outlined, "Total Items", "24"),
+                        statCard(Icons.layers_outlined, "Active Packs",
+                            "${combos.length}"),
                         statCard(Icons.shopping_cart_outlined, "Orders", "145"),
                         statCard(Icons.payments_outlined, "Revenue", "₹45,280"),
                       ],
@@ -576,11 +613,13 @@ class _ComboPackagesScreenState extends State<ComboPackagesScreen> {
                             backgroundColor: themeColor,
                             foregroundColor: Colors.white,
                             minimumSize: const Size(200, 44),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
                           ),
                           onPressed: () {},
                           icon: const Icon(Icons.add_circle_outline),
-                          label: const Text("Create Bundle", style: TextStyle(fontWeight: FontWeight.bold)),
+                          label: const Text("Create Bundle",
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
@@ -598,7 +637,8 @@ class _ComboPackagesScreenState extends State<ComboPackagesScreen> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const PackageBuilderScreen()),
+              MaterialPageRoute(
+                  builder: (context) => const PackageBuilderScreen()),
             ).then((value) {
               if (value == true) {
                 _fetchComboPackages();
@@ -607,7 +647,8 @@ class _ComboPackagesScreenState extends State<ComboPackagesScreen> {
           },
           backgroundColor: themeColor,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: const Icon(Icons.add),
         ),
         body: content,
@@ -668,7 +709,8 @@ class _ComboPackagesScreenState extends State<ComboPackagesScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const PackageBuilderScreen()),
+            MaterialPageRoute(
+                builder: (context) => const PackageBuilderScreen()),
           ).then((value) {
             if (value == true) {
               _fetchComboPackages();
@@ -686,52 +728,13 @@ class _ComboPackagesScreenState extends State<ComboPackagesScreen> {
 
   Widget statCard(IconData icon, String title, String value) {
     return Container(
-      width: 160,
+      width: 135,
       margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: themeAccent,
-            radius: 18,
-            child: Icon(icon, color: themeColor, size: 18),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 10, color: Colors.black54),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: themeColor,
-                  ),
-                ),
-              ],
-            ),
-          )
-        ],
+      child: StatCard(
+        title: title,
+        value: value,
+        icon: icon,
+        borderColor: themeColor,
       ),
     );
   }
@@ -750,19 +753,19 @@ class ComboCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withOpacity(0.06), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withOpacity(0.02),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: Colors.grey.shade100),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -772,7 +775,8 @@ class ComboCard extends StatelessWidget {
             children: [
               if (combo.popular)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: const Color(0xFFD4E6E5),
                     borderRadius: BorderRadius.circular(30),
@@ -780,7 +784,7 @@ class ComboCard extends StatelessWidget {
                   child: const Text(
                     "POPULAR",
                     style: TextStyle(
-                      fontSize: 9,
+                      fontSize: 8,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF006565),
                     ),
@@ -789,51 +793,55 @@ class ComboCard extends StatelessWidget {
               else
                 const SizedBox.shrink(),
               IconButton(
-                icon: const Icon(Icons.more_vert, color: Colors.black54),
+                icon: const Icon(Icons.more_vert,
+                    color: Colors.black54, size: 18),
                 onPressed: onActionMenu,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             combo.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 18,
+              fontSize: 14,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             "Sold by ${combo.seller}",
-            style: const TextStyle(color: Colors.black54, fontSize: 12),
+            style: const TextStyle(color: Colors.black54, fontSize: 11),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // Mini Product Thumbnails
           SizedBox(
-            height: 60,
+            height: 48,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: combo.images.length,
               itemBuilder: (_, index) {
                 return Container(
-                  width: 60,
+                  width: 48,
                   margin: const EdgeInsets.only(right: 8),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade100),
-                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.black.withOpacity(0.04)),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                     child: Image.network(
                       combo.images[index],
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
                         color: Colors.grey.shade100,
-                        child: const Icon(Icons.broken_image, color: Colors.grey),
+                        child: const Icon(Icons.broken_image,
+                            color: Colors.grey, size: 18),
                       ),
                     ),
                   ),
@@ -841,7 +849,7 @@ class ComboCard extends StatelessWidget {
               },
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
@@ -849,45 +857,53 @@ class ComboCard extends StatelessWidget {
               Text(
                 "₹${combo.price.toStringAsFixed(2)}",
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: 16,
                   color: Color(0xFF006565),
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Text(
                 "₹${combo.oldPrice.toStringAsFixed(2)}",
                 style: const TextStyle(
-                  fontSize: 14,
+                  fontSize: 12,
                   color: Colors.grey,
                   decoration: TextDecoration.lineThrough,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.remove_red_eye_outlined, size: 14, color: Colors.black54),
+              const Icon(Icons.remove_red_eye_outlined,
+                  size: 12, color: Colors.black54),
               const SizedBox(width: 4),
-              Text("${combo.views}", style: const TextStyle(color: Colors.black54, fontSize: 12)),
-              const SizedBox(width: 16),
-              const Icon(Icons.shopping_cart_outlined, size: 14, color: Colors.black54),
+              Text("${combo.views}",
+                  style: const TextStyle(color: Colors.black54, fontSize: 11)),
+              const SizedBox(width: 12),
+              const Icon(Icons.shopping_cart_outlined,
+                  size: 12, color: Colors.black54),
               const SizedBox(width: 4),
-              Text("${combo.orders}", style: const TextStyle(color: Colors.black54, fontSize: 12)),
+              Text("${combo.orders}",
+                  style: const TextStyle(color: Colors.black54, fontSize: 11)),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: combo.inStock ? const Color(0xffE2F3E2) : const Color(0xffFCEEE6),
+                  color: combo.inStock
+                      ? const Color(0xffE2F3E2)
+                      : const Color(0xffFCEEE6),
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: Text(
                   combo.inStock ? "Active" : "Suspended",
                   style: TextStyle(
-                    color: combo.inStock ? Colors.green.shade800 : Colors.orange.shade800,
+                    color: combo.inStock
+                        ? Colors.green.shade800
+                        : Colors.orange.shade800,
                     fontWeight: FontWeight.bold,
-                    fontSize: 11,
+                    fontSize: 10,
                   ),
                 ),
               ),

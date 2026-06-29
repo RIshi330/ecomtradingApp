@@ -26,6 +26,11 @@ class AuthService {
     Map<String, dynamic>? userData,
   }) async {
     final prefs = await SharedPreferences.getInstance();
+    // Clear any previous admin session keys to avoid stray session states
+    await prefs.remove(_keyIsAdminLoggedIn);
+    await prefs.remove(_keyAdminId);
+    await prefs.remove(_keyAdminEmail);
+
     final now = DateTime.now().millisecondsSinceEpoch;
     await prefs.setBool(_keyIsLoggedIn, true);
     await prefs.setInt(_keyVendorId, vendorId);
@@ -205,6 +210,14 @@ class AuthService {
     required String email,
   }) async {
     final prefs = await SharedPreferences.getInstance();
+    // Clear any previous user session keys to avoid stray session states
+    await prefs.remove(_keyIsLoggedIn);
+    await prefs.remove(_keyVendorId);
+    await prefs.remove(_keyUserData);
+    await prefs.remove(_keyUserInterests);
+    await prefs.remove(_keyHasSelectedInterests);
+    await prefs.remove(_keyUserLocation);
+
     final now = DateTime.now().millisecondsSinceEpoch;
     await prefs.setBool(_keyIsAdminLoggedIn, true);
     await prefs.setInt(_keyAdminId, adminId);

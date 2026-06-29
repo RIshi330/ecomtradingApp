@@ -122,7 +122,7 @@ class _TaxonomyManagerScreenState extends State<TaxonomyManagerScreen> {
                       color: Color(0xff006565),
                     ),
             ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.small(
         backgroundColor: const Color(0xff006565),
         foregroundColor: Colors.white,
         onPressed: _showAddCategoryDialog,

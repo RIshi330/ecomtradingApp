@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:trading_ecommerce_admin/index.dart';
 import 'package:trading_ecommerce_admin/services/auth_service.dart';
@@ -34,9 +35,11 @@ import 'package:trading_ecommerce_admin/services/location_service.dart';
 import 'package:trading_ecommerce_admin/admin/business_user_profile_screen.dart';
 import 'package:trading_ecommerce_admin/admin/financial_command_center_screen.dart';
 import 'package:trading_ecommerce_admin/admin/manage_vendors_screen.dart';
+import 'package:trading_ecommerce_admin/admin/commission_settings_screen.dart';
 import 'package:trading_ecommerce_admin/user/seller_bank_accounts_screen.dart';
 import 'package:trading_ecommerce_admin/screens/marketplace_trainings_screen.dart';
 import 'package:trading_ecommerce_admin/screens/enrolled_trainings_screen.dart';
+import 'package:trading_ecommerce_admin/screens/mom_trainings_screen.dart';
 
 class BusinessUserDashboard extends StatefulWidget {
   const BusinessUserDashboard({super.key});
@@ -79,7 +82,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
 
   // Visual Styling constants
   static const Color primaryTeal = Color(0xFF006565);
-  static const Color darkTeal = Color(0xFF001F1F);
+  static const Color darkTeal = Color(0xFF00796B); // Colors.teal.shade700
   static const Color cardColor = Colors.white;
   static const Color bgLight = Color(0xFFF9F9F9);
   static const Color textDark = Color(0xFF1C1B1B);
@@ -166,6 +169,19 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
     // Request location permission
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _requestLocationPermission();
+      
+      // Handle route arguments safely after frame is built
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is int) {
+        setState(() {
+          switch (args) {
+            case 0: _currentIndex = 0; break;
+            case 1: _currentIndex = 11; break;
+            case 2: _currentIndex = 18; break;
+            case 3: _currentIndex = 22; break;
+          }
+        });
+      }
     });
     // Show Membership Upsell modal after 3.5 seconds, ensuring route is active
     Future.delayed(const Duration(milliseconds: 3500), () {
@@ -180,10 +196,131 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
 
   Future<void> _requestLocationPermission() async {
     try {
-      await LocationService.requestAndGetLocation();
+      final denied = await LocationService.isPermissionDenied();
+      if (denied) {
+        await _showLocationPermissionDialog();
+      } else {
+        await LocationService.requestAndGetLocation();
+      }
     } catch (e) {
       debugPrint("Error requesting location: $e");
     }
+  }
+
+  Future<void> _showLocationPermissionDialog() async {
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Top Icon
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE5F5F5), // Light teal circle background
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.location_on,
+                      color: Color(0xFF006565), // Dark teal pin
+                      size: 38,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Title
+                const Text(
+                  "Enable Location",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Subtitle
+                const Text(
+                  "Luxe requires access to your location to provide personalized delivery estimates, calculate taxes correctly, and display premium stores near you.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Allow Access Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF006565),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      try {
+                        await LocationService.requestAndGetLocation();
+                      } catch (_) {}
+                    },
+                    child: const Text(
+                      "Allow Access",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Not Now Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF006565)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text(
+                      "Not Now",
+                      style: TextStyle(
+                        color: Color(0xFF006565),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _loadBusinessProfile() async {
@@ -601,7 +738,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                         child: const Text(
                           'Exit',
                           style: TextStyle(
-                            color: Colors.red,
+                            color: Color(0xFFBA1A1A),
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -618,37 +755,137 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
   }
 
   void _handleLogout() {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Confirm Logout", style: TextStyle(color: textDark, fontWeight: FontWeight.bold)),
-        content: const Text("Are you sure you want to log out?", style: TextStyle(color: textLight)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
-          ),
-          SizedBox(
-            height: 36,
-            child: ElevatedButton(
-              onPressed: () async {
-                Navigator.pop(ctx);
-                await AuthService.logout();
-                if (mounted) {
-                  Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                elevation: 0,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
               ),
-              child: const Text("Logout", style: TextStyle(color: Colors.white)),
-            ),
+              
+              // Header Row (Icon + Title & Subtitle)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEE), // Light red background
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.power_settings_new_rounded,
+                      color: Color(0xFFC62828), // Dark red icon
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Sign Out",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: textDark,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          "Confirm account log out",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              
+              // Body message
+              const Text(
+                "Are you sure you want to sign out of your account?\nYou will need to enter your credentials to log back in.",
+                style: TextStyle(
+                  fontSize: 13,
+                  color: textLight,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Action Buttons Row
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(color: Colors.grey.shade300),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        foregroundColor: textDark,
+                      ),
+                      child: const Text(
+                        "Cancel",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        await AuthService.logout();
+                        if (mounted) {
+                          Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFEBEE), // Light red background
+                        foregroundColor: const Color(0xFFC62828), // Red text
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        "Logout",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -675,6 +912,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
   PreferredSizeWidget _buildHeader() {
     String titleText = "Business Central";
     switch (_currentIndex) {
+      case 36: titleText = "Commission Settings"; break;
       case 1: titleText = "User Management"; break;
       case 2: titleText = "Product Listing"; break;
       case 3: titleText = "Job Board"; break;
@@ -709,10 +947,11 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       case 32: titleText = "Membership Builder"; break;
       case 33: titleText = "Marketplace Trainings"; break;
       case 34: titleText = "Enrolled Trainings"; break;
+      case 35: titleText = "MOM Trainings"; break;
     }
 
     return AppBar(
-      backgroundColor: darkTeal,
+      backgroundColor: Colors.teal.shade700,
       foregroundColor: Colors.white,
       elevation: 0,
       leading: IconButton(
@@ -745,20 +984,17 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
   Widget _buildLeftDrawer() {
     return Drawer(
       backgroundColor: Colors.white,
-      child: Column(
-        children: [
-          // Drawer Header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-            color: darkTeal,
-            width: double.infinity,
-            child: SafeArea(
-              bottom: false,
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Drawer Header
+            Container(
+              padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
                   CircleAvatar(
-                    radius: 26,
-                    backgroundColor: Colors.white,
+                    radius: 28,
+                    backgroundColor: const Color(0xFFE0F2F1),
                     backgroundImage: _businessProfilePic.isNotEmpty
                         ? NetworkImage(_businessProfilePic)
                         : null,
@@ -775,25 +1011,38 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                           _businessName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: textDark,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.verified,
+                              color: primaryTeal,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              "Verified Business",
+                              style: TextStyle(
+                                color: textLight,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _businessEmail,
+                          _businessLocation,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: Colors.white70, fontSize: 12),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: primaryTeal,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            "Verified Business",
-                            style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            color: textLight,
+                            fontSize: 12,
                           ),
                         ),
                       ],
@@ -802,15 +1051,17 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                 ],
               ),
             ),
-          ),
 
-          // Drawer Navigation Items List
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              children: [
+            const Divider(height: 1),
+
+            // Drawer Navigation Items List
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                children: [
                 _buildDrawerHeaderLabel("OVERVIEW"),
                 _buildDrawerItem(0, Icons.dashboard_rounded, "Dashboard"),
+                _buildDrawerItem(36, Icons.percent_rounded, "Commission Settings"),
                 _buildDrawerItem(1, Icons.storefront_rounded, "Manage Vendors"),
                 Theme(
                   data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -898,6 +1149,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                     children: [
                       _buildDrawerItem(33, Icons.storefront_outlined, "Marketplace Training", isSubItem: true),
                       _buildDrawerItem(34, Icons.collections_bookmark_rounded, "Enrolled Trainings", isSubItem: true),
+                      _buildDrawerItem(35, Icons.psychology_outlined, "MOM Training", isSubItem: true),
                     ],
                   ),
                 ),
@@ -932,8 +1184,8 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
           const Divider(height: 1),
           // Drawer Footer
           ListTile(
-            leading: const Icon(Icons.logout_rounded, color: Colors.red),
-            title: const Text("Sign Out", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            leading: const Icon(Icons.logout_rounded, color: Color(0xFFBA1A1A)),
+            title: const Text("Sign Out", style: TextStyle(color: Color(0xFFBA1A1A), fontWeight: FontWeight.bold)),
             onTap: () {
               Navigator.pop(context);
               _handleLogout();
@@ -942,8 +1194,9 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
           const SizedBox(height: 8),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildDrawerHeaderLabel(String text) {
     return Padding(
@@ -988,6 +1241,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
   Widget _buildBodyContent() {
     switch (_currentIndex) {
       case 0: return _buildDashboardView();
+      case 36: return const CommissionSettingsScreen(isEmbedded: true);
       case 1: return const ManageVendorsScreen(isEmbedded: true);
       case 2: return const ProductManagementScreen(isEmbedded: true);
       case 3: return _buildJobsView();
@@ -1026,6 +1280,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       case 32: return const MembershipBuilderScreen(isEmbedded: true);
       case 33: return const MarketplaceTrainingsScreen(isEmbedded: true);
       case 34: return const EnrolledTrainingsScreen(isEmbedded: true);
+      case 35: return const MomTrainingsScreen(isEmbedded: true);
       default: return _buildDashboardView();
     }
   }
@@ -1518,12 +1773,13 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                               Expanded(
                                 child: SizedBox(
                                   height: 36,
-                                  child: OutlinedButton(
-                                    style: OutlinedButton.styleFrom(
-                                      side: const BorderSide(color: Colors.redAccent),
-                                      foregroundColor: Colors.redAccent,
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFFFEBEE), // Soft pinkish red
+                                      foregroundColor: const Color(0xFFC62828), // Crimson red
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                       padding: EdgeInsets.zero,
+                                      elevation: 0,
                                     ),
                                     onPressed: () {
                                       setState(() {
@@ -1685,8 +1941,8 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
               const Text("Curated Queue: Listing Approvals", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(8)),
-                child: const Text("12 New", style: TextStyle(color: Colors.redAccent, fontSize: 9, fontWeight: FontWeight.bold)),
+                decoration: BoxDecoration(color: const Color(0xFFFFEBEE), borderRadius: BorderRadius.circular(8)),
+                child: const Text("12 New", style: TextStyle(color: Color(0xFFC62828), fontSize: 9, fontWeight: FontWeight.bold)),
               )
             ],
           ),
@@ -1714,21 +1970,20 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                       const Text("Requested by: TechNexus", style: TextStyle(fontSize: 10, color: Colors.grey)),
                       const SizedBox(height: 12),
                       SizedBox(
-                        height: 32,
+                        height: 38,
                         child: Row(
                           children: [
                             Expanded(
-                              child: OutlinedButton(
-                                style: OutlinedButton.styleFrom(
-                                  side: const BorderSide(color: Colors.redAccent),
-                                  foregroundColor: Colors.redAccent,
-                                  padding: EdgeInsets.zero,
-                                  minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFFFEBEE), // Soft pinkish red
+                                  foregroundColor: const Color(0xFFC62828), // Crimson red
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 ),
                                 onPressed: () => _showSuccess("Soundbar Pro listing rejected."),
-                                child: const Text("Reject", style: TextStyle(fontSize: 10)),
+                                child: const Text("Reject", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -1737,14 +1992,12 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: primaryTeal,
                                   foregroundColor: Colors.white,
-                                  padding: EdgeInsets.zero,
-                                  minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                   elevation: 0,
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 ),
                                 onPressed: () => _showSuccess("Soundbar Pro listing approved!"),
-                                child: const Text("Approve", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                child: const Text("Approve", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                               ),
                             )
                           ],
@@ -1771,21 +2024,20 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                       const Text("Requested by: Creative Labs", style: TextStyle(fontSize: 10, color: Colors.grey)),
                       const SizedBox(height: 12),
                       SizedBox(
-                        height: 32,
+                        height: 38,
                         child: Row(
                           children: [
                             Expanded(
-                              child: OutlinedButton(
-                                style: OutlinedButton.styleFrom(
-                                  side: const BorderSide(color: Colors.redAccent),
-                                  foregroundColor: Colors.redAccent,
-                                  padding: EdgeInsets.zero,
-                                  minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFFFEBEE), // Soft pinkish red
+                                  foregroundColor: const Color(0xFFC62828), // Crimson red
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 ),
                                 onPressed: () => _showSuccess("Workshop listing rejected."),
-                                child: const Text("Reject", style: TextStyle(fontSize: 10)),
+                                child: const Text("Reject", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -1794,14 +2046,12 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: primaryTeal,
                                   foregroundColor: Colors.white,
-                                  padding: EdgeInsets.zero,
-                                  minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                   elevation: 0,
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 ),
                                 onPressed: () => _showSuccess("Workshop listing approved!"),
-                                child: const Text("Approve", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                child: const Text("Approve", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                               ),
                             )
                           ],
@@ -1867,19 +2117,18 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
   }
 
   Widget _buildSliderCard({required Widget child, Color? color}) {
-    return Container(
+    return SizedBox(
       width: 260,
       height: 155,
-      decoration: BoxDecoration(
-        color: color ?? Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color == null ? Colors.grey.shade200 : Colors.transparent),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
+      child: HoverableCard(
+        borderRadius: 20.0,
+        backgroundColor: color ?? Colors.white,
+        borderColor: const Color(0xff006565),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: child,
+        ),
       ),
-      padding: const EdgeInsets.all(16),
-      child: child,
     );
   }
 
@@ -1990,12 +2239,12 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: isActive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                              color: isActive ? Colors.green.withOpacity(0.1) : const Color(0xFFBA1A1A).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               status,
-                              style: TextStyle(color: isActive ? Colors.green : Colors.red, fontSize: 9, fontWeight: FontWeight.bold),
+                              style: TextStyle(color: isActive ? Colors.green : const Color(0xFFBA1A1A), fontSize: 9, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ],
@@ -2354,14 +2603,14 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                       },
                     ),
                     IconButton(
-                      icon: const Icon(Icons.cancel_rounded, color: Colors.red),
+                      icon: const Icon(Icons.cancel_rounded, color: Color(0xFFBA1A1A)),
                       onPressed: () {
                         setState(() {
                           _mockCommunities.removeAt(idx);
                           _pendingApprovalsCount--;
                         });
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Approval request rejected."), backgroundColor: Colors.red),
+                          const SnackBar(content: Text("Approval request rejected."), backgroundColor: Color(0xFFBA1A1A)),
                         );
                       },
                     ),

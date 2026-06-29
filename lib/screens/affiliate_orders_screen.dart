@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 import '../Database/Database.dart';
 import '../index.dart';
 
@@ -568,28 +569,10 @@ class _AffiliateOrdersScreenState extends State<AffiliateOrdersScreen> {
   }
 
   Widget buildStatCard(String title, String value) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 22,
-              color: Color(0xff006565),
-            ),
-          ),
-        ],
-      ),
+    return StatCard(
+      title: title,
+      value: value,
+      valueColor: const Color(0xff006565),
     );
   }
 

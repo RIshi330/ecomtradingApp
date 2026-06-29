@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 
 class RewardsRecognitionScreen extends StatefulWidget {
   final bool isEmbedded;
@@ -218,66 +219,65 @@ class _RewardsRecognitionScreenState extends State<RewardsRecognitionScreen> {
   }
 
   Widget _buildStatsGrid() {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      childAspectRatio: 1.5,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      children: [
-        _buildStatCard(
-          "Total Distributed",
-          "₹${_totalDistributed.toStringAsFixed(0)}",
-          Icons.emoji_events,
-          const [Colors.amber, Colors.orange],
-        ),
-        _buildStatCard(
-          "Pending Payouts",
-          "₹${_availablePayout.toStringAsFixed(0)}",
-          Icons.payments,
-          const [Colors.green, Colors.teal],
-        ),
-        _buildStatCard(
-          "Active Contributors",
-          "$_activeContributors Members",
-          Icons.people_alt,
-          const [Color(0xFF006565), Color(0xFF008080)],
-        ),
-        _buildStatCard(
-          "Leaderboard Points",
-          "14.8k Coins",
-          Icons.stars,
-          const [Color(0xFF516161), Color(0xFFBDC9C8)],
-        ),
-      ],
+    final listStats = [
+      {
+        "label": "Total Distributed",
+        "value": "₹${_totalDistributed.toStringAsFixed(0)}",
+        "icon": Icons.emoji_events,
+        "colors": [Colors.amber, Colors.orange],
+      },
+      {
+        "label": "Pending Payouts",
+        "value": "₹${_availablePayout.toStringAsFixed(0)}",
+        "icon": Icons.payments,
+        "colors": [Colors.green, Colors.teal],
+      },
+      {
+        "label": "Active Contributors",
+        "value": "$_activeContributors Members",
+        "icon": Icons.people_alt,
+        "colors": [Color(0xFF006565), Color(0xFF008080)],
+      },
+      {
+        "label": "Leaderboard Points",
+        "value": "14.8k Coins",
+        "icon": Icons.stars,
+        "colors": [Color(0xFF516161), Color(0xFFBDC9C8)],
+      },
+    ];
+
+    return SizedBox(
+      height: 120,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: listStats.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final stat = listStats[index];
+          return SizedBox(
+            width: 140,
+            child: _buildStatCard(
+              stat["label"] as String,
+              stat["value"] as String,
+              stat["icon"] as IconData,
+              stat["colors"] as List<Color>,
+            ),
+          );
+        },
+      ),
     );
   }
 
   Widget _buildStatCard(String label, String value, IconData icon, List<Color> colors) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: colors[0].withAlpha(60),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: Colors.white70, size: 24),
-          const Spacer(),
-          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-          const SizedBox(height: 2),
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
-        ],
-      ),
+    return StatCard(
+      title: label,
+      value: value,
+      icon: icon,
+      gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
+      valueColor: Colors.white,
+      titleColor: Colors.white70,
+      iconColor: Colors.white70,
+      bgHighlightColor: Colors.white.withOpacity(0.15),
     );
   }
 

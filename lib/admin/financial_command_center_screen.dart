@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 
 class FinancialCommandCenterScreen extends StatefulWidget {
   final bool isEmbedded;
@@ -194,7 +195,7 @@ class _FinancialCommandCenterScreenState extends State<FinancialCommandCenterScr
                                       ),
                                       const SizedBox(width: 8),
                                       Text(
-                                        "\$${request['amount']}",
+                                        "₹${request['amount']}",
                                         style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: primaryTeal),
                                       ),
                                     ],
@@ -355,14 +356,14 @@ class _FinancialCommandCenterScreenState extends State<FinancialCommandCenterScr
         "type": "Debit",
         "txid": "TXN-${request['id']?.split('-').last ?? '8841'}",
         "method": request['method'] ?? 'ACH Transfer',
-        "amount": "-\$${request['amount']}",
+        "amount": "-₹${request['amount']}",
         "dateTime": "Just Now",
         "status": "COMPLETED",
         "comments": "Released for ${request['vendor']}"
       });
     });
 
-    _triggerAction("Funds released for ${request['vendor']} (\$${request['amount']})");
+    _triggerAction("Funds released for ${request['vendor']} (₹${request['amount']})");
   }
 
   @override
@@ -488,10 +489,10 @@ class _FinancialCommandCenterScreenState extends State<FinancialCommandCenterScr
             physics: const BouncingScrollPhysics(),
             child: Row(
               children: [
-                _buildStatCard("GROSS REVENUE", "\$1,240,500.00", "+18.2% vs prev. month", primaryTeal, Icons.trending_up),
-                _buildStatCard("NET REVENUES", "\$982,300.00", "79.1% Gross Margin", secondaryTeal, Icons.show_chart),
-                _buildStatCard("COMMISSIONS & PAYOUTS", "\$124,200.00", "Last processed: 12h ago", textLight, Icons.account_tree_rounded),
-                _buildStatCard("PENDING WITHDRAWALS", "\$142,500.00", "24 Action Items", statusNegotiation, Icons.pending_actions_rounded),
+                _buildStatCard("GROSS REVENUE", "₹1,240,500.00", "+18.2% vs prev. month", primaryTeal, Icons.trending_up),
+                _buildStatCard("NET REVENUES", "₹982,300.00", "79.1% Gross Margin", secondaryTeal, Icons.show_chart),
+                _buildStatCard("COMMISSIONS & PAYOUTS", "₹124,200.00", "Last processed: 12h ago", textLight, Icons.account_tree_rounded),
+                _buildStatCard("PENDING WITHDRAWALS", "₹142,500.00", "24 Action Items", statusNegotiation, Icons.pending_actions_rounded),
               ],
             ),
           ),
@@ -545,53 +546,25 @@ class _FinancialCommandCenterScreenState extends State<FinancialCommandCenterScr
     return Container(
       width: 280,
       margin: const EdgeInsets.only(right: 16, bottom: 4),
-      decoration: BoxDecoration(
-        color: surfaceWhite,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderTeal.withOpacity(0.6)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            child: Container(width: 4, decoration: BoxDecoration(color: accentColor, borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)))),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textLight, letterSpacing: 0.5),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  val,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textDark),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(icon, color: accentColor, size: 14),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        sub,
-                        style: TextStyle(color: accentColor, fontSize: 11, fontWeight: FontWeight.w600),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                    )
-                  ],
-                )
-              ],
-            ),
-          )
-        ],
+      child: StatCard(
+        title: title,
+        value: val,
+        borderColor: borderTeal.withOpacity(0.6),
+        leftIndicatorColor: accentColor,
+        footer: Row(
+          children: [
+            Icon(icon, color: accentColor, size: 14),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                sub,
+                style: TextStyle(color: accentColor, fontSize: 11, fontWeight: FontWeight.w600),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
@@ -714,7 +687,7 @@ class _FinancialCommandCenterScreenState extends State<FinancialCommandCenterScr
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: const [
-                                Text("\$1.2M", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
+                                Text("₹1.2M", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
                                 Text("TOTAL VAL", style: TextStyle(fontSize: 7, color: textLight, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
                               ],
                             ),
@@ -763,7 +736,7 @@ class _FinancialCommandCenterScreenState extends State<FinancialCommandCenterScr
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: const [
-                              Text("\$1.2M", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDark)),
+                              Text("₹1.2M", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDark)),
                               Text("TOTAL VAL", style: TextStyle(fontSize: 8, color: textLight, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
                             ],
                           ),
@@ -975,7 +948,7 @@ class _FinancialCommandCenterScreenState extends State<FinancialCommandCenterScr
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      "\$${req['amount']}",
+                                      "₹${req['amount']}",
                                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: textDark),
                                     ),
                                     Text(
@@ -1048,7 +1021,7 @@ class _FinancialCommandCenterScreenState extends State<FinancialCommandCenterScr
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     Text(
-                                      "\$${req['amount']}",
+                                      "₹${req['amount']}",
                                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: textDark),
                                     ),
                                     Text(

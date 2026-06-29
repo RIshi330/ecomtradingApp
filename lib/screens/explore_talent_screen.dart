@@ -220,68 +220,124 @@ class _ExploreTalentScreenState extends State<ExploreTalentScreen>
       body: Column(
         children: [
           /// APPBAR
-          Container(
-            color: Colors.white,
-            padding: EdgeInsets.only(
-              top: widget.isEmbedded ? 8 : 55,
-              left: 16,
-              right: 16,
-              bottom: 8,
-            ),
-            child: Row(
-              children: [
-                if (!widget.isEmbedded) ...[
-                  Builder(
-                    builder: (context) => IconButton(
-                      icon: const Icon(
-                        Icons.menu,
-                        color: AppTheme.primary,
-                      ),
-                      onPressed: () {
-                        Scaffold.of(context).openDrawer();
-                      },
+          if (!widget.isEmbedded)
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.only(
+                top: 48,
+                left: 12,
+                right: 12,
+                bottom: 8,
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      Navigator.canPop(context)
+                          ? Icons.arrow_back_rounded
+                          : Icons.menu_rounded,
+                      color: AppTheme.primary,
                     ),
+                    onPressed: () {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      } else {
+                        Scaffold.of(context).openDrawer();
+                      }
+                    },
                   ),
                   const Expanded(
                     child: Text(
                       "Talent Marketplace",
                       style: TextStyle(
-                        fontSize: 22,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.primary,
                       ),
                     ),
                   ),
-                ] else
-                  const Expanded(child: SizedBox()),
-                Row(
-                  children: [
-                    Text(
-                      _activeTab == 0 ? "Talents" : "Hiring Packages",
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primary,
+                  Row(
+                    children: [
+                      Text(
+                        _activeTab == 0 ? "Talents" : "Hiring Packages",
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primary,
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          _activeTab == 0
+                              ? Icons.people_outline
+                              : Icons.card_giftcard,
+                          color: AppTheme.primary,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _activeTab = _activeTab == 0 ? 1 : 0;
+                          });
+                        },
+                      ),
+                    ],
+                  )
+                ],
+              ),
+            )
+          else
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _activeTab == 0 ? "Talent Profiles" : "Featured Packages",
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primary,
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () {
+                      setState(() {
+                        _activeTab = _activeTab == 0 ? 1 : 0;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _activeTab == 0
+                                ? Icons.card_giftcard
+                                : Icons.people_outline,
+                            color: AppTheme.primary,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _activeTab == 0 ? "Packages" : "Profiles",
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    IconButton(
-                      icon: Icon(
-                        _activeTab == 0
-                            ? Icons.people_outline
-                            : Icons.card_giftcard,
-                        color: AppTheme.primary,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _activeTab = _activeTab == 0 ? 1 : 0;
-                        });
-                      },
-                    ),
-                  ],
-                )
-              ],
+                  ),
+                ],
+              ),
             ),
-          ),
 
           Expanded(
             child: _activeTab == 0
@@ -399,8 +455,8 @@ class _ExploreTalentScreenState extends State<ExploreTalentScreen>
                         itemBuilder: (context, index) {
                           final profile = _profiles[index];
                           return Container(
-                            height: 480,
-                            margin: const EdgeInsets.only(bottom: 20),
+                            height: 360,
+                            margin: const EdgeInsets.only(bottom: 16),
                             child: TalentCard(
                               profile: profile,
                               onInvite: () => _showInviteDialogOnSwipe(profile),
@@ -529,10 +585,10 @@ class _ExploreTalentScreenState extends State<ExploreTalentScreen>
 
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.only(bottom: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.only(bottom: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -544,39 +600,41 @@ class _ExploreTalentScreenState extends State<ExploreTalentScreen>
                     title,
                     style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontSize: 14,
                         color: AppTheme.primary),
                   ),
                 ),
                 Text(
                   price,
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.green),
+                      fontWeight: FontWeight.bold, color: Colors.green, fontSize: 13),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(company,
-                style: const TextStyle(color: Colors.grey, fontSize: 12)),
-            const SizedBox(height: 10),
+                style: const TextStyle(color: Colors.grey, fontSize: 11)),
+            const SizedBox(height: 8),
             Text(desc,
-                style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
-            const SizedBox(height: 12),
+                style: TextStyle(color: Colors.grey.shade700, fontSize: 12)),
+            const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text("$slots slots available",
                     style: const TextStyle(
-                        fontWeight: FontWeight.w500, fontSize: 12)),
+                        fontWeight: FontWeight.w500, fontSize: 11)),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primary,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                        borderRadius: BorderRadius.circular(6)),
+                    minimumSize: const Size(80, 30),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                   ),
                   onPressed: () => _showPackageContractConfirmation(pkg),
                   child: const Text("Hire Package",
-                      style: TextStyle(color: Colors.white)),
+                      style: TextStyle(color: Colors.white, fontSize: 11)),
                 )
               ],
             )
@@ -899,10 +957,10 @@ class TalentCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: const [
           BoxShadow(
-            blurRadius: 20,
+            blurRadius: 12,
             color: Colors.black12,
           ),
         ],
@@ -915,7 +973,7 @@ class TalentCard extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(30)),
+                      const BorderRadius.vertical(top: Radius.circular(20)),
                   child: profile.image.isNotEmpty
                       ? Image.network(
                           profile.image,
@@ -928,35 +986,35 @@ class TalentCard extends StatelessWidget {
                 ),
                 if (profile.premium)
                   Positioned(
-                    top: 15,
-                    left: 15,
+                    top: 10,
+                    left: 10,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: AppTheme.primary,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(
                         "PREMIUM TALENT",
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 11,
+                          fontSize: 9,
                         ),
                       ),
                     ),
                   ),
                 Positioned(
-                  top: 15,
-                  right: 15,
+                  top: 10,
+                  right: 10,
                   child: Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       border: Border.all(
-                          color: AppTheme.primary, width: 1.5),
+                          color: AppTheme.primary, width: 1.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -964,21 +1022,21 @@ class TalentCard extends StatelessWidget {
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: AppTheme.primary,
-                        fontSize: 12,
+                        fontSize: 10,
                       ),
                     ),
                   ),
                 ),
                 Positioned(
-                  left: 15,
-                  right: 15,
-                  bottom: 15,
+                  left: 10,
+                  right: 10,
+                  bottom: 10,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
+                        horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.black.withAlpha(140),
-                      borderRadius: BorderRadius.circular(20),
+                      color: Colors.black.withOpacity(0.55),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -987,16 +1045,16 @@ class TalentCard extends StatelessWidget {
                           profile.name,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 22,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 1),
                         Text(
                           "${profile.role} • ${profile.location}",
                           style: const TextStyle(
                             color: Colors.white70,
-                            fontSize: 13,
+                            fontSize: 11,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -1011,7 +1069,7 @@ class TalentCard extends StatelessWidget {
           Expanded(
             flex: 4,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1023,11 +1081,11 @@ class TalentCard extends StatelessWidget {
                           padding: const EdgeInsets.only(right: 6),
                           child: Chip(
                             label:
-                                Text(e, style: const TextStyle(fontSize: 10)),
+                                Text(e, style: const TextStyle(fontSize: 9)),
                             backgroundColor:
-                                AppTheme.primary.withAlpha(25),
+                                AppTheme.primary.withOpacity(0.1),
                             labelStyle:
-                                const TextStyle(color: AppTheme.primary),
+                                const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold),
                             padding: EdgeInsets.zero,
                             side: BorderSide.none,
                             materialTapTargetSize:
@@ -1037,32 +1095,33 @@ class TalentCard extends StatelessWidget {
                       }).toList(),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Expanded(
                     child: Text(
                       profile.description,
                       style: TextStyle(
                           color: Colors.grey.shade700,
-                          fontSize: 13,
-                          height: 1.4),
+                          fontSize: 11,
+                          height: 1.3),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   SizedBox(
                     width: double.infinity,
-                    height: 38,
+                    height: 34,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primary,
+                        padding: EdgeInsets.zero,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                       ),
                       onPressed: onInvite,
                       child: const Text(
-                        "Invite as Collaborator",
+                        "Invite",
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,

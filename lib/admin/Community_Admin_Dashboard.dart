@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 import 'package:trading_ecommerce_admin/services/auth_service.dart';
 import 'package:trading_ecommerce_admin/index.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
@@ -104,6 +105,19 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     _fetchMyListings();
     _fetchMySubmissions();
     _fetchPlatformSettings();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is int) {
+        setState(() {
+          switch (args) {
+            case 0: _currentIndex = 0; break;
+            case 1: _currentIndex = 3; break;
+            case 2: _currentIndex = 2; break;
+          }
+        });
+      }
+    });
   }
 
   Future<void> _fetchOpportunities() async {
@@ -326,16 +340,16 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
 
   // Mock Data (legacy placeholders)
   final List<Map<String, dynamic>> _mockProducts = [
-    {"title": "Rolex Submariner", "price": "\$12,500", "stock": 4, "status": "Approved"},
-    {"title": "Louis Vuitton Keepall", "price": "\$2,800", "stock": 12, "status": "Approved"},
-    {"title": "Gucci Double G Belt", "price": "\$650", "stock": 45, "status": "Pending"},
-    {"title": "Hermes Birkin 30", "price": "\$22,000", "stock": 2, "status": "Approved"},
+    {"title": "Rolex Submariner", "price": "₹12,500", "stock": 4, "status": "Approved"},
+    {"title": "Louis Vuitton Keepall", "price": "₹2,800", "stock": 12, "status": "Approved"},
+    {"title": "Gucci Double G Belt", "price": "₹650", "stock": 45, "status": "Pending"},
+    {"title": "Hermes Birkin 30", "price": "₹22,000", "stock": 2, "status": "Approved"},
   ];
 
   final List<Map<String, dynamic>> _mockOrders = [
-    {"id": "LX-9082", "user": "Aditya Singh", "amount": "\$12,500", "status": "Delivered"},
-    {"id": "LX-9083", "user": "Nehal Gupta", "amount": "\$650", "status": "Pending"},
-    {"id": "LX-9084", "user": "Vikram Rathore", "amount": "\$2,800", "status": "Shipped"},
+    {"id": "LX-9082", "user": "Aditya Singh", "amount": "₹12,500", "status": "Delivered"},
+    {"id": "LX-9083", "user": "Nehal Gupta", "amount": "₹650", "status": "Pending"},
+    {"id": "LX-9084", "user": "Vikram Rathore", "amount": "₹2,800", "status": "Shipped"},
   ];
 
   final List<String> _mockCategories = ["Luxury Watches", "Leather Bags", "Fine Jewelry", "Designer Belts", "Apparel"];
@@ -373,10 +387,10 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   ];
 
   final List<Map<String, dynamic>> _mockMembershipPlans = [
-    {"tier": "Basic (Free)", "price": "\$0", "duration": "Lifetime", "features": "List up to 5 items"},
-    {"tier": "Silver Premium", "price": "\$29/mo", "duration": "1 Month", "features": "List up to 50 items, 5% commission"},
-    {"tier": "Gold Elite", "price": "\$79/mo", "duration": "3 Months", "features": "Unlimited listings, 2.5% commission"},
-    {"tier": "Platinum Royalty", "price": "\$249/yr", "duration": "1 Year", "features": "Unlimited listings, 0% commission, Priority Support"},
+    {"tier": "Basic (Free)", "price": "₹0", "duration": "Lifetime", "features": "List up to 5 items"},
+    {"tier": "Silver Premium", "price": "₹29/mo", "duration": "1 Month", "features": "List up to 50 items, 5% commission"},
+    {"tier": "Gold Elite", "price": "₹79/mo", "duration": "3 Months", "features": "Unlimited listings, 2.5% commission"},
+    {"tier": "Platinum Royalty", "price": "₹249/yr", "duration": "1 Year", "features": "Unlimited listings, 0% commission, Priority Support"},
   ];
 
   // Helper method to get screen title
@@ -415,33 +429,137 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
 
   // Handle Logout action
   void _handleLogout() {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Confirm Logout", style: TextStyle(color: textDark, fontWeight: FontWeight.bold)),
-        content: const Text("Are you sure you want to log out of the admin panel?", style: TextStyle(color: textLight)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Cancel", style: TextStyle(color: textLight)),
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              
+              // Header Row (Icon + Title & Subtitle)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEE), // Light red background
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.power_settings_new_rounded,
+                      color: Color(0xFFC62828), // Dark red icon
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Sign Out",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: textDark,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          "Confirm account log out",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              
+              // Body message
+              const Text(
+                "Are you sure you want to sign out of your account?\nYou will need to enter your credentials to log back in.",
+                style: TextStyle(
+                  fontSize: 13,
+                  color: textLight,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Action Buttons Row
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(color: Colors.grey.shade300),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        foregroundColor: textDark,
+                      ),
+                      child: const Text(
+                        "Cancel",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        await AuthService.logout();
+                        if (mounted) {
+                          Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFEBEE), // Light red background
+                        foregroundColor: const Color(0xFFC62828), // Red text
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        "Logout",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await AuthService.logout();
-              if (mounted) {
-                Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text("Logout", style: TextStyle(color: Colors.white)),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -545,10 +663,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
               child: const Icon(Icons.add),
             )
           : null,
-      appBar: _currentIndex == 0
-          ? _buildTealHeader()
-          : _currentIndex == 12
-              ? _buildSellerHeader()
+      appBar: (_currentIndex == 0 || _currentIndex == 12)
+          ? _buildSellerHeader()
               : AppBar(
               backgroundColor: Colors.white,
               elevation: 1,
@@ -564,14 +680,14 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       ),
                     ),
               centerTitle: true,
-              title: Text(
-                _getAppBarTitle(),
-                style: const TextStyle(
-                  color: Color(0xFF006565),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                ),
-              ),
+                  title: Text(
+                    _getAppBarTitle(),
+                    style: const TextStyle(
+                      color: Color(0xFF006565),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 19,
+                    ),
+                  ),
               actions: [
                 Stack(
                   children: [
@@ -1120,7 +1236,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   // Navigate from bottom bar tabs
   void _setTabFromBottomNav(int bottomIndex) {
     if (bottomIndex == 3) {
-      Navigator.pushNamed(context, '/wallet');
+      Navigator.pushNamed(context, '/wallet', arguments: 'admin');
     } else {
       setState(() {
         switch (bottomIndex) {
@@ -1231,7 +1347,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   // Render Body based on index
   Widget _buildBodyContent() {
     switch (_currentIndex) {
-      case 0: return _buildDashboardView();
+      case 0: return const SellerDashboardScreen(isEmbedded: true);
       case 1: return _buildTextUsersView(); // renamed custom users view helper below
       case 2: return const ProductManagementScreen(isEmbedded: true);
       case 31: return const LowStockInventoryScreen(isEmbedded: true);
@@ -1407,137 +1523,111 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     );
   }
 
-  PreferredSizeWidget _buildTealHeader() {
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(135), // Increased to fit search bar and action icons cleanly without overflow
-      child: Container(
-        color: const Color(0xFF006565),
-        child: SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Row 1: Menu Icon & Location dropdown
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.menu, color: Colors.white, size: 24),
-                      onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.location_on_outlined, color: Colors.white, size: 18),
-                    const SizedBox(width: 4),
-                    const Text(
-                      "Location ",
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
-                    ),
-                    const Text(
-                      "180004",
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-                    const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 18),
-                  ],
+  PreferredSizeWidget _buildCleanDashboardHeader() {
+    return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      scrolledUnderElevation: 1.0,
+      shadowColor: Colors.black.withOpacity(0.08),
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(1),
+        child: Container(
+          color: Colors.black.withOpacity(0.04),
+          height: 1,
+        ),
+      ),
+      leading: Builder(
+        builder: (context) => IconButton(
+          icon: const Icon(Icons.menu, color: Color(0xff006565)),
+          onPressed: () => Scaffold.of(context).openDrawer(),
+        ),
+      ),
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xff006565).withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.dashboard_outlined,
+              color: Color(0xff006565),
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Flexible(
+            child: Text(
+              "Serene Commerce",
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              style: TextStyle(
+                color: Color(0xff006565),
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        Container(
+          margin: const EdgeInsets.only(right: 8),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.notifications_none_rounded,
+                  color: Color(0xff3e4949),
+                  size: 24,
                 ),
-                const SizedBox(height: 12),
-                // Row 2: Search Bar & Icons
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 22,
-                              height: 22,
-                              decoration: BoxDecoration(
-                                color: Colors.red.shade400,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              alignment: Alignment.center,
-                              child: const Text(
-                                "M",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Expanded(
-                              child: Text(
-                                "Search for products...",
-                                style: TextStyle(color: Colors.grey, fontSize: 13),
-                              ),
-                            ),
-                            const Icon(Icons.search, color: Colors.grey, size: 18),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Notification Icon with Badge
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.notifications_outlined, color: Colors.white, size: 24),
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const LocalNotificationsScreen()),
-                          ),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                        Positioned(
-                          right: 4,
-                          top: 4,
-                          child: Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: 12),
-                    // Favorites Icon
-                    IconButton(
-                      icon: const Icon(Icons.favorite_border, color: Colors.white, size: 24),
-                      onPressed: () {},
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                    const SizedBox(width: 12),
-                    // Profile Icon
-                    IconButton(
-                      icon: const Icon(Icons.person_outline, color: Colors.white, size: 24),
-                      onPressed: () {
-                        setState(() => _currentIndex = 11);
-                      },
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LocalNotificationsScreen()),
                 ),
-              ],
+              ),
+              Positioned(
+                right: 12,
+                top: 12,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          margin: const EdgeInsets.only(right: 16),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: const Color(0xff006565).withOpacity(0.2),
+              width: 2,
+            ),
+          ),
+          child: InkWell(
+            onTap: () {
+              setState(() => _currentIndex = 11);
+            },
+            child: const CircleAvatar(
+              radius: 16,
+              backgroundColor: Color(0xffe5f7f7),
+              backgroundImage: NetworkImage(
+                "https://i.pravatar.cc/150?img=33",
+              ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 
@@ -1572,7 +1662,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           // Stats Row
           Row(
             children: [
-              Expanded(child: _buildStatCard("Total Revenue", "\$438,200", Icons.monetization_on_rounded, Colors.green)),
+              Expanded(child: _buildStatCard("Total Revenue", "₹438,200", Icons.monetization_on_rounded, Colors.green)),
               const SizedBox(width: 16),
               Expanded(
                 child: _buildStatCard(
@@ -1658,44 +1748,12 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   }
 
   Widget _buildStatCard(String title, String val, IconData icon, Color color, {VoidCallback? onTap}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10, offset: const Offset(0, 4))],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(color: textLight, fontSize: 12, fontWeight: FontWeight.w600),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(icon, color: color, size: 22),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(val, style: const TextStyle(color: textDark, fontSize: 20, fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return StatCard(
+      title: title,
+      value: val,
+      icon: icon,
+      iconColor: color,
+      onTap: onTap,
     );
   }
 
@@ -2127,13 +2185,13 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
               children: [
                 const Text("PLATFORM ESCROW BALANCE", style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1.5)),
                 const SizedBox(height: 8),
-                const Text("\$184,350.00", style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+                const Text("₹184,350.00", style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: const [
-                    Text("Commission Earned: \$18,435.00", style: TextStyle(color: Colors.white70, fontSize: 13)),
-                    Text("Payouts Pending: \$4,200", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    Text("Commission Earned: ₹18,435.00", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    Text("Payouts Pending: ₹4,200", style: TextStyle(color: Colors.white70, fontSize: 13)),
                   ],
                 ),
               ],
@@ -2812,7 +2870,7 @@ class LocalNotificationsScreen extends StatelessWidget {
         itemBuilder: (context, index) {
           final titles = ["Withdrawal Requested", "New Seller Signup", "Low Stock Alert"];
           final subtitles = [
-            "Supreme Vintage requested a payout of \$4,200.",
+            "Supreme Vintage requested a payout of ₹4,200.",
             "Ananya Sharma registered as a new Vendor.",
             "Rolex Submariner has only 4 items left in stock."
           ];

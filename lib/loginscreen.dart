@@ -135,11 +135,13 @@ class _LoginScreenState extends State<LoginScreen> {
           vendorId: vendorId,
           userData: fullUserData,
         );
-        _requestLocationInBackground();
         _showSuccessBanner('Login successful! Redirecting...');
 
         // Wait 1.5 seconds to show the toast banner before navigating
         await Future.delayed(const Duration(milliseconds: 1500));
+        if (!mounted) return;
+
+        await _showLocationPermissionDialog();
         if (!mounted) return;
 
         if (selectedRole == 'Admin') {
@@ -282,7 +284,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const CommunityAdminDashboard()),
+            MaterialPageRoute(builder: (_) => const BusinessUserDashboard()),
             (route) => false,
           );
           return;
@@ -339,9 +341,11 @@ class _LoginScreenState extends State<LoginScreen> {
           vendorId: vendorId,
           userData: fullUserData,
         );
-        _requestLocationInBackground();
         _showSuccessBanner('Login successful! Redirecting...');
         await Future.delayed(const Duration(milliseconds: 1500));
+        if (!mounted) return;
+
+        await _showLocationPermissionDialog();
         if (!mounted) return;
 
         if (selectedRole == 'Business' &&
@@ -361,7 +365,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (vendorType != '500' && vendorType != '1') {
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const BusinessUserDashboard()),
+            MaterialPageRoute(builder: (_) => const CommunityAdminDashboard()),
             (route) => false,
           );
           return;
@@ -494,12 +498,120 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _requestLocationInBackground() {
-    Future.delayed(const Duration(milliseconds: 500), () async {
-      try {
-        await LocationService.requestAndGetLocation();
-      } catch (_) {}
-    });
+  Future<void> _showLocationPermissionDialog() async {
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Top Icon
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE5F5F5), // Light teal circle background
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.location_on,
+                      color: Color(0xFF006565), // Dark teal pin
+                      size: 38,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Title
+                const Text(
+                  "Enable Location",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Subtitle
+                const Text(
+                  "Luxe requires access to your location to provide personalized delivery estimates, calculate taxes correctly, and display premium stores near you.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Allow Access Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF006565),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      try {
+                        await LocationService.requestAndGetLocation();
+                      } catch (_) {}
+                    },
+                    child: const Text(
+                      "Allow Access",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Not Now Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF006565)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text(
+                      "Not Now",
+                      style: TextStyle(
+                        color: Color(0xFF006565),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<bool> _checkUserHasInterests(int vendorId) async {

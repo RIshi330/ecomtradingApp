@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 
 class WalletAdminScreen extends StatefulWidget {
@@ -192,6 +193,9 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    final bool isFromAdmin = args == 'admin';
+
     return Scaffold(
       backgroundColor: Colors.white,
 
@@ -208,29 +212,100 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
                 onPressed: () {},
               ),
         title: const Text(
-          "Financial Admin",
+          "Financial Wallet",
           style: TextStyle(
-            color: Colors.black87,
+            color: Color(0xff006565),
             fontWeight: FontWeight.bold,
+            fontSize: 18,
           ),
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: const Color(0xffD4E6E5),
-              child: const Icon(Icons.person, color: Color(0xff006565)),
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Color(0xff006565)),
+            onPressed: _fetchWithdrawalHistory,
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () {
+              Navigator.pushNamed(context, '/user/bank-accounts');
+            },
+            child: const CircleAvatar(
+              radius: 16,
+              backgroundColor: Color(0xff006565),
+              child: Icon(Icons.account_balance_rounded, color: Colors.white, size: 18),
             ),
           ),
+          const SizedBox(width: 16),
         ],
       ),
 
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.small(
         backgroundColor: const Color(0xff006565),
         onPressed: _showWithdrawSheet,
         child: const Icon(Icons.add, color: Colors.white),
       ),
+
+      bottomNavigationBar: widget.isEmbedded
+          ? null
+          : BottomNavigationBar(
+              currentIndex: isFromAdmin ? 3 : 4, // Wallet is 3 for Admin, More is 4 for Business
+              onTap: (index) {
+                if (isFromAdmin) {
+                  if (index == 3) {
+                    // Already on wallet
+                  } else if (index == 4) {
+                    // Navigate back to Admin Dashboard and trigger drawer
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      '/admin/dashboard',
+                      (route) => false,
+                      arguments: 4, // More/Drawer
+                    );
+                  } else {
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      '/admin/dashboard',
+                      (route) => false,
+                      arguments: index,
+                    );
+                  }
+                } else {
+                  if (index == 4) {
+                    // Already on more
+                  } else {
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      '/business/dashboard',
+                      (route) => false,
+                      arguments: index,
+                    );
+                  }
+                }
+              },
+              backgroundColor: Colors.white,
+              type: BottomNavigationBarType.fixed,
+              selectedItemColor: const Color(0xff006565),
+              unselectedItemColor: Colors.grey,
+              showSelectedLabels: true,
+              showUnselectedLabels: true,
+              selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+              unselectedLabelStyle: const TextStyle(fontSize: 11),
+              items: isFromAdmin
+                  ? const [
+                      BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: "Dashboard"),
+                      BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: "Orders"),
+                      BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_rounded), label: "Products"),
+                      BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_rounded), label: "Wallet"),
+                      BottomNavigationBarItem(icon: Icon(Icons.menu_rounded), label: "More"),
+                    ]
+                  : const [
+                      BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: "Home"),
+                      BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: "Orders"),
+                      BottomNavigationBarItem(icon: Icon(Icons.business_center_rounded), label: "Opportunities"),
+                      BottomNavigationBarItem(icon: Icon(Icons.settings_rounded), label: "Settings"),
+                      BottomNavigationBarItem(icon: Icon(Icons.menu_rounded), label: "More"),
+                    ],
+            ),
 
       body: RefreshIndicator(
         onRefresh: _fetchWithdrawalHistory,
@@ -242,40 +317,52 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
 
               // Stats Cards
               SizedBox(
-                height: 150,
+                height: 120,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: const [
-                    StatCard(
-                      title: "Total Revenue",
-                      amount: "₹1,28,430",
-                      icon: Icons.payments,
-                      percentage: "+12%",
-                      positive: true,
+                    SizedBox(
+                      width: 140,
+                      child: StatCard(
+                        title: "Total Revenue",
+                        value: "₹1,28,430",
+                        icon: Icons.payments,
+                        growth: "+12%",
+                        positive: true,
+                      ),
                     ),
                     SizedBox(width: 12),
-                    StatCard(
-                      title: "Total Expenses",
-                      amount: "₹42,150",
-                      icon: Icons.account_balance_wallet,
-                      percentage: "-5%",
-                      positive: false,
+                    SizedBox(
+                      width: 140,
+                      child: StatCard(
+                        title: "Total Expenses",
+                        value: "₹42,150",
+                        icon: Icons.account_balance_wallet,
+                        growth: "-5%",
+                        positive: false,
+                      ),
                     ),
                     SizedBox(width: 12),
-                    StatCard(
-                      title: "Total Income",
-                      amount: "₹86,280",
-                      icon: Icons.trending_up,
-                      percentage: "",
-                      positive: true,
+                    SizedBox(
+                      width: 140,
+                      child: StatCard(
+                        title: "Total Income",
+                        value: "₹86,280",
+                        icon: Icons.trending_up,
+                        growth: "",
+                        positive: true,
+                      ),
                     ),
                     SizedBox(width: 12),
-                    StatCard(
-                      title: "Pending Dues",
-                      amount: "₹4,500",
-                      icon: Icons.pending_actions,
-                      percentage: "",
-                      positive: false,
+                    SizedBox(
+                      width: 140,
+                      child: StatCard(
+                        title: "Pending Dues",
+                        value: "₹4,500",
+                        icon: Icons.pending_actions,
+                        growth: "",
+                        positive: false,
+                      ),
                     ),
                   ],
                 ),
@@ -643,58 +730,7 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
   }
 }
 
-class StatCard extends StatelessWidget {
-  final String title;
-  final String amount;
-  final IconData icon;
-  final String percentage;
-  final bool positive;
 
-  const StatCard({
-    super.key,
-    required this.title,
-    required this.amount,
-    required this.icon,
-    required this.percentage,
-    required this.positive,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 180,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey.shade200),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: const Color(0xff006565)),
-          const Spacer(),
-          Text(title),
-          const SizedBox(height: 4),
-          Text(
-            amount,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          if (percentage.isNotEmpty)
-            Text(
-              percentage,
-              style: TextStyle(
-                color: positive ? Colors.green : Colors.red,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
 
 class WalletCard extends StatelessWidget {
   final String title;

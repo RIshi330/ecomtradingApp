@@ -691,13 +691,13 @@ class LogisticsPartnerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 18),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withOpacity(0.02),
             blurRadius: 6,
             offset: const Offset(0, 3),
           )
@@ -707,26 +707,27 @@ class LogisticsPartnerCard extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: const BoxDecoration(
               color: Color(0xffF6F3F2),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
             ),
             child: Row(
               children: [
                 Container(
-                  width: 50,
-                  height: 50,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF006565).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(14),
+                    color: const Color(0xFF006565).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     partner.icon,
                     color: const Color(0xFF006565),
+                    size: 18,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -735,18 +736,18 @@ class LogisticsPartnerCard extends StatelessWidget {
                         partner.companyName,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 14,
                           color: Colors.black87,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 1),
                       Row(
                         children: [
-                          const Icon(Icons.star, color: Colors.amber, size: 16),
+                          const Icon(Icons.star, color: Colors.amber, size: 14),
                           const SizedBox(width: 2),
                           Text(
                             partner.rating.toString(),
-                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.black54),
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11, color: Colors.black54),
                           ),
                         ],
                       ),
@@ -754,9 +755,9 @@ class LogisticsPartnerCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: partner.badgeColor.withValues(alpha: 0.15),
+                    color: partner.badgeColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: Text(
@@ -764,7 +765,7 @@ class LogisticsPartnerCard extends StatelessWidget {
                     style: TextStyle(
                       color: partner.badgeColor,
                       fontWeight: FontWeight.bold,
-                      fontSize: 11,
+                      fontSize: 10,
                     ),
                   ),
                 ),
@@ -772,38 +773,38 @@ class LogisticsPartnerCard extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Column(
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.trip_origin, size: 16, color: Colors.grey),
+                    const Icon(Icons.trip_origin, size: 14, color: Colors.grey),
                     const SizedBox(width: 8),
                     Text(
                       partner.route,
-                      style: const TextStyle(fontSize: 13, color: Colors.black87),
+                      style: const TextStyle(fontSize: 12, color: Colors.black87),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(Icons.schedule, size: 16, color: Colors.grey),
+                    const Icon(Icons.schedule, size: 14, color: Colors.grey),
                     const SizedBox(width: 8),
                     Text(
                       partner.deliveryTime,
-                      style: const TextStyle(fontSize: 13, color: Colors.black87),
+                      style: const TextStyle(fontSize: 12, color: Colors.black87),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     Text(
                       partner.price,
                       style: const TextStyle(
                         color: Color(0xFF006565),
-                        fontSize: 22,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -812,21 +813,23 @@ class LogisticsPartnerCard extends StatelessWidget {
                       onPressed: onMessage,
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Color(0xFF006565)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        minimumSize: const Size(80, 36),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        minimumSize: const Size(75, 30),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
                       ),
-                      child: const Text("Message", style: TextStyle(color: Color(0xFF006565), fontSize: 12, fontWeight: FontWeight.bold)),
+                      child: const Text("Message", style: TextStyle(color: Color(0xFF006565), fontSize: 11, fontWeight: FontWeight.bold)),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     ElevatedButton(
                       onPressed: onBook,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF006565),
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        minimumSize: const Size(90, 36),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        minimumSize: const Size(80, 30),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
                       ),
-                      child: const Text("Book Now", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      child: const Text("Book Now", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),

@@ -278,7 +278,7 @@ class _SellerManagementScreenState
             SizedBox(height: 12),
             Text("Orders: 1284"),
             Text("Rating: 4.9/5"),
-            Text("Revenue: \$42k"),
+            Text("Revenue: ₹42k"),
           ],
         ),
       ),

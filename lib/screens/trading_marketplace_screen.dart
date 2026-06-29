@@ -1052,12 +1052,22 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
             colors: [
-              Color(0xff7C3AED),
-              Color(0xffA855F7),
+              Color(0xff004d4d),
+              Color(0xff006565),
+              Color(0xff008080),
             ],
           ),
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xff004d4d).withOpacity(0.2),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1066,39 +1076,42 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
               "Combo Promotion Pack",
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 24,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
+                letterSpacing: 0.1,
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
+            const SizedBox(height: 6),
+            Text(
               "Promote 5 products together and boost conversions",
               style: TextStyle(
-                color: Colors.white70,
+                color: Colors.white.withOpacity(0.8),
+                fontSize: 11,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Row(
-              children: const [
+              children: [
                 Expanded(
                   child: Text(
                     "Price",
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 11,
                     ),
                   ),
                 ),
-                Text(
+                const Text(
                   "₹4,999",
                   style: TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -1106,8 +1119,19 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: themeColor,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
-                child: const Text("Buy Combo"),
+                child: const Text(
+                  "Buy Combo",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
               ),
             ),
           ],

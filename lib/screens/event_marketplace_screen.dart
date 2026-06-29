@@ -215,8 +215,8 @@ class _EventMarketplaceScreenState extends State<EventMarketplaceScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text("\$0", style: TextStyle(color: Colors.grey[700], fontSize: 13)),
-                        Text("\$${_maxPriceFilter.toInt()}+", style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold)),
+                        Text("₹0", style: TextStyle(color: Colors.grey[700], fontSize: 13)),
+                        Text("₹${_maxPriceFilter.toInt()}+", style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold)),
                       ],
                     ),
                     Slider(

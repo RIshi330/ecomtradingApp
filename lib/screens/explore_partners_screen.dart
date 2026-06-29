@@ -406,7 +406,7 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
               const SizedBox(height: 12),
               Text(
                 name,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -494,7 +494,7 @@ class _ExplorePartnersScreenState extends State<ExplorePartnersScreen> {
             Expanded(
               child: Text(
                 name,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
               ),
             ),
             Container(

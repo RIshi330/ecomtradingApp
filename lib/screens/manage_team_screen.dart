@@ -939,10 +939,17 @@ class MemberCard extends StatelessWidget {
               children: [
                 Text("Created: ${member.createdDate}"),
                 Chip(
+                  side: BorderSide.none,
                   backgroundColor: member.status == "Active"
                       ? Colors.green.shade100
                       : Colors.grey.shade300,
-                  label: Text(member.status),
+                  label: Text(
+                    member.status,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ],
             ),

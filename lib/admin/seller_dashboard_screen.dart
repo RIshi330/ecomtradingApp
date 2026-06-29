@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
@@ -886,116 +887,7 @@ class LowStockCard extends StatelessWidget {
   }
 }
 
-class StatCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String value;
-  final String growth;
-  final bool positive;
 
-  const StatCard({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.value,
-    required this.growth,
-    required this.positive,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final statusColor = positive ? const Color(0xff006565) : Colors.redAccent;
-    final bgHighlightColor =
-        positive ? const Color(0xffe5f7f7) : const Color(0xffffebee);
-
-    return HoverableCard(
-      borderColor: const Color(0xff006565),
-      borderRadius: 20.0,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isNarrow = constraints.maxWidth < 150;
-          final padding = isNarrow ? 12.0 : 18.0;
-          final iconPadding = isNarrow ? 8.0 : 12.0;
-          final iconSize = isNarrow ? 18.0 : 22.0;
-          final titleSize = isNarrow ? 11.0 : 13.0;
-          final valueSize = isNarrow ? 16.0 : 22.0;
-
-          return Padding(
-            padding: EdgeInsets.all(padding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(iconPadding),
-                      decoration: BoxDecoration(
-                        color: bgHighlightColor,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        icon,
-                        color: statusColor,
-                        size: iconSize,
-                      ),
-                    ),
-                    if (!isNarrow || constraints.maxWidth > 100)
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isNarrow ? 6 : 10,
-                          vertical: isNarrow ? 4 : 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: positive
-                              ? Colors.green.shade50
-                              : Colors.red.shade50,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          growth,
-                          style: TextStyle(
-                            color: positive
-                                ? Colors.green.shade700
-                                : Colors.red.shade700,
-                            fontWeight: FontWeight.w800,
-                            fontSize: isNarrow ? 9 : 11,
-                          ),
-                        ),
-                      )
-                  ],
-                ),
-                const Spacer(),
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.grey.shade500,
-                    fontSize: titleSize,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: valueSize,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black87,
-                    letterSpacing: -0.2,
-                  ),
-                )
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
 
 class AnalyticsSection extends StatefulWidget {
   final List<String> labels;
@@ -2832,14 +2724,14 @@ class SellerOpportunitySection extends StatelessWidget {
               buyerSubtitle: "Verified Buyer",
               product: "Custom Bamboo Desk Organizers",
               quantity: "500 units",
-              budget: "\$4,500.00",
+              budget: "₹4,500.00",
             ),
             OpportunityCard(
               buyer: "Sarah Kross",
               buyerSubtitle: "Enterprise Client",
               product: "Ergonomic Office Chairs (Teal)",
               quantity: "120 units",
-              budget: "\$18,000.00",
+              budget: "₹18,000.00",
             ),
           ],
         )
@@ -4174,64 +4066,7 @@ class _ContactBuyerDialogState extends State<ContactBuyerDialog> {
   }
 }
 
-class HoverableCard extends StatefulWidget {
-  final Widget child;
-  final Color borderColor;
-  final double borderRadius;
-  final Color backgroundColor;
 
-  const HoverableCard({
-    super.key,
-    required this.child,
-    this.borderColor = const Color(0xff006565),
-    this.borderRadius = 24.0,
-    this.backgroundColor = Colors.white,
-  });
-
-  @override
-  State<HoverableCard> createState() => _HoverableCardState();
-}
-
-class _HoverableCardState extends State<HoverableCard> {
-  bool _isHovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutCubic,
-        transform: Matrix4.translationValues(0, _isHovered ? -6.0 : 0.0, 0.0),
-        decoration: BoxDecoration(
-          color: widget.backgroundColor,
-          borderRadius: BorderRadius.circular(widget.borderRadius),
-          border: Border.all(
-            color: _isHovered
-                ? widget.borderColor.withValues(alpha: 0.3)
-                : Colors.black.withValues(alpha: 0.04),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: _isHovered ? 0.08 : 0.03),
-              blurRadius: _isHovered ? 24 : 12,
-              offset: Offset(0, _isHovered ? 12 : 6),
-            ),
-            if (_isHovered)
-              BoxShadow(
-                color: widget.borderColor.withValues(alpha: 0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-          ],
-        ),
-        child: widget.child,
-      ),
-    );
-  }
-}
 
 class DoughnutChart extends StatelessWidget {
   final List<double> values;

@@ -15,6 +15,7 @@ import 'admin/membership_plans_screen.dart';
 import 'admin/memberships_and_plans_screen.dart';
 import 'admin/manage_vendors_screen.dart';
 import 'admin/platform_settings_screen.dart';
+import 'admin/commission_settings_screen.dart';
 import 'admin/seller_dashboard_screen.dart';
 import 'admin/seller_management_screen.dart';
 import 'admin/taxonomy_manager_screen.dart';
@@ -100,6 +101,7 @@ class AppRoutes {
   static const String adminProfileScreen = '/admin_profile';
   static const String manageItems = '/manage_items';
   static const String platformSettings = '/platform_settings';
+  static const String commissionSettings = '/commission_settings';
   static const String membershipPlans = '/membership_plans';
   static const String manageVendors = '/manage_vendors';
   static const String membershipsAndPlans = '/memberships_and_plans';
@@ -180,6 +182,7 @@ class AppRoutes {
         adminProfileScreen: (context) => const AdminProfileScreen(),
         manageItems: (context) => const ManageItemsScreen(),
         platformSettings: (context) => const PlatformSettingsScreen(),
+        commissionSettings: (context) => const CommissionSettingsScreen(),
         membershipPlans: (context) => const MembershipPlansScreen(),
         manageVendors: (context) => const ManageVendorsScreen(),
         membershipsAndPlans: (context) => const MembershipsAndPlansScreen(),

@@ -43,7 +43,7 @@ class _EventOppDetailScreenState extends State<EventOppDetailScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(tierName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        Text("\$${price.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary, fontSize: 16)),
+                        Text("₹${price.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary, fontSize: 16)),
                       ],
                     ),
                   ),
@@ -115,13 +115,13 @@ class _EventOppDetailScreenState extends State<EventOppDetailScreen> {
               const Text("Confirm Booking", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
               const SizedBox(height: 8),
               Text(
-                "Booking $name for \$${basePrice.toStringAsFixed(0)} plus 15% service tax:",
+                "Booking $name for ₹${basePrice.toStringAsFixed(0)} plus 15% service tax:",
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
               ),
               const SizedBox(height: 12),
               Text(
-                "\$${total.toStringAsFixed(2)}",
+                "₹${total.toStringAsFixed(2)}",
                 style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppTheme.primary),
               ),
               const SizedBox(height: 24),
@@ -574,11 +574,11 @@ class _EventOppDetailScreenState extends State<EventOppDetailScreen> {
                       children: [
                         const Text("Exhibition Stalls", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
                         const SizedBox(height: 12),
-                        _buildStallRadio(1, "Premium Corner", "4x4m • \$5,000", 5000),
+                        _buildStallRadio(1, "Premium Corner", "4x4m • ₹5,000", 5000),
                         const SizedBox(height: 8),
-                        _buildStallRadio(2, "Standard Booth", "3x3m • \$3,500", 3500),
+                        _buildStallRadio(2, "Standard Booth", "3x3m • ₹3,500", 3500),
                         const SizedBox(height: 8),
-                        _buildStallRadio(3, "Product Kiosk", "2x2m • \$1,500", 1500),
+                        _buildStallRadio(3, "Product Kiosk", "2x2m • ₹1,500", 1500),
                         const SizedBox(height: 16),
                         ElevatedButton.icon(
                           icon: const Icon(Icons.storefront, size: 16),
@@ -861,7 +861,7 @@ class _EventOppDetailScreenState extends State<EventOppDetailScreen> {
         children: [
           ListTile(
             title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.textPrimary)),
-            subtitle: Text("\$${price.toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 14)),
+            subtitle: Text("₹${price.toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 14)),
             trailing: Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: AppTheme.textSecondary),
             onTap: onToggle,
           ),

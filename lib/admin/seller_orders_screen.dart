@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../model/order_model.dart';
 import '../core/theme/app_theme.dart';
+import '../widgets/stat_card.dart';
 import 'order_details_screen.dart';
 
 class SellerOrderScreen extends StatefulWidget {
@@ -557,141 +558,143 @@ class _SellerOrderScreenState extends State<SellerOrderScreen> {
   }
 
   Widget _buildOrderCard(OrderModel order) {
-    return Card(
-      elevation: 0,
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => OrderDetailsScreen(order: order),
+      child: HoverableCard(
+        borderRadius: 16.0,
+        borderColor: AppTheme.primary,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => OrderDetailsScreen(order: order),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      order.id,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: AppTheme.primary,
+                      ),
+                    ),
+                    Text(
+                      order.date,
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "Customer: ${order.customerName}",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    color: Color(0xFF1C1B1B),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "Items: ${order.items}",
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "₹${order.amount.toStringAsFixed(2)}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: AppTheme.primary,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: getStatusColor(order.status).withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            order.status,
+                            style: TextStyle(
+                              color: getStatusColor(order.status),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert, size: 18, color: Colors.grey),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onSelected: (value) {
+                            switch (value) {
+                              case "details":
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => OrderDetailsScreen(order: order),
+                                  ),
+                                );
+                                break;
+                              case "status":
+                                showStatusModal(order);
+                                break;
+                              case "tracking":
+                                showTrackingModal(order);
+                                break;
+                              case "notes":
+                                showOrderNotesModal(order);
+                                break;
+                            }
+                          },
+                          itemBuilder: (BuildContext context) => [
+                            const PopupMenuItem(
+                              value: "details",
+                              child: Text("View Details"),
+                            ),
+                            const PopupMenuItem(
+                              value: "status",
+                              child: Text("Update Status"),
+                            ),
+                            const PopupMenuItem(
+                              value: "tracking",
+                              child: Text("Tracking Details"),
+                            ),
+                            const PopupMenuItem(
+                              value: "notes",
+                              child: Text("Order Notes"),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
             ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    order.id,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: AppTheme.primary,
-                    ),
-                  ),
-                  Text(
-                    order.date,
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                "Customer: ${order.customerName}",
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                "Items: ${order.items}",
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "₹${order.amount.toStringAsFixed(2)}",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: AppTheme.primary,
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: getStatusColor(order.status).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          order.status,
-                          style: TextStyle(
-                            color: getStatusColor(order.status),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert, size: 20),
-                        onSelected: (value) {
-                          switch (value) {
-                            case "details":
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => OrderDetailsScreen(order: order),
-                                ),
-                              );
-                              break;
-                            case "status":
-                              showStatusModal(order);
-                              break;
-                            case "tracking":
-                              showTrackingModal(order);
-                              break;
-                            case "notes":
-                              showOrderNotesModal(order);
-                              break;
-                          }
-                        },
-                        itemBuilder: (BuildContext context) => [
-                          const PopupMenuItem(
-                            value: "details",
-                            child: Text("View Details"),
-                          ),
-                          const PopupMenuItem(
-                            value: "status",
-                            child: Text("Update Status"),
-                          ),
-                          const PopupMenuItem(
-                            value: "tracking",
-                            child: Text("Tracking Details"),
-                          ),
-                          const PopupMenuItem(
-                            value: "notes",
-                            child: Text("Order Notes"),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
           ),
         ),
       ),

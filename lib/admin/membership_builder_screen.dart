@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../Database/Database.dart';
+import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 
 class MembershipBuilderScreen extends StatefulWidget {
   final bool isEmbedded;
@@ -190,7 +191,7 @@ class _MembershipBuilderScreenState
   final List<TemplatePlan> templates = [
     TemplatePlan(
       title: "Basic Plan",
-      price: "\$0",
+      price: "₹0",
       icon: Icons.person,
       description: "Perfect for individuals starting their journey.",
       features: [
@@ -204,7 +205,7 @@ class _MembershipBuilderScreenState
     ),
     TemplatePlan(
       title: "Pro Professional",
-      price: "\$29",
+      price: "₹29",
       icon: Icons.workspace_premium,
       description: "Advance features for growing businesses.",
       features: [
@@ -218,7 +219,7 @@ class _MembershipBuilderScreenState
     ),
     TemplatePlan(
       title: "Enterprise Suite",
-      price: "\$499",
+      price: "₹499",
       icon: Icons.business,
       description: "Tailored for large scale organizations.",
       features: [
@@ -279,7 +280,7 @@ class _MembershipBuilderScreenState
                 ),
               ],
             ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.small(
         backgroundColor: const Color(0xff006565),
         foregroundColor: Colors.white,
         onPressed: () => openAddMembershipSheet(),
@@ -473,10 +474,11 @@ class _MembershipBuilderScreenState
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: filteredPlans.length,
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 1,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: MediaQuery.of(context).size.width >= 900 ? 3 : (MediaQuery.of(context).size.width >= 600 ? 2 : 1),
                           mainAxisExtent: 290,
                           mainAxisSpacing: 16,
+                          crossAxisSpacing: 16,
                         ),
                         itemBuilder: (context, index) {
                           final plan = filteredPlans[index];
@@ -491,176 +493,172 @@ class _MembershipBuilderScreenState
                             categoryColor = const Color(0xff2A7F7F);
                           }
 
-                          return Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: const Color(0xffE6E6F0),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withAlpha(5),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                /// TOP
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: categoryColor.withValues(alpha: 0.15),
-                                        borderRadius: BorderRadius.circular(30),
-                                      ),
-                                      child: Text(
-                                        plan.type,
-                                        style: TextStyle(
-                                          color: categoryColor,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 11,
+                          return HoverableCard(
+                            borderRadius: 20.0,
+                            borderColor: const Color(0xff006565),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  /// TOP
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
                                         ),
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    PopupMenuButton<String>(
-                                      icon: const Icon(Icons.more_vert, color: Colors.grey),
-                                      onSelected: (value) {
-                                        if (value == "edit") {
-                                          openAddMembershipSheet(editPlan: plan);
-                                        } else if (value == "delete") {
-                                          _deletePlan(plan.id);
-                                        }
-                                      },
-                                      itemBuilder: (context) => [
-                                        const PopupMenuItem(
-                                          value: "edit",
-                                          child: Text("Edit"),
+                                        decoration: BoxDecoration(
+                                          color: categoryColor.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(30),
                                         ),
-                                        const PopupMenuItem(
-                                          value: "delete",
-                                          child: Text("Delete"),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-
-                                const SizedBox(height: 12),
-
-                                Text(
-                                  plan.title,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 20,
-                                    color: Color(0xFF1C1B1B),
-                                  ),
-                                ),
-
-                                const SizedBox(height: 8),
-
-                                Text(
-                                  plan.description,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 13,
-                                  ),
-                                ),
-
-                                const Spacer(),
-
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    if (plan.discountAmount > 0) ...[
-                                      Text(
-                                        "\$${plan.price.toStringAsFixed(0)}",
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          decoration: TextDecoration.lineThrough,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                    ],
-                                    Text(
-                                      "\$${plan.finalPrice.toStringAsFixed(0)}",
-                                      style: const TextStyle(
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xff006565),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 5),
-                                    Padding(
-                                      padding: const EdgeInsets.only(bottom: 4),
-                                      child: Text(
-                                        plan.validity == -1
-                                            ? "/ unlimited"
-                                            : "/ ${plan.validity} days",
-                                        style: const TextStyle(color: Colors.grey, fontSize: 13),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-
-                                const SizedBox(height: 15),
-
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: OutlinedButton(
-                                        onPressed: plan.status == 1 ? () => _changeStatus(plan.id, 0) : null,
-                                        style: OutlinedButton.styleFrom(
-                                          foregroundColor: Colors.orange,
-                                          side: BorderSide(
-                                            color: plan.status == 1 ? Colors.orange : Colors.grey.shade300,
+                                        child: Text(
+                                          plan.type,
+                                          style: TextStyle(
+                                            color: categoryColor,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 10,
                                           ),
                                         ),
-                                        child: const Text("Suspend"),
                                       ),
+                                      const Spacer(),
+                                      PopupMenuButton<String>(
+                                        icon: const Icon(Icons.more_vert, color: Colors.grey),
+                                        onSelected: (value) {
+                                          if (value == "edit") {
+                                            openAddMembershipSheet(editPlan: plan);
+                                          } else if (value == "delete") {
+                                            _deletePlan(plan.id);
+                                          }
+                                        },
+                                        itemBuilder: (context) => [
+                                          const PopupMenuItem(
+                                            value: "edit",
+                                            child: Text("Edit"),
+                                          ),
+                                          const PopupMenuItem(
+                                            value: "delete",
+                                            child: Text("Delete"),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+
+                                  const SizedBox(height: 8),
+
+                                  Text(
+                                    plan.title,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: Color(0xFF1C1B1B),
                                     ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xff006565),
-                                          foregroundColor: Colors.white,
-                                          disabledBackgroundColor: Colors.grey.shade300,
-                                          disabledForegroundColor: Colors.grey.shade500,
+                                  ),
+
+                                  const SizedBox(height: 6),
+
+                                  Text(
+                                    plan.description,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+
+                                  const Spacer(),
+
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      if (plan.discountAmount > 0) ...[
+                                        Text(
+                                          "₹${plan.price.toStringAsFixed(0)}",
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            decoration: TextDecoration.lineThrough,
+                                            color: Colors.grey,
+                                          ),
                                         ),
-                                        onPressed: plan.status == 0 ? () => _changeStatus(plan.id, 1) : null,
-                                        child: const Text("Approve"),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.red.withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: IconButton(
-                                        onPressed: () => _deletePlan(plan.id),
-                                        icon: const Icon(
-                                          Icons.delete,
-                                          color: Colors.red,
+                                        const SizedBox(width: 8),
+                                      ],
+                                      Text(
+                                        "₹${plan.finalPrice.toStringAsFixed(0)}",
+                                        style: const TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w800,
+                                          color: Color(0xff006565),
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                                      const SizedBox(width: 5),
+                                      Padding(
+                                        padding: const EdgeInsets.only(bottom: 2),
+                                        child: Text(
+                                          plan.validity == -1
+                                              ? "/ unlimited"
+                                              : "/ ${plan.validity} days",
+                                          style: const TextStyle(color: Colors.grey, fontSize: 11),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  const SizedBox(height: 12),
+
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton(
+                                          onPressed: plan.status == 1 ? () => _changeStatus(plan.id, 0) : null,
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: Colors.orange,
+                                            side: BorderSide(
+                                              color: plan.status == 1 ? Colors.orange : Colors.grey.shade300,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                          ),
+                                          child: const Text("Suspend"),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xff006565),
+                                            foregroundColor: Colors.white,
+                                            disabledBackgroundColor: Colors.grey.shade300,
+                                            disabledForegroundColor: Colors.grey.shade500,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                          ),
+                                          onPressed: plan.status == 0 ? () => _changeStatus(plan.id, 1) : null,
+                                          child: const Text("Approve"),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.red.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: IconButton(
+                                          onPressed: () => _deletePlan(plan.id),
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                           );
                         },
@@ -779,7 +777,7 @@ class _MembershipBuilderScreenState
               onPressed: () => openAddMembershipSheet(
                 templateData: {
                   "title": plan.title,
-                  "price": plan.price.replaceAll('\$', ''),
+                  "price": plan.price.replaceAll(RegExp(r'[\$₹]'), ''),
                   "validity": plan.validityDays,
                   "description": plan.description,
                   "vendorType": plan.vendorType,
@@ -1447,6 +1445,7 @@ class _AddMembershipBottomSheetState
       validator: validator,
       decoration: inputDecoration(label).copyWith(
         hintText: hint,
+        prefixText: label == "Price" ? "₹ " : null,
       ),
     );
   }

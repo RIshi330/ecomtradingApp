@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 
 class ManageItemsScreen extends StatefulWidget {
@@ -414,36 +415,13 @@ class _ManageItemsScreenState extends State<ManageItemsScreen> {
     Color valueColor = const Color(0xff0b1c30),
     required Widget footerWidget,
   }) {
-    return Container(
-      width: 155,
-      height: 105,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xffbdc9c8), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 12, color: Color(0xff3e4949), fontWeight: FontWeight.w600),
-          ),
-          Text(
-            value,
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: valueColor),
-          ),
-          footerWidget,
-        ],
+    return SizedBox(
+      width: 175,
+      child: StatCard(
+        title: title,
+        value: value,
+        valueColor: valueColor,
+        footer: footerWidget,
       ),
     );
   }
