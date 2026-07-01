@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../Database/Database.dart';
 import '../model/module_model.dart';
 import '../core/theme/app_theme.dart';
@@ -18,6 +20,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
   bool useEwallet = false;
   bool _isPaying = false;
   bool _isLoadingBalances = false;
+  dynamic _razorpay;
+  String? _pendingOrderId;
 
   late TextEditingController ecashController;
   late TextEditingController ewalletController;
@@ -53,6 +57,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
       _initialized = true;
       _fetchBalances();
+      _initRazorpay();
+    }
+  }
+
+  void _initRazorpay() {
+    try {
+      _razorpay = _RazorpayWrapper();
+      _razorpay.onSuccess = _handleRazorpaySuccess;
+      _razorpay.onError = _handleRazorpayError;
+      _razorpay.onWallet = _handleExternalWallet;
+    } catch (e) {
+      debugPrint("Razorpay wrapper initialization skipped: $e");
     }
   }
 
@@ -61,6 +77,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     ecashController.dispose();
     ewalletController.dispose();
     couponController.dispose();
+    _razorpay?.clear();
     super.dispose();
   }
 
@@ -223,9 +240,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
       if (res['success'] == true || res['status'] == 200 || res.containsKey('razorpay_order_id') || res.containsKey('order_id') || res.containsKey('id')) {
         final String? orderId = res['razorpay_order_id']?.toString() ?? res['order_id']?.toString() ?? res['id']?.toString();
+        final String? razorpayKey = res['key']?.toString();
+        final int? razorpayAmount = res['amount'] is int ? res['amount'] : int.tryParse(res['amount']?.toString() ?? '');
+        final String currency = res['currency']?.toString() ?? 'INR';
         
         if (orderId != null && remainingAmount > 0.0) {
-          _showVerifyPurchaseDialog(orderId);
+          // Open real Razorpay checkout
+          _pendingOrderId = orderId;
+          _openRazorpay(
+            key: razorpayKey ?? 'rzp_test_pi2fEEfhC66GKs',
+            orderId: orderId,
+            amount: razorpayAmount ?? (remainingAmount * 100).toInt(),
+            currency: currency,
+          );
         } else {
           _showSuccessDialog("Payment completed successfully!");
         }
@@ -247,50 +274,43 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
-  void _showVerifyPurchaseDialog(String orderId) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Simulate Razorpay Verification"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Razorpay Order Created successfully on server."),
-            const SizedBox(height: 8),
-            Text("Order ID: $orderId", style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            const Text("Simulate signature verification success?"),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primary,
-              minimumSize: const Size(0, 40),
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              _verifyPurchaseOnBackend(orderId);
-            },
-            child: const Text("Verify Success", style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
+  void _openRazorpay({
+    required String key,
+    required String orderId,
+    required int amount,
+    required String currency,
+  }) {
+    final options = {
+      'key': key,
+      'amount': amount,
+      'currency': currency,
+      'name': 'Module Purchase',
+      'order_id': orderId,
+      'description': module.title,
+      'prefill': {
+        'contact': '9999999999',
+        'email': 'customer@idealvillage.in',
+      },
+      'theme': {
+        'color': '#006565',
+      },
+    };
+
+    debugPrint("RAZORPAY OPTIONS (Buy Module): $options");
+
+    try {
+      _razorpay.open(options);
+    } catch (e) {
+      debugPrint("Razorpay open error: $e");
+      _showErrorDialog("Razorpay failed to launch: $e");
+    }
   }
 
-  Future<void> _verifyPurchaseOnBackend(String orderId) async {
+  void _handleRazorpaySuccess(dynamic response) async {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(
-        child: CircularProgressIndicator(),
-      ),
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
     try {
@@ -298,9 +318,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
       final res = await db.getData(
         {
           "verifyModulePurchase": "true",
-          "razorpay_payment_id": "pay_mock_${DateTime.now().millisecondsSinceEpoch}",
-          "razorpay_order_id": orderId,
-          "razorpay_signature": "mock_signature_verification_success_ccbul",
+          "razorpay_payment_id": response.paymentId ?? '',
+          "razorpay_order_id": response.orderId ?? '',
+          "razorpay_signature": response.signature ?? '',
         },
         endpoint: "new_apis/buy_module_api.php",
       );
@@ -320,6 +340,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
         _showErrorDialog("Verification failed: $e");
       }
     }
+  }
+
+  void _handleRazorpayError(dynamic response) {
+    _showErrorDialog("Payment Cancelled / Failed.");
+  }
+
+  void _handleExternalWallet(dynamic response) {
+    debugPrint("External wallet payment: $response");
   }
 
   void _showSuccessDialog(String message) {
@@ -377,7 +405,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text("Complete Payment"),
+        title: const Text(
+          "Complete Payment",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -395,17 +426,20 @@ class _PaymentScreenState extends State<PaymentScreen> {
         padding: const EdgeInsets.all(16),
         child: ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
-            minimumSize: const Size(double.infinity, 55),
+            minimumSize: const Size(double.infinity, 48),
             backgroundColor: AppTheme.primary,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
+            elevation: 0,
           ),
           onPressed: _isPaying ? null : _handlePayment,
           icon: const Icon(
-            Icons.lock,
+            Icons.lock_outline,
             color: Colors.white,
+            size: 18,
           ),
           label: Text(
             _isPaying ? "Processing..." : "Pay Now",
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
           ),
         ),
       ),
@@ -416,20 +450,25 @@ class _PaymentScreenState extends State<PaymentScreen> {
               child: Column(
                 children: [
                   Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                      side: BorderSide(color: Colors.grey.shade200),
+                    ),
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
                       child: Row(
                         children: [
                           Container(
-                            width: 80,
-                            height: 80,
+                            width: 60,
+                            height: 60,
                             decoration: BoxDecoration(
                               color: AppTheme.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(
                               module.icon,
-                              size: 40,
+                              size: 30,
                               color: AppTheme.primary,
                             ),
                           ),
@@ -440,20 +479,28 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               children: [
                                 Text(
                                   module.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: AppTheme.textPrimary,
                                   ),
                                 ),
+                                const SizedBox(height: 2),
+                                const Text(
+                                  "Standard License",
+                                  style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                                ),
                                 const SizedBox(height: 4),
-                                const Text("Standard License"),
-                                const SizedBox(height: 6),
-                                  Text(
-                                    module.discountPrice,
-                                    style: TextStyle(
-                                      color: AppTheme.primary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                Text(
+                                  module.discountPrice,
+                                  style: const TextStyle(
+                                    color: AppTheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
                                   ),
+                                ),
                               ],
                             ),
                           ),
@@ -468,30 +515,40 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       "COUPON CODE",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                        color: AppTheme.textSecondary,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       Expanded(
                         child: TextField(
                           controller: couponController,
+                          style: const TextStyle(fontSize: 13),
                           decoration: const InputDecoration(
                             hintText: "Enter coupon code",
-                            prefixIcon: Icon(Icons.sell),
+                            hintStyle: TextStyle(fontSize: 12),
+                            prefixIcon: Icon(Icons.sell, size: 16),
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                           ),
                         ),
                       ),
                       const SizedBox(width: 10),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(0, 48),
+                          minimumSize: const Size(80, 42),
                           backgroundColor: AppTheme.primary,
                           foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
                         ),
                         onPressed: _recalculateRemaining,
-                        child: const Text("Apply"),
+                        child: const Text("Apply", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
@@ -539,12 +596,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   ),
                   const SizedBox(height: 24),
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                       border: Border.all(
-                        color: Colors.grey.shade300,
+                        color: Colors.grey.shade200,
                       ),
                     ),
                     child: Column(
@@ -561,7 +618,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           title: "Wallet Applied",
                           value: "-₹${walletApplied.toStringAsFixed(0)}",
                         ),
-                        const Divider(),
+                        const Divider(height: 16),
                         SummaryRow(
                           title: "Total Payable",
                           value: "₹${remainingAmount.toStringAsFixed(0)}",
@@ -571,15 +628,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     ),
                   ),
                   const SizedBox(height: 30),
-                  const Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.verified_user,
-                        size: 16,
+                        size: 14,
+                        color: AppTheme.textSecondary,
                       ),
                       const SizedBox(width: 6),
-                      Text("256-bit SSL Encrypted Payment"),
+                      Text(
+                        "256-bit SSL Encrypted Payment",
+                        style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 100),
@@ -613,17 +674,24 @@ class WalletCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           children: [
             Row(
               children: [
                  CircleAvatar(
+                   radius: 18,
                    backgroundColor: AppTheme.primary.withOpacity(0.1),
                    child: Icon(
                      icon,
                      color: AppTheme.primary,
+                     size: 18,
                    ),
                  ),
                 const SizedBox(width: 12),
@@ -635,28 +703,46 @@ class WalletCard extends StatelessWidget {
                         title,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: AppTheme.textPrimary,
                         ),
                       ),
-                      Text(balance),
+                      const SizedBox(height: 2),
+                      Text(
+                        balance,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                Switch(
-                  value: enabled,
-                  onChanged: onToggle,
+                Transform.scale(
+                  scale: 0.8,
+                  child: Switch(
+                    value: enabled,
+                    onChanged: onToggle,
+                    activeColor: AppTheme.primary,
+                  ),
                 ),
               ],
             ),
             if (enabled)
               Padding(
-                padding: const EdgeInsets.only(top: 12),
+                padding: const EdgeInsets.only(top: 10),
                 child: TextField(
                   controller: amountController,
                   keyboardType: TextInputType.number,
                   onChanged: onAmountChanged,
-                  decoration: const InputDecoration(
+                  style: const TextStyle(fontSize: 13),
+                  decoration: InputDecoration(
                     labelText: "Specify Amount",
+                    labelStyle: const TextStyle(fontSize: 11),
                     suffixText: "INR",
+                    suffixStyle: const TextStyle(fontSize: 11),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                 ),
               ),
@@ -682,13 +768,15 @@ class SummaryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
           Text(
             title,
             style: TextStyle(
               fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              fontSize: isBold ? 13 : 12,
+              color: isBold ? AppTheme.textPrimary : AppTheme.textSecondary,
             ),
           ),
           const Spacer(),
@@ -696,11 +784,65 @@ class SummaryRow extends StatelessWidget {
             value,
             style: TextStyle(
               fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-              fontSize: isBold ? 18 : 14,
+              fontSize: isBold ? 15 : 12,
+              color: isBold ? AppTheme.primary : AppTheme.textPrimary,
             ),
           ),
         ],
       ),
     );
+  }
+}
+
+// =============================================================================
+//  RAZORPAY WRAPPER (isolates platform-specific import)
+// =============================================================================
+class _RazorpayWrapper {
+  dynamic _instance;
+
+  Function(dynamic)? onSuccess;
+  Function(dynamic)? onError;
+  Function(dynamic)? onWallet;
+
+  _RazorpayWrapper() {
+    try {
+      _instance = _createInstance();
+    } catch (e) {
+      _instance = null;
+    }
+  }
+
+  dynamic _createInstance() {
+    if (kIsWeb) return null;
+    try {
+      final r = Razorpay();
+      r.on(Razorpay.EVENT_PAYMENT_SUCCESS, (PaymentSuccessResponse response) {
+        onSuccess?.call(response);
+      });
+      r.on(Razorpay.EVENT_PAYMENT_ERROR, (PaymentFailureResponse response) {
+        onError?.call(response);
+      });
+      r.on(Razorpay.EVENT_EXTERNAL_WALLET, (ExternalWalletResponse response) {
+        onWallet?.call(response);
+      });
+      return r;
+    } catch (e) {
+      debugPrint("Error creating Razorpay instance: $e");
+      return null;
+    }
+  }
+
+  void open(Map<String, dynamic> options) {
+    if (_instance != null) {
+      _instance.open(options);
+    } else {
+      throw UnsupportedError("Razorpay not available on this platform");
+    }
+  }
+
+  void clear() {
+    try {
+      _instance?.clear();
+    } catch (_) {}
   }
 }

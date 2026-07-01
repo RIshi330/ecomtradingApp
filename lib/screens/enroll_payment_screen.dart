@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../Database/Database.dart';
+import '../index.dart';
 
 /// Full payment screen for course enrollment with ecash/ewallet
 /// balance adjustment, coupon support, and Razorpay checkout.
@@ -303,12 +305,13 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
         var options = {
           'key': razorpayKey,
           'amount': (amount * 100).toInt(),
+          'currency': 'INR',
           'name': 'Course Enrollment',
           'description': _title,
           'order_id': orderId,
           'prefill': {
-            'contact': '',
-            'email': '',
+            'contact': '9999999999',
+            'email': 'customer@idealvillage.in',
           },
           'theme': {
             'color': '#006565',
@@ -488,6 +491,8 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
             onPressed: () {
               Navigator.pop(ctx);  // Close dialog
               Navigator.pop(context); // Pop payment screen
+              Navigator.pop(context); // Pop details screen
+              Navigator.pushNamed(context, AppRoutes.enrolledTrainings);
             },
             child: const Text("Done"),
           ),
@@ -533,7 +538,7 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         title: const Text("Complete Payment",
-            style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF006565)),
           onPressed: () => Navigator.pop(context),
@@ -553,18 +558,20 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
         ),
         child: ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
-            minimumSize: const Size(double.infinity, 55),
+            minimumSize: const Size(double.infinity, 48),
             backgroundColor: const Color(0xFF006565),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            elevation: 0,
           ),
           onPressed: _isPaying ? null : _handlePayment,
           icon: Icon(
-            _isPaying ? Icons.hourglass_top : Icons.lock,
+            _isPaying ? Icons.hourglass_top : Icons.lock_outline,
             color: Colors.white,
+            size: 18,
           ),
           label: Text(
             _isPaying ? "Processing..." : "Pay ₹${remainingAmount.toStringAsFixed(0)}",
-            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
           ),
         ),
       ),
@@ -651,41 +658,44 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
 
   Widget _buildCourseSummary() {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
       elevation: 0,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Row(
           children: [
             Container(
-              width: 70,
-              height: 70,
+              width: 60,
+              height: 60,
               decoration: BoxDecoration(
                 color: const Color(0xffe5f7f7),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.school, size: 36, color: Color(0xFF006565)),
+              child: const Icon(Icons.school, size: 30, color: Color(0xFF006565)),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     _title,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                    maxLines: 2,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  const SizedBox(height: 2),
+                  Text(_batch, style: const TextStyle(color: Colors.grey, fontSize: 11)),
                   const SizedBox(height: 4),
-                  Text(_batch, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                  const SizedBox(height: 6),
                   Text(
                     "₹${_price.toStringAsFixed(0)}",
                     style: const TextStyle(
                       color: Color(0xFF006565),
                       fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                      fontSize: 15,
                     ),
                   ),
                 ],
@@ -702,25 +712,29 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text("COUPON CODE",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black54)),
-        const SizedBox(height: 8),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.black54, letterSpacing: 0.5)),
+        const SizedBox(height: 6),
         Row(
           children: [
             Expanded(
               child: TextField(
                 controller: couponController,
+                style: const TextStyle(fontSize: 13),
                 decoration: InputDecoration(
                   hintText: "Enter coupon code",
-                  prefixIcon: const Icon(Icons.sell, color: Color(0xFF006565)),
+                  hintStyle: const TextStyle(fontSize: 12),
+                  prefixIcon: const Icon(Icons.sell, color: Color(0xFF006565), size: 16),
                   filled: true,
                   fillColor: Colors.white,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.shade200),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.shade200),
                   ),
                 ),
               ),
@@ -730,12 +744,13 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF006565),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                minimumSize: const Size(0, 0),
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                minimumSize: const Size(80, 42),
               ),
               onPressed: _recalculateRemaining,
-              child: const Text("Apply"),
+              child: const Text("Apply", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -745,15 +760,15 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
 
   Widget _buildPriceBreakdown() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
       ),
       child: Column(
         children: [
-          _SummaryRow(title: "Subtotal", value: "₹${_price.toStringAsFixed(0)}"),
+          _SummaryRow(title: "Summary", value: "₹${_price.toStringAsFixed(0)}"), // wait, was "Subtotal" but let's keep name
           if (couponDiscount > 0)
             _SummaryRow(
                 title: "Coupon Discount",
@@ -762,7 +777,7 @@ class _EnrollPaymentScreenState extends State<EnrollPaymentScreen> {
             _SummaryRow(
                 title: "Wallet Applied",
                 value: "-₹${walletApplied.toStringAsFixed(0)}"),
-          const Divider(height: 20),
+          const Divider(height: 16),
           _SummaryRow(
             title: "Total Payable",
             value: "₹${remainingAmount.toStringAsFixed(0)}",
@@ -800,48 +815,70 @@ class _WalletCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
       elevation: 0,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           children: [
             Row(
               children: [
                 CircleAvatar(
+                  radius: 18,
                   backgroundColor: const Color(0xffe5f7f7),
-                  child: Icon(icon, color: const Color(0xFF006565)),
+                  child: Icon(icon, color: const Color(0xFF006565), size: 18),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title,
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                      Text(balance, style: const TextStyle(color: Colors.grey)),
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        balance,
+                        style: const TextStyle(color: Colors.grey, fontSize: 11),
+                      ),
                     ],
                   ),
                 ),
-                Switch(
-                  value: enabled,
-                  activeColor: const Color(0xFF006565),
-                  onChanged: onToggle,
+                Transform.scale(
+                  scale: 0.8,
+                  child: Switch(
+                    value: enabled,
+                    activeColor: const Color(0xFF006565),
+                    onChanged: onToggle,
+                  ),
                 ),
               ],
             ),
             if (enabled)
               Padding(
-                padding: const EdgeInsets.only(top: 12),
+                padding: const EdgeInsets.only(top: 10),
                 child: TextField(
                   controller: amountController,
                   keyboardType: TextInputType.number,
                   onChanged: onAmountChanged,
+                  style: const TextStyle(fontSize: 13),
                   decoration: InputDecoration(
                     labelText: "Specify Amount",
+                    labelStyle: const TextStyle(fontSize: 11),
                     suffixText: "INR",
+                    suffixStyle: const TextStyle(fontSize: 11),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                 ),
@@ -867,14 +904,15 @@ class _SummaryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
           Text(
             title,
             style: TextStyle(
               fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-              color: isBold ? Colors.black : Colors.black54,
+              fontSize: isBold ? 13 : 12,
+              color: isBold ? Colors.black87 : Colors.black54,
             ),
           ),
           const Spacer(),
@@ -882,7 +920,7 @@ class _SummaryRow extends StatelessWidget {
             value,
             style: TextStyle(
               fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-              fontSize: isBold ? 20 : 14,
+              fontSize: isBold ? 15 : 12,
               color: isBold ? const Color(0xFF006565) : Colors.black87,
             ),
           ),
@@ -908,7 +946,6 @@ class _RazorpayWrapper {
 
   _RazorpayWrapper() {
     try {
-      // This will work on Android/iOS where razorpay_flutter is available
       _instance = _createInstance();
     } catch (e) {
       _instance = null;
@@ -916,15 +953,21 @@ class _RazorpayWrapper {
   }
 
   dynamic _createInstance() {
-    // Use reflection-like approach — the actual import is conditional
-    // In production builds for mobile, razorpay_flutter is available
+    if (kIsWeb) return null;
     try {
-      // ignore: undefined_function
-      final r = Function.apply(() {
-        throw UnsupportedError("Use razorpay_flutter directly on mobile");
-      }, []);
+      final r = Razorpay();
+      r.on(Razorpay.EVENT_PAYMENT_SUCCESS, (PaymentSuccessResponse response) {
+        onSuccess?.call(response);
+      });
+      r.on(Razorpay.EVENT_PAYMENT_ERROR, (PaymentFailureResponse response) {
+        onError?.call(response);
+      });
+      r.on(Razorpay.EVENT_EXTERNAL_WALLET, (ExternalWalletResponse response) {
+        onWallet?.call(response);
+      });
       return r;
-    } catch (_) {
+    } catch (e) {
+      debugPrint("Error creating Razorpay instance: $e");
       return null;
     }
   }

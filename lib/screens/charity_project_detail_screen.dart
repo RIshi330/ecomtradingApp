@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -36,11 +38,16 @@ class _CharityProjectDetailScreenState extends State<CharityProjectDetailScreen>
   final Color textDark = const Color(0xFF1C1B1B);
   final Color textGrey = const Color(0xFF3E4949);
 
+  // Razorpay
+  dynamic _razorpay;
+  VoidCallback? _pendingSuccessCallback;
+
   @override
   void initState() {
     super.initState();
     _fetchDetail();
     _fetchBalances();
+    _initRazorpay();
     _customAmountController.addListener(() {
       final val = double.tryParse(_customAmountController.text);
       if (val != null && val > 0) {
@@ -51,10 +58,22 @@ class _CharityProjectDetailScreenState extends State<CharityProjectDetailScreen>
     });
   }
 
+  void _initRazorpay() {
+    try {
+      _razorpay = _DonationRazorpayWrapper();
+      _razorpay.onSuccess = _handleRazorpaySuccess;
+      _razorpay.onError = _handleRazorpayError;
+      _razorpay.onWallet = (r) => debugPrint("External wallet: $r");
+    } catch (e) {
+      debugPrint("Razorpay init skipped: $e");
+    }
+  }
+
   @override
   void dispose() {
     _customAmountController.dispose();
     _customAmountFocusNode.dispose();
+    _razorpay?.clear();
     super.dispose();
   }
 
@@ -134,12 +153,18 @@ class _CharityProjectDetailScreenState extends State<CharityProjectDetailScreen>
       Navigator.pop(context); // Close loading dialog
 
       if (response['success'] == true) {
-        final onlinePaid = amount - walletUsed - bankingUsed;
-        if (onlinePaid > 0) {
-          _showRazorpaySimulateDialog(onlinePaid, () {
-            _showSuccessDialog(amount);
-          });
+        final data = response['data'];
+        if (data != null && data['razorpay'] == true) {
+          // Real Razorpay checkout needed
+          _pendingSuccessCallback = () => _showSuccessDialog(amount);
+          _openRazorpay(
+            key: data['key'] ?? 'rzp_test_pi2fEEfhC66GKs',
+            orderId: data['razorpay_order_id'],
+            amount: data['amount'] is int ? data['amount'] : int.tryParse(data['amount']?.toString() ?? '0') ?? 0,
+            currency: data['currency'] ?? 'INR',
+          );
         } else {
+          // Wallet-only payment completed
           _showSuccessDialog(amount);
         }
       } else {
@@ -151,43 +176,72 @@ class _CharityProjectDetailScreenState extends State<CharityProjectDetailScreen>
     }
   }
 
-  void _showRazorpaySimulateDialog(double amount, VoidCallback onSuccess) {
+  void _openRazorpay({
+    required String key,
+    required String orderId,
+    required int amount,
+    required String currency,
+  }) {
+    final options = {
+      'key': key,
+      'amount': amount,
+      'currency': currency,
+      'name': 'Charity Donation',
+      'order_id': orderId,
+      'description': _charity?['fundraiser_title'] ?? 'Donation',
+      'prefill': {
+        'contact': '9999999999',
+        'email': 'donor@idealvillage.in',
+      },
+      'theme': {
+        'color': '#006565',
+      },
+    };
+
+    debugPrint("RAZORPAY OPTIONS (Donation): $options");
+
+    try {
+      _razorpay.open(options);
+    } catch (e) {
+      debugPrint("Razorpay open error: $e");
+      Fluttertoast.showToast(msg: "Razorpay failed to launch: $e");
+    }
+  }
+
+  void _handleRazorpaySuccess(dynamic response) async {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Simulate Razorpay Payment"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Online payment gateway simulated."),
-            const SizedBox(height: 12),
-            Text("Amount: ₹${amount.toStringAsFixed(2)}",
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            const Text("Confirm payment verification success?"),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryTeal,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              onSuccess();
-            },
-            child: const Text("Verify Success"),
-          ),
-        ],
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF006565))),
       ),
     );
+
+    try {
+      final res = await Database().getJsonData({
+        'action': 'verify_donation',
+        'razorpay_payment_id': response.paymentId ?? '',
+        'razorpay_order_id': response.orderId ?? '',
+        'razorpay_signature': response.signature ?? '',
+      }, endpoint: 'new_apis/donation_details_api.php');
+
+      if (!mounted) return;
+      Navigator.pop(context);
+
+      if (res['success'] == true) {
+        _pendingSuccessCallback?.call();
+        _pendingSuccessCallback = null;
+      } else {
+        Fluttertoast.showToast(msg: res['message']?.toString() ?? 'Payment verification failed');
+      }
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      Fluttertoast.showToast(msg: "Verification failed: $e");
+    }
+  }
+
+  void _handleRazorpayError(dynamic response) {
+    Fluttertoast.showToast(msg: "Payment Cancelled / Failed.");
   }
 
   void _showSuccessDialog(double amount) {
@@ -821,5 +875,58 @@ class _CharityProjectDetailScreenState extends State<CharityProjectDetailScreen>
         ],
       ),
     );
+  }
+}
+
+// =============================================================================
+//  RAZORPAY WRAPPER for Donation Detail screen
+// =============================================================================
+class _DonationRazorpayWrapper {
+  dynamic _instance;
+
+  Function(dynamic)? onSuccess;
+  Function(dynamic)? onError;
+  Function(dynamic)? onWallet;
+
+  _DonationRazorpayWrapper() {
+    try {
+      _instance = _createInstance();
+    } catch (e) {
+      _instance = null;
+    }
+  }
+
+  dynamic _createInstance() {
+    if (kIsWeb) return null;
+    try {
+      final r = Razorpay();
+      r.on(Razorpay.EVENT_PAYMENT_SUCCESS, (PaymentSuccessResponse response) {
+        onSuccess?.call(response);
+      });
+      r.on(Razorpay.EVENT_PAYMENT_ERROR, (PaymentFailureResponse response) {
+        onError?.call(response);
+      });
+      r.on(Razorpay.EVENT_EXTERNAL_WALLET, (ExternalWalletResponse response) {
+        onWallet?.call(response);
+      });
+      return r;
+    } catch (e) {
+      debugPrint("Error creating Razorpay instance: $e");
+      return null;
+    }
+  }
+
+  void open(Map<String, dynamic> options) {
+    if (_instance != null) {
+      _instance.open(options);
+    } else {
+      throw UnsupportedError("Razorpay not available on this platform");
+    }
+  }
+
+  void clear() {
+    try {
+      _instance?.clear();
+    } catch (_) {}
   }
 }

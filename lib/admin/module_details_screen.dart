@@ -290,7 +290,7 @@ class ModuleDetailsScreen extends StatelessWidget {
                       Text(
                         module.originalPrice,
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,
                           decoration: TextDecoration.lineThrough,
                           color: AppTheme.textSecondary,
                         ),
@@ -298,7 +298,7 @@ class ModuleDetailsScreen extends StatelessWidget {
                     Text(
                       module.discountPrice,
                       style: const TextStyle(
-                        fontSize: 22,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.primary,
                       ),
@@ -310,7 +310,7 @@ class ModuleDetailsScreen extends StatelessWidget {
               // Buy button
               Expanded(
                 child: SizedBox(
-                  height: 50,
+                  height: 46,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primary,
@@ -329,12 +329,12 @@ class ModuleDetailsScreen extends StatelessWidget {
                         Text(
                           "Buy Now",
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        SizedBox(width: 6),
-                        Icon(Icons.arrow_forward, size: 18),
+                        SizedBox(width: 4),
+                        Icon(Icons.arrow_forward, size: 16),
                       ],
                     ),
                   ),
@@ -483,37 +483,37 @@ class ModuleDetailsScreen extends StatelessWidget {
                   Text(
                     module.title,
                     style: const TextStyle(
-                      fontSize: 24,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.textPrimary,
                       height: 1.2,
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 10),
 
                   // Developer & rating row
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(6),
+                        padding: const EdgeInsets.all(5),
                         decoration: BoxDecoration(
                           color: AppTheme.surfaceContainer,
                           borderRadius: BorderRadius.circular(AppTheme.radius),
                         ),
-                        child: const Icon(Icons.person_outline, size: 16, color: AppTheme.textSecondary),
+                        child: const Icon(Icons.person_outline, size: 14, color: AppTheme.textSecondary),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Text(
                         module.developer,
                         style: const TextStyle(
                           color: AppTheme.primary,
                           fontWeight: FontWeight.w600,
-                          fontSize: 13,
+                          fontSize: 12,
                         ),
                       ),
                       const Spacer(),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFF8E1),
                           borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -521,22 +521,22 @@ class ModuleDetailsScreen extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.star, color: Colors.amber, size: 16),
+                            const Icon(Icons.star, color: Colors.amber, size: 14),
                             const SizedBox(width: 4),
                             Text(
                               module.rating,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 13,
+                                fontSize: 11,
                                 color: AppTheme.textPrimary,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: AppTheme.surfaceContainer,
                           borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -544,13 +544,13 @@ class ModuleDetailsScreen extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.download_outlined, size: 16, color: AppTheme.textSecondary),
+                            const Icon(Icons.download_outlined, size: 14, color: AppTheme.textSecondary),
                             const SizedBox(width: 4),
                             Text(
                               module.installs.split(' ')[0],
                               style: const TextStyle(
                                 fontWeight: FontWeight.w600,
-                                fontSize: 12,
+                                fontSize: 11,
                                 color: AppTheme.textSecondary,
                               ),
                             ),
@@ -559,7 +559,7 @@ class ModuleDetailsScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
                   // Pricing card
                   Container(
@@ -593,7 +593,7 @@ class ModuleDetailsScreen extends StatelessWidget {
                               "Pricing",
                               style: TextStyle(
                                 color: Colors.white70,
-                                fontSize: 13,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -608,18 +608,18 @@ class ModuleDetailsScreen extends StatelessWidget {
                                   module.badge,
                                   style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize: 11,
+                                    fontSize: 10,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Text(
                           module.discountPrice,
                           style: const TextStyle(
-                            fontSize: 28,
+                            fontSize: 24,
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),
@@ -629,26 +629,26 @@ class ModuleDetailsScreen extends StatelessWidget {
                           Text(
                             module.originalPrice,
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 12,
                               decoration: TextDecoration.lineThrough,
                               color: Colors.white.withValues(alpha: 0.6),
                             ),
                           ),
                         ],
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 12),
                         Row(
                           children: [
                             Icon(
                               Icons.verified,
                               color: Colors.white.withValues(alpha: 0.9),
-                              size: 18,
+                              size: 15,
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             const Text(
                               "Lifetime License",
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 13,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -656,14 +656,14 @@ class ModuleDetailsScreen extends StatelessWidget {
                             Icon(
                               Icons.security,
                               color: Colors.white.withValues(alpha: 0.9),
-                              size: 18,
+                              size: 15,
                             ),
                             const SizedBox(width: 6),
                             const Text(
                               "Secure Purchase",
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 13,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -678,12 +678,12 @@ class ModuleDetailsScreen extends StatelessWidget {
                   const Text(
                     "Key Features",
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 10),
                   if (module.features.isEmpty)
                     Container(
                       width: double.infinity,
@@ -696,7 +696,7 @@ class ModuleDetailsScreen extends StatelessWidget {
                         "No specific features highlighted.",
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 13,
                           color: AppTheme.textSecondary,
                         ),
                       ),
@@ -716,18 +716,18 @@ class ModuleDetailsScreen extends StatelessWidget {
                         );
                       }).toList(),
                     ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 24),
 
                   // About section
                   const Text(
                     "About This Module",
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
@@ -740,7 +740,7 @@ class ModuleDetailsScreen extends StatelessWidget {
                       module.description,
                       style: const TextStyle(
                         height: 1.6,
-                        fontSize: 14,
+                        fontSize: 12,
                         color: AppTheme.textSecondary,
                       ),
                     ),

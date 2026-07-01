@@ -42,225 +42,213 @@ class TradingMarketplaceScreen extends StatefulWidget {
       _TradingMarketplaceScreenState();
 }
 
-class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
-  static const Color themeColor = Color(0xFF006565); // Teal Primary
-  static const Color themeAccent = Color(0xFFD4E6E5); // Light Teal Container
+class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen>
+    with SingleTickerProviderStateMixin {
+  // ── Design Tokens ──────────────────────────────────────────────
+  static const Color primary = Color(0xFF006565);
+  static const Color primaryDark = Color(0xFF004848);
+  static const Color primaryLight = Color(0xFFE0F2F2);
+  static const Color accent = Color(0xFF00A878);
+  static const Color surface = Color(0xFFF7FAFA);
+  static const Color cardBg = Colors.white;
+  static const Color textPrimary = Color(0xFF0D1B1B);
+  static const Color textSecondary = Color(0xFF6B8080);
+  static const Color divider = Color(0xFFECF3F3);
 
   final TextEditingController searchController = TextEditingController();
-  int currentIndex = 0;
+  late TabController _tabController;
+
+  int currentIndex = 1;
   bool isLoading = false;
   List<MarketplaceItem> selectedItems = [];
 
   List<MarketplaceItem> b2cProducts = [];
   List<MarketplaceItem> b2bProducts = [];
   List<MarketplaceItem> servicesList = [];
+  List<MarketplaceItem> trainingList = []; // populated immediately in initState below
+  List<MarketplaceItem> donationList = [];
+  List<MarketplaceItem> eventsList = [];
+  List<MarketplaceItem> membershipList = [];
 
-  // Static high-fidelity mockup lists (fallbacks when API returns empty)
+  // ── Mock Data ───────────────────────────────────────────────────
   final List<MarketplaceItem> mockB2C = [
     MarketplaceItem(
-      id: "101",
-      variantId: "201",
-      marketplaceId: "5",
-      title: "Premium Quartz Watch v2",
-      subtitle: "Luxury Collection",
+      id: "101", variantId: "201", marketplaceId: "5",
+      title: "Premium Quartz Watch v2", subtitle: "Luxury Collection",
       image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBKM-HOD7CEZuOQRaBSnnprakdb5jfGyqmmJECq7POhy6d5NKpaHC_y-ek8yBBumg73TLMklrwZZn5ZsSxm0qIr5Kx5-z-sSQODyqQWwnO0PH8n9X7s0npHxYeAjFtySFI5MnT6LWkQeV08CwyGtlVBtUpd1JdCqmS0N0vu7agaV4sxtZpRegj6SElLVlzwf-C_fB6Kst08nc-DmSkJm1o_u75yPcfXTdexG79qDYRnqDsKtsdU3K_Fkw",
-      price: "₹1,200",
-      earning: "₹96",
-      category: "B2C",
+      price: "₹1,200", earning: "₹96", category: "B2C",
     ),
     MarketplaceItem(
-      id: "102",
-      variantId: "202",
-      marketplaceId: "5",
-      title: "Acoustic Pro Headphones",
-      subtitle: "Premium Audio",
+      id: "102", variantId: "202", marketplaceId: "5",
+      title: "Acoustic Pro Headphones", subtitle: "Premium Audio",
       image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAeiOjJG4iAcTtFJKWOL_0ugAMrhVhlA-kkLs79uUhLr2RIuKWmQ03RaAJdoJVbpIxM4WK7q815XXnGRFNiX_Gy9155Ac0pMXsYrLzuqdj58Kn_-lAv22lt6H7uK6gFAlmnUn1st3CA4zXuvA5wdTqqw0J-Aor06oj2S23ztm6EO9OlQRm0EVkhBikm_osA0AppuJABhtU_up_RtKI8RPpgtaqpvbgfJ-FteCxWS16qCjV2ankzX71ynA",
-      price: "₹1,500",
-      earning: "₹120",
-      category: "B2C",
+      price: "₹1,500", earning: "₹120", category: "B2C",
     ),
     MarketplaceItem(
-      id: "103",
-      variantId: "203",
-      marketplaceId: "5",
-      title: "Smart Hydration Bottle",
-      subtitle: "Health Tech",
+      id: "103", variantId: "203", marketplaceId: "5",
+      title: "Smart Hydration Bottle", subtitle: "Health Tech",
       image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDHyy7m8qaZZLN2S8ig-q589RBaLCs-SAkdBjoi3LmNP40Y7fxiuKmO9GYk2hxaj6ORbZMWsNvaEdXN-Xn-Ob3lFL1JL-umulR9yREY5Asq8rWQ31dj_zUU5suMnw_ykrzLez8QbR1HDgUfjBSsxl3e-e7Lgd7Y7B6URHQbF-UR67NeOyneWCZccxqEO21naC_fUEpmbq-XSEFjVaE2g_KHHlHGAPBHagCG1egxjtWe-XaUZjtVOwGsTw",
-      price: "₹1,000",
-      earning: "₹80",
-      category: "B2C",
+      price: "₹1,000", earning: "₹80", category: "B2C",
     ),
   ];
 
   final List<MarketplaceItem> mockB2B = [
-    MarketplaceItem(
-      id: "301",
-      variantId: "401",
-      marketplaceId: "6",
-      title: "Enterprise CRM",
-      subtitle: "TechCorp Solutions",
-      image: "",
-      price: "₹25,000",
-      earning: "₹2,000",
-      category: "B2B",
-    ),
-    MarketplaceItem(
-      id: "302",
-      variantId: "402",
-      marketplaceId: "6",
-      title: "Cloud ERP Suite",
-      subtitle: "SaaS Systems",
-      image: "",
-      price: "₹50,000",
-      earning: "₹4,000",
-      category: "B2B",
-    ),
-    MarketplaceItem(
-      id: "303",
-      variantId: "403",
-      marketplaceId: "6",
-      title: "Marketing Automation",
-      subtitle: "GrowFast Digital",
-      image: "",
-      price: "₹15,000",
-      earning: "₹1,200",
-      category: "B2B",
-    ),
+    MarketplaceItem(id: "301", variantId: "401", marketplaceId: "6", title: "Enterprise CRM", subtitle: "TechCorp Solutions", image: "", price: "₹25,000", earning: "₹2,000", category: "B2B"),
+    MarketplaceItem(id: "302", variantId: "402", marketplaceId: "6", title: "Cloud ERP Suite", subtitle: "SaaS Systems", image: "", price: "₹50,000", earning: "₹4,000", category: "B2B"),
+    MarketplaceItem(id: "303", variantId: "403", marketplaceId: "6", title: "Marketing Automation", subtitle: "GrowFast Digital", image: "", price: "₹15,000", earning: "₹1,200", category: "B2B"),
   ];
 
   final List<MarketplaceItem> mockServices = [
+    MarketplaceItem(id: "501", variantId: "0", marketplaceId: "16", title: "Affiliate Marketing", subtitle: "12 Modules • Certify Pro", image: "", price: "₹999", earning: "₹200", category: "Service"),
+    MarketplaceItem(id: "502", variantId: "0", marketplaceId: "16", title: "Sales Funnel Optimization", subtitle: "8 Modules • Conversion Lab", image: "", price: "₹799", earning: "₹160", category: "Service"),
+    MarketplaceItem(id: "503", variantId: "0", marketplaceId: "16", title: "Influencer Growth Program", subtitle: "15 Modules • Media Academy", image: "", price: "₹1,499", earning: "₹300", category: "Service"),
+  ];
+
+  final List<MarketplaceItem> mockTraining = [
+    MarketplaceItem(id: "601", variantId: "0", marketplaceId: "17", title: "Affiliate Marketing", subtitle: "12 Modules", image: "", price: "₹999", earning: "₹200", category: "Training"),
+    MarketplaceItem(id: "602", variantId: "0", marketplaceId: "17", title: "Sales Funnel Optimization", subtitle: "8 Modules", image: "", price: "₹799", earning: "₹160", category: "Training"),
+    MarketplaceItem(id: "603", variantId: "0", marketplaceId: "17", title: "Influencer Growth Program", subtitle: "15 Modules", image: "", price: "₹1,499", earning: "₹300", category: "Training"),
+  ];
+
+  // Donation & Events now modeled as MarketplaceItem too, so they can share
+  // the exact same card design as B2C / B2B / Services / Training.
+  final List<MarketplaceItem> mockDonation = [
     MarketplaceItem(
-      id: "501",
-      variantId: "0",
-      marketplaceId: "16",
-      title: "Affiliate Marketing Masterclass",
-      subtitle: "12 Modules • Certify Pro",
-      image: "",
-      price: "₹999",
-      earning: "₹200",
-      category: "Service",
+      id: "701", variantId: "0", marketplaceId: "18",
+      title: "Education For All", subtitle: "Goal: ₹2L",
+      image: "", price: "₹1.2L raised", earning: "65%", category: "Donation",
     ),
     MarketplaceItem(
-      id: "502",
-      variantId: "0",
-      marketplaceId: "16",
-      title: "Sales Funnel Optimization",
-      subtitle: "8 Modules • Conversion Lab",
-      image: "",
-      price: "₹799",
-      earning: "₹160",
-      category: "Service",
+      id: "702", variantId: "0", marketplaceId: "18",
+      title: "Clean Water Initiative", subtitle: "Goal: ₹2L",
+      image: "", price: "₹90K raised", earning: "45%", category: "Donation",
+    ),
+  ];
+
+  final List<MarketplaceItem> mockMembership = [
+    MarketplaceItem(
+      id: "901", variantId: "0", marketplaceId: "20",
+      title: "Silver", subtitle: "5 Products • Basic Analytics • Email Support",
+      image: "", price: "₹999", earning: "STANDARD", category: "Membership",
     ),
     MarketplaceItem(
-      id: "503",
-      variantId: "0",
-      marketplaceId: "16",
-      title: "Influencer Growth Program",
-      subtitle: "15 Modules • Media Academy",
-      image: "",
-      price: "₹1,499",
-      earning: "₹300",
-      category: "Service",
+      id: "902", variantId: "0", marketplaceId: "20",
+      title: "Gold", subtitle: "20 Products • Advanced Analytics • Priority Support",
+      image: "", price: "₹2,499", earning: "POPULAR", category: "Membership",
+    ),
+    MarketplaceItem(
+      id: "903", variantId: "0", marketplaceId: "20",
+      title: "Platinum", subtitle: "Unlimited Products • Dedicated Manager • Premium Visibility",
+      image: "", price: "₹4,999", earning: "BEST", category: "Membership",
+    ),
+  ];
+
+  final List<MarketplaceItem> mockEvents = [
+    MarketplaceItem(
+      id: "801", variantId: "0", marketplaceId: "19",
+      title: "Affiliate Summit 2026", subtitle: "Conference",
+      image: "", price: "12 Aug 2026", earning: "Free Entry", category: "Event",
+    ),
+    MarketplaceItem(
+      id: "802", variantId: "0", marketplaceId: "19",
+      title: "Creator Economy Meetup", subtitle: "Meetup",
+      image: "", price: "28 Aug 2026", earning: "Free Entry", category: "Event",
     ),
   ];
 
   @override
   void initState() {
     super.initState();
-    // Fetch real products from marketplace_trading_API.php
+    _tabController = TabController(length: 3, vsync: this);
+    // Show mock data immediately so sections (esp. Training) never render empty
+    // while the network call is in flight or if it fails.
+    b2cProducts = mockB2C;
+    b2bProducts = mockB2B;
+    servicesList = mockServices;
+    trainingList = mockTraining;
+    donationList = mockDonation;
+    eventsList = mockEvents;
+    membershipList = mockMembership;
+    _syncSelectedItems();
     _fetchItems();
     searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
+    _tabController.dispose();
     searchController.removeListener(_onSearchChanged);
     searchController.dispose();
     super.dispose();
   }
 
-  void _onSearchChanged() {
-    // Triggers search fetch after user types
-    _fetchItems();
-  }
+  void _onSearchChanged() => _fetchItems();
 
   Future<void> _fetchItems() async {
     if (!mounted) return;
-    setState(() {
-      isLoading = true;
-    });
-
+    setState(() => isLoading = true);
     try {
-      final response = await Database().getData({
-        'keyword': searchController.text,
-      }, endpoint: 'new_apis/marketplace_trading_API.php');
-
+      final response = await Database().getData(
+        {'keyword': searchController.text},
+        endpoint: 'new_apis/marketplace_trading_API.php',
+      );
       if (response['status'] == true && response['data'] != null) {
         final data = response['data'];
         final List<MarketplaceItem> fetchedB2C = [];
         final List<MarketplaceItem> fetchedB2B = [];
         final List<MarketplaceItem> fetchedServices = [];
 
-        // Parse ORG products (B2C)
         final org = data['org_products'] as List?;
         if (org != null) {
           for (var item in org) {
-            fetchedB2C.add(
-              MarketplaceItem(
-                id: item['product_id']?.toString() ?? '',
-                variantId: item['variant_id']?.toString() ?? '',
-                marketplaceId: '5',
-                title: item['title']?.toString() ?? '',
-                subtitle: item['seller']?.toString() ?? '',
-                image: item['image']?.toString() ?? '',
-                price: '₹${item['price']}',
-                earning: '₹${item['commission'] ?? item['upgradedcommission'] ?? '0'}',
-                category: item['category']?.toString() ?? 'B2C',
-                selected: item['is_selected'] == true,
-              ),
-            );
+            fetchedB2C.add(MarketplaceItem(
+              id: item['product_id']?.toString() ?? '',
+              variantId: item['variant_id']?.toString() ?? '',
+              marketplaceId: '5',
+              title: item['title']?.toString() ?? '',
+              subtitle: item['seller']?.toString() ?? '',
+              image: item['image']?.toString() ?? '',
+              price: '₹${item['price']}',
+              earning: '₹${item['commission'] ?? item['upgradedcommission'] ?? '0'}',
+              category: item['category']?.toString() ?? 'B2C',
+              selected: item['is_selected'] == true,
+            ));
           }
         }
 
-        // Parse BTB products (B2B)
         final btb = data['btb_products'] as List?;
         if (btb != null) {
           for (var item in btb) {
-            fetchedB2B.add(
-              MarketplaceItem(
-                id: item['product_id']?.toString() ?? '',
-                variantId: item['variant_id']?.toString() ?? '',
-                marketplaceId: '6',
-                title: item['title']?.toString() ?? '',
-                subtitle: item['seller']?.toString() ?? '',
-                image: item['image']?.toString() ?? '',
-                price: '₹${item['price']}',
-                earning: '₹${item['commission'] ?? item['upgraded_commission'] ?? '0'}',
-                category: item['category']?.toString() ?? 'B2B',
-                selected: item['is_selected'] == true,
-              ),
-            );
+            fetchedB2B.add(MarketplaceItem(
+              id: item['product_id']?.toString() ?? '',
+              variantId: item['variant_id']?.toString() ?? '',
+              marketplaceId: '6',
+              title: item['title']?.toString() ?? '',
+              subtitle: item['seller']?.toString() ?? '',
+              image: item['image']?.toString() ?? '',
+              price: '₹${item['price']}',
+              earning: '₹${item['commission'] ?? item['upgraded_commission'] ?? '0'}',
+              category: item['category']?.toString() ?? 'B2B',
+              selected: item['is_selected'] == true,
+            ));
           }
         }
 
-        // Parse Services
         final services = data['services'] as List?;
         if (services != null) {
           for (var item in services) {
-            fetchedServices.add(
-              MarketplaceItem(
-                id: item['service_id']?.toString() ?? '',
-                variantId: '0',
-                marketplaceId: '16',
-                title: item['name']?.toString() ?? '',
-                subtitle: item['seller']?.toString() ?? '',
-                image: item['image']?.toString() ?? '',
-                price: '₹${item['price']}',
-                earning: '₹${item['commission'] ?? item['upgraded_commission'] ?? '0'}',
-                category: item['category']?.toString() ?? 'Service',
-                selected: item['is_selected'] == true,
-              ),
-            );
+            fetchedServices.add(MarketplaceItem(
+              id: item['service_id']?.toString() ?? '',
+              variantId: '0',
+              marketplaceId: '16',
+              title: item['name']?.toString() ?? '',
+              subtitle: item['seller']?.toString() ?? '',
+              image: item['image']?.toString() ?? '',
+              price: '₹${item['price']}',
+              earning: '₹${item['commission'] ?? item['upgraded_commission'] ?? '0'}',
+              category: item['category']?.toString() ?? 'Service',
+              selected: item['is_selected'] == true,
+            ));
           }
         }
 
@@ -269,27 +257,32 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
           b2cProducts = fetchedB2C.isNotEmpty ? fetchedB2C : mockB2C;
           b2bProducts = fetchedB2B.isNotEmpty ? fetchedB2B : mockB2B;
           servicesList = fetchedServices.isNotEmpty ? fetchedServices : mockServices;
-
-          // Sync selection array
-          selectedItems.clear();
-          selectedItems.addAll(b2cProducts.where((e) => e.selected));
-          selectedItems.addAll(b2bProducts.where((e) => e.selected));
-          selectedItems.addAll(servicesList.where((e) => e.selected));
+          trainingList = mockTraining;
+          donationList = mockDonation;
+          eventsList = mockEvents;
+          membershipList = mockMembership;
+          _syncSelectedItems();
         });
       } else {
-        // Fallback to static mocklists if API call fails
         _loadMockData();
       }
     } catch (e) {
       debugPrint('Error fetching marketplace items: $e');
       _loadMockData();
     } finally {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
+      if (mounted) setState(() => isLoading = false);
     }
+  }
+
+  void _syncSelectedItems() {
+    selectedItems.clear();
+    selectedItems.addAll(b2cProducts.where((e) => e.selected));
+    selectedItems.addAll(b2bProducts.where((e) => e.selected));
+    selectedItems.addAll(servicesList.where((e) => e.selected));
+    selectedItems.addAll(trainingList.where((e) => e.selected));
+    selectedItems.addAll(donationList.where((e) => e.selected));
+    selectedItems.addAll(eventsList.where((e) => e.selected));
+    selectedItems.addAll(membershipList.where((e) => e.selected));
   }
 
   void _loadMockData() {
@@ -298,18 +291,17 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
       b2cProducts = mockB2C;
       b2bProducts = mockB2B;
       servicesList = mockServices;
-
-      selectedItems.clear();
-      selectedItems.addAll(b2cProducts.where((e) => e.selected));
-      selectedItems.addAll(b2bProducts.where((e) => e.selected));
-      selectedItems.addAll(servicesList.where((e) => e.selected));
+      trainingList = mockTraining;
+      donationList = mockDonation;
+      eventsList = mockEvents;
+      membershipList = mockMembership;
+      _syncSelectedItems();
     });
   }
 
   Future<void> saveSelectedItems() async {
     setState(() => isLoading = true);
     try {
-      // items format is JSON array of strings: "pid-vid-marketplaceId"
       final itemIds = selectedItems
           .map((item) => "${item.id}-${item.variantId}-${item.marketplaceId}")
           .toList();
@@ -321,65 +313,73 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
       }, endpoint: 'new_apis/marketplace_trading_API.php');
 
       if (response['status'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response['message'] ?? 'Items successfully selected'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        // Refresh selection states from backend database
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(response['message'] ?? 'Items successfully selected'),
+          backgroundColor: accent,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+        ));
         await _fetchItems();
-
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (BuildContext ctx) {
-              return AlertDialog(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                title: const Text("Go to Promoted Products?", style: TextStyle(fontWeight: FontWeight.bold)),
-                content: const Text("Your items have been selected successfully. Do you want to view them in your Promoted Products list?"),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text("No", style: TextStyle(color: Colors.grey)),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      Navigator.pushNamed(context, AppRoutes.selectedItems);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: themeColor,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text("Yes", style: TextStyle(color: Colors.white)),
-                  ),
-                ],
-              );
-            },
-          );
-        }
+        if (mounted) _showNavigateDialog();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response['message'] ?? 'Failed to select items'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(response['message'] ?? 'Failed to select items'),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+        ));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error saving items: $e'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Error: $e'),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ));
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) setState(() => isLoading = false);
     }
+  }
+
+  void _showNavigateDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: cardBg,
+        title: const Text("View Promoted Products?",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: textPrimary)),
+        content: const Text(
+            "Your items are saved. Head to Promoted Products to manage them.",
+            style: TextStyle(fontSize: 13, color: textSecondary, height: 1.5)),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: TextButton.styleFrom(foregroundColor: textSecondary),
+            child: const Text("Later", style: TextStyle(fontSize: 13)),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pushNamed(context, AppRoutes.selectedItems);
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: primary,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text("View Now", style: TextStyle(fontSize: 13)),
+          ),
+        ],
+      ),
+    );
   }
 
   void toggleSelection(MarketplaceItem item) {
@@ -395,171 +395,199 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
     });
   }
 
+  void _upgradeEarning(MarketplaceItem item) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('Upgraded "${item.title}" to earn 2% more'),
+      backgroundColor: primary,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.all(16),
+    ));
+  }
+
+  // ── Build ───────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    Widget scrollContent = SingleChildScrollView(
-      child: Column(
-        children: [
-          if (!widget.isEmbedded) buildTopBar(),
-          buildSearchBar(),
-          buildMembershipBanner(),
-          if (isLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 20.0),
-              child: Center(
-                child: CircularProgressIndicator(
-                  color: themeColor,
-                ),
-              ),
+    final scrollContent = CustomScrollView(
+      slivers: [
+        if (!widget.isEmbedded) _buildSliverAppBar(),
+        SliverToBoxAdapter(child: _buildSearchBar()),
+        SliverToBoxAdapter(child: _buildFeaturedBanner()),
+        if (isLoading)
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
+              child: Center(child: CircularProgressIndicator(color: primary, strokeWidth: 2)),
             ),
-          buildB2CSection(),
-          buildB2BSection(),
-          buildServicesSection(),
-          buildComboPackSection(),
-          buildMembershipPlans(),
-          buildTrainingSection(),
-          buildDonationSection(),
-          buildEventsSection(),
-          const SizedBox(height: 180),
-        ],
-      ),
-    );
-
-    Widget content = Stack(
-      children: [
-        Positioned.fill(child: scrollContent),
-        if (selectedItems.isNotEmpty) buildSelectionBar(),
+          ),
+        SliverToBoxAdapter(child: _buildSectionHeader("B2C Products", onViewAll: () {})),
+        SliverToBoxAdapter(child: _buildCardSlider(b2cProducts, fallbackIcon: Icons.shopping_bag_rounded)),
+        SliverToBoxAdapter(child: _buildSectionHeader("B2B Solutions", onViewAll: () {})),
+        SliverToBoxAdapter(child: _buildCardSlider(b2bProducts, fallbackIcon: Icons.business_center_rounded)),
+        SliverToBoxAdapter(child: _buildSectionHeader("Services & Opportunities", onViewAll: () {})),
+        SliverToBoxAdapter(child: _buildCardSlider(servicesList, fallbackIcon: Icons.school_rounded)),
+        SliverToBoxAdapter(child: _buildComboPack()),
+        SliverToBoxAdapter(child: _buildSectionHeader("Membership Plans", onViewAll: () {})),
+        SliverToBoxAdapter(child: _buildCardSlider(
+          membershipList,
+          fallbackIcon: Icons.workspace_premium_rounded,
+          buttonLabel: "Add to List",
+          badgePrefix: "",
+          badgeSuffix: "",
+        )),
+        SliverToBoxAdapter(child: _buildSectionHeader("Training & Skills", onViewAll: () {})),
+        SliverToBoxAdapter(child: _buildCardSlider(trainingList, fallbackIcon: Icons.menu_book_rounded)),
+        SliverToBoxAdapter(child: _buildSectionHeader("Donation Projects", onViewAll: () {})),
+        SliverToBoxAdapter(child: _buildCardSlider(
+          donationList,
+          fallbackIcon: Icons.volunteer_activism_rounded,
+          buttonLabel: "Donate Now",
+          badgePrefix: "Funded ",
+        )),
+        SliverToBoxAdapter(child: _buildSectionHeader("Upcoming Events", onViewAll: () {})),
+        SliverToBoxAdapter(child: _buildCardSlider(
+          eventsList,
+          fallbackIcon: Icons.event_rounded,
+          buttonLabel: "Register Now",
+          badgePrefix: "",
+        )),
+        const SliverToBoxAdapter(child: SizedBox(height: 120)),
       ],
     );
 
-    if (widget.isEmbedded) {
-      return content;
-    }
+    final content = Stack(
+      children: [
+        scrollContent,
+        if (selectedItems.isNotEmpty) _buildSelectionBar(),
+      ],
+    );
+
+    if (widget.isEmbedded) return content;
 
     return Scaffold(
-      backgroundColor: const Color(0xffFEF7FF),
-      bottomNavigationBar: buildBottomNav(),
-      body: SafeArea(child: content),
+      backgroundColor: surface,
+      extendBody: true,
+      bottomNavigationBar: _buildBottomNav(),
+      body: content,
     );
   }
 
-  Widget buildTopBar() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
+  // ── App Bar ─────────────────────────────────────────────────────
+  Widget _buildSliverAppBar() {
+    return SliverAppBar(
+      backgroundColor: cardBg,
+      surfaceTintColor: Colors.transparent,
+      floating: true,
+      snap: true,
+      elevation: 0,
+      titleSpacing: 16,
+      title: Row(
         children: [
-          const CircleAvatar(
-            radius: 22,
-            backgroundColor: themeColor,
-            child: Icon(Icons.person, color: Colors.white),
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: primaryLight,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.storefront_rounded, color: primary, size: 18),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           const Expanded(
-            child: Text(
-              "Marketplace",
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+            child: Text("Marketplace",
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: textPrimary,
+                    letterSpacing: -0.3)),
+          ),
+        ],
+      ),
+      actions: [
+        _iconBtn(Icons.notifications_none_rounded, () {}),
+        const SizedBox(width: 4),
+        Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: GestureDetector(
+            onTap: () {},
+            child: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: primary,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Center(
+                child: Text("A",
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)),
               ),
             ),
           ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.search),
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.notifications),
-          ),
-        ],
+        ),
+      ],
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(1),
+        child: Divider(height: 1, color: divider),
       ),
     );
   }
 
-  Widget buildSearchBar() {
+  Widget _iconBtn(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          color: surface,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, size: 18, color: textPrimary),
+      ),
+    );
+  }
+
+  // ── Search ──────────────────────────────────────────────────────
+  Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
       child: Row(
         children: [
           Expanded(
-            child: TextField(
-              controller: searchController,
-              decoration: const InputDecoration(
-                hintText: "Search high-margin products...",
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(16)),
+            child: Container(
+              height: 42,
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: divider),
+              ),
+              child: TextField(
+                controller: searchController,
+                style: const TextStyle(fontSize: 13, color: textPrimary),
+                decoration: InputDecoration(
+                  hintText: "Search products...",
+                  hintStyle: const TextStyle(fontSize: 13, color: textSecondary),
+                  prefixIcon: const Icon(Icons.search_rounded, size: 18, color: textSecondary),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  isDense: true,
                 ),
               ),
             ),
           ),
           const SizedBox(width: 8),
-          IconButton(
-            onPressed: openFilterSheet,
-            icon: const Icon(Icons.filter_list),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildMembershipBanner() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: themeAccent,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              ClipRRect(
+          GestureDetector(
+            onTap: openFilterSheet,
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: primary,
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  "https://lh3.googleusercontent.com/aida-public/AB6AXuAst1jWbJ4HFNmYu4UgzP5IJAZ8TIHukvFrQ6NWCEG483mNxR5NdiR9iCRa0MG1JZpvedDYxQIJfSLDDTrUtifxlgZLgoojYgMSCULTIIflYD9eqMfB2_fXZFT9iaBrefL9hkIUyp2JIVx_i35hDeIS0UHTb3FpQDLbyBdgGdBxa46NV08al_AkULT3dlffqDSPBvDZZJBOxWj7zh2TyXFISpHUKBulrA7wAhvjxz_uRCt2plLff9O4Fw",
-                  width: 80,
-                  height: 80,
-                  fit: BoxFit.cover,
-                  errorBuilder: (ctx, err, stack) => Container(
-                    width: 80,
-                    height: 80,
-                    color: themeAccent,
-                    child: const Icon(Icons.business, size: 40, color: themeColor),
-                  ),
-                ),
               ),
-              const SizedBox(width: 16),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Enterprise Suite",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text("By TechCorp Solutions"),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          buildInfoRow("MOQ", "5 Licenses"),
-          buildInfoRow("Commission", "₹2,000 (8%)"),
-          buildInfoRow("Starting Price", "₹25,000"),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.share),
-              label: const Text("Share & Earn"),
+              child: const Icon(Icons.tune_rounded, size: 18, color: Colors.white),
             ),
           ),
         ],
@@ -567,774 +595,352 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
     );
   }
 
-  Widget buildInfoRow(String title, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(title),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildB2CSection() {
-    if (b2cProducts.isEmpty) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  "B2C Products",
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: () {},
-                child: const Text("View All"),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(
-          height: 400,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.all(16),
-            itemCount: b2cProducts.length,
-            itemBuilder: (context, index) {
-              return buildProductCard(b2cProducts[index]);
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget buildProductCard(MarketplaceItem item) {
+  // ── Featured Banner ─────────────────────────────────────────────
+  Widget _buildFeaturedBanner() {
     return Container(
-      width: 280,
-      margin: const EdgeInsets.only(right: 16),
+      margin: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+      height: 150,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.grey.shade300,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
-                child: item.image.isNotEmpty
-                    ? Image.network(
-                        item.image,
-                        height: 180,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (ctx, err, stack) => Container(
-                          height: 180,
-                          color: Colors.grey.shade100,
-                          child: const Icon(Icons.image, size: 60, color: Colors.grey),
-                        ),
-                      )
-                    : Container(
-                        height: 180,
-                        color: Colors.grey.shade100,
-                        child: const Icon(Icons.image, size: 60, color: Colors.grey),
-                      ),
-              ),
-              Positioned(
-                top: 12,
-                left: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: themeColor,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    "Earn ${item.earning}",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 10,
-                right: 10,
-                child: Checkbox(
-                  value: item.selected,
-                  activeColor: themeColor,
-                  onChanged: (_) {
-                    toggleSelection(item);
-                  },
-                ),
-              ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-                Text(
-                  item.subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  item.price,
-                  style: const TextStyle(
-                    color: themeColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.share),
-                    label: const Text("Share & Earn"),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildB2BSection() {
-    if (b2bProducts.isEmpty) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            "B2B Solutions",
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 360,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.all(16),
-            itemCount: b2bProducts.length,
-            itemBuilder: (context, index) {
-              return buildB2BCard(b2bProducts[index]);
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget buildB2BCard(MarketplaceItem item) {
-    return Container(
-      width: 280,
-      margin: const EdgeInsets.only(right: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.grey.shade300,
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF003D3D), Color(0xFF006565), Color(0xFF008A8A)],
         ),
       ),
       child: Stack(
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(
-                Icons.business_center,
-                size: 60,
-                color: themeColor,
+          Positioned(
+            right: -20, top: -20,
+            child: Container(
+              width: 120, height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.06),
               ),
-              const SizedBox(height: 10),
-              Text(
-                item.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                item.subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Colors.grey),
-              ),
-              const Spacer(),
-              Text(
-                item.price,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                "Commission ${item.earning}",
-                style: const TextStyle(
-                  color: Colors.green,
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {},
-                  child: const Text("Promote"),
-                ),
-              ),
-            ],
+            ),
           ),
           Positioned(
-            top: 0,
-            right: 0,
-            child: Checkbox(
-              value: item.selected,
-              activeColor: themeColor,
-              onChanged: (_) {
-                toggleSelection(item);
-              },
+            right: 30, bottom: -30,
+            child: Container(
+              width: 80, height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.05),
+              ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildServicesSection() {
-    if (servicesList.isEmpty) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            "Services & Opportunities",
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: servicesList.length,
-          itemBuilder: (context, index) {
-            return buildServiceCard(servicesList[index]);
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget buildServiceCard(MarketplaceItem item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.grey.shade300,
-        ),
-      ),
-      child: Row(
-        children: [
-          Stack(
-            children: [
-              CircleAvatar(
-                radius: 32,
-                backgroundColor: themeAccent,
-                backgroundImage: item.image.isNotEmpty ? NetworkImage(item.image) : null,
-                child: item.image.isEmpty
-                    ? const Icon(Icons.school, size: 30, color: themeColor)
-                    : null,
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: const BoxDecoration(
-                    color: themeColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.star,
-                    size: 12,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Padding(
+            padding: const EdgeInsets.all(18),
+            child: Row(
               children: [
-                Text(
-                  item.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text("FEATURED",
+                            style: TextStyle(
+                                color: Colors.white, fontSize: 9,
+                                fontWeight: FontWeight.w700, letterSpacing: 1)),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text("Enterprise Suite",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              color: Colors.white, fontSize: 18,
+                              fontWeight: FontWeight.w800, letterSpacing: -0.4)),
+                      const SizedBox(height: 2),
+                      Text("By TechCorp Solutions",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          _bannerChip("MOQ: 5"),
+                          _bannerChip("8% Commission"),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                Text(
-                  item.subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "Earn: ${item.earning}",
-                  style: const TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text("₹25,000",
+                        style: TextStyle(
+                            color: Colors.white, fontSize: 20,
+                            fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 10),
+                    _tinyButton("Share & Earn", Icons.share_rounded, () {}),
+                  ],
                 ),
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Checkbox(
-                value: item.selected,
-                activeColor: themeColor,
-                onChanged: (_) {
-                  toggleSelection(item);
-                },
-              ),
-              const SizedBox(height: 8),
-              Text(
-                item.price,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: themeColor,
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
   }
 
-  Widget buildSelectionBar() {
-    return Positioned(
-      left: 16,
-      right: 16,
-      bottom: widget.isEmbedded ? 20 : 90,
+  Widget _bannerChip(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(label,
+          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w500)),
+    );
+  }
+
+  // ── Section Header ──────────────────────────────────────────────
+  Widget _buildSectionHeader(String title, {VoidCallback? onViewAll}) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 20, 14, 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.w700,
+                    color: textPrimary, letterSpacing: -0.2)),
+          ),
+          if (onViewAll != null)
+            GestureDetector(
+              onTap: onViewAll,
+              child: const Text("View all",
+                  style: TextStyle(fontSize: 12, color: primary, fontWeight: FontWeight.w600)),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ── Reusable "Upgrade to earn 2% more" / action button ──────────
+  Widget _upgradeButton(MarketplaceItem item, {double height = 28, String label = "Upgrade to earn 2% more"}) {
+    return GestureDetector(
+      onTap: () => _upgradeEarning(item),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        width: double.infinity,
+        height: height,
+        alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: Colors.black87,
-          borderRadius: BorderRadius.circular(24),
+          color: const Color(0xFF0D1B1B),
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: themeColor,
-              child: Text(
-                selectedItems.length.toString(),
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    "Selected Items",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                  Text(
-                    "${selectedItems.length} products selected",
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: saveSelectedItems,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: themeColor,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(0, 40),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text("Add To My List", overflow: TextOverflow.ellipsis),
-            ),
-          ],
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700),
         ),
       ),
     );
   }
 
-  Widget buildComboPackSection() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Container(
-        padding: const EdgeInsets.all(20),
+  Widget _commissionBadge(String earning, {String prefix = ""}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: primaryLight,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        "$prefix$earning Commission",
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(color: primary, fontSize: 10.5, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+
+  // ── Unified Card (used by B2C, B2B, Services, Training, Donation, Events) ──
+  // This is the same B2C card design — image header, title, subtitle, price,
+  // a badge, and an action button — reused everywhere for consistency.
+  Widget _buildUnifiedCard(
+      MarketplaceItem item, {
+        IconData fallbackIcon = Icons.image_rounded,
+        String buttonLabel = "Upgrade to earn 2% more",
+        String badgePrefix = "",
+        String badgeSuffix = " Commission",
+      }) {
+    return GestureDetector(
+      onTap: () => toggleSelection(item),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 200,
+        margin: const EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xff004d4d),
-              Color(0xff006565),
-              Color(0xff008080),
-            ],
+          color: cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: item.selected ? primary : divider,
+            width: item.selected ? 1.5 : 1,
           ),
-          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xff004d4d).withOpacity(0.2),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8, offset: const Offset(0, 2),
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              "Combo Promotion Pack",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.1,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              "Promote 5 products together and boost conversions",
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
-                fontSize: 11,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
+            Stack(
               children: [
-                Expanded(
-                  child: Text(
-                    "Price",
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 11,
-                    ),
-                  ),
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                  child: item.image.isNotEmpty
+                      ? Image.network(item.image,
+                      height: 120, width: double.infinity, fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _imagePlaceholder(120, icon: fallbackIcon))
+                      : _imagePlaceholder(120, icon: fallbackIcon),
                 ),
-                const Text(
-                  "₹4,999",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 18,
-                  ),
+                Positioned(
+                  top: 6, right: 6,
+                  child: _selectionCircle(item.selected),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: themeColor,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text(
-                  "Buy Combo",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget buildMembershipPlans() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            "Membership Plans",
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        buildMembershipCard(
-          "Silver",
-          "₹999",
-          [
-            "5 Products",
-            "Basic Analytics",
-            "Email Support",
-          ],
-        ),
-        buildMembershipCard(
-          "Gold",
-          "₹2,499",
-          [
-            "20 Products",
-            "Advanced Analytics",
-            "Priority Support",
-          ],
-        ),
-        buildMembershipCard(
-          "Platinum",
-          "₹4,999",
-          [
-            "Unlimited Products",
-            "Dedicated Manager",
-            "Premium Visibility",
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget buildMembershipCard(
-    String title,
-    String price,
-    List<String> features,
-  ) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.grey.shade300,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            price,
-            style: const TextStyle(
-              color: themeColor,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...features.map(
-            (feature) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.check_circle,
-                    color: Colors.green,
+                  Text(item.title,
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary)),
+                  const SizedBox(height: 2),
+                  Text(item.subtitle,
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11, color: textSecondary)),
+                  const SizedBox(height: 8),
+                  Text(item.price,
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w800, color: primary)),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: primaryLight,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      "$badgePrefix${item.earning}$badgeSuffix",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: primary, fontSize: 10.5, fontWeight: FontWeight.w700),
+                    ),
                   ),
-                  const SizedBox(width: 10),
-                  Text(feature),
+                  const SizedBox(height: 8),
+                  _upgradeButton(item, label: buttonLabel),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {},
-              child: const Text("Choose Plan"),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget buildTrainingSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            "Training & Skills",
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+  // Horizontal slider built from the unified card — replaces all the
+  // previous per-section card builders (B2C/B2B/Services/Training/etc).
+  Widget _buildCardSlider(
+      List<MarketplaceItem> items, {
+        IconData fallbackIcon = Icons.image_rounded,
+        String buttonLabel = "Upgrade to earn 2% more",
+        String badgePrefix = "",
+        String badgeSuffix = " Commission",
+      }) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    return SizedBox(
+      height: 312,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        itemCount: items.length,
+        itemBuilder: (_, i) => _buildUnifiedCard(
+          items[i],
+          fallbackIcon: fallbackIcon,
+          buttonLabel: buttonLabel,
+          badgePrefix: badgePrefix,
+          badgeSuffix: badgeSuffix,
         ),
-        const SizedBox(height: 16),
-        buildTrainingCard(
-          "Affiliate Marketing Masterclass",
-          "12 Modules",
-          "₹999",
-        ),
-        buildTrainingCard(
-          "Sales Funnel Optimization",
-          "8 Modules",
-          "₹799",
-        ),
-        buildTrainingCard(
-          "Influencer Growth Program",
-          "15 Modules",
-          "₹1,499",
-        ),
-      ],
+      ),
     );
   }
 
-  Widget buildTrainingCard(
-    String title,
-    String modules,
-    String price,
-  ) {
+  // ── Combo Pack ──────────────────────────────────────────────────
+  Widget _buildComboPack() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.fromLTRB(14, 8, 14, 0),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.grey.shade300,
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF003D3D), Color(0xFF006565)],
         ),
       ),
       child: Row(
         children: [
-          const CircleAvatar(
-            radius: 32,
-            backgroundColor: themeColor,
-            child: Icon(Icons.school, color: Colors.white),
-          ),
-          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(6),
                   ),
+                  child: const Text("BUNDLE DEAL",
+                      style: TextStyle(color: Colors.white, fontSize: 9,
+                          fontWeight: FontWeight.w700, letterSpacing: 0.8)),
                 ),
-                Text(modules),
+                const SizedBox(height: 8),
+                const Text("Combo Promotion Pack",
+                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 4),
+                Text("Promote 5 products · Boost conversions",
+                    maxLines: 2, overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 11)),
               ],
             ),
           ),
+          const SizedBox(width: 12),
           Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                price,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(80, 40),
-                ),
-                onPressed: () {},
-                child: const Text("Enroll"),
-              ),
+              const Text("₹4,999",
+                  style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 8),
+              _tinyButton("Buy Now", Icons.bolt_rounded, () {},
+                  bgColor: Colors.white, textColor: primary),
             ],
           ),
         ],
@@ -1342,221 +948,251 @@ class _TradingMarketplaceScreenState extends State<TradingMarketplaceScreen> {
     );
   }
 
-  Widget buildDonationSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            "Donation Projects",
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        buildDonationCard(
-          "Education For All",
-          "Raised ₹1.2L",
-        ),
-        buildDonationCard(
-          "Clean Water Initiative",
-          "Raised ₹90K",
-        ),
-      ],
-    );
-  }
 
-  Widget buildDonationCard(
-    String title,
-    String raised,
-  ) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.grey.shade300,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+  // ── Selection Bar ───────────────────────────────────────────────
+  Widget _buildSelectionBar() {
+    return Positioned(
+      left: 14, right: 14,
+      bottom: widget.isEmbedded ? 16 : 80,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0D1B1B),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.25),
+              blurRadius: 16, offset: const Offset(0, 4),
             ),
-          ),
-          const SizedBox(height: 10),
-          const LinearProgressIndicator(
-            value: .65,
-            color: themeColor,
-            backgroundColor: themeAccent,
-          ),
-          const SizedBox(height: 10),
-          Text(raised),
-          const SizedBox(height: 12),
-          ElevatedButton(
-            onPressed: () {},
-            child: const Text("Donate"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildEventsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            "Upcoming Events",
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          ],
         ),
-        const SizedBox(height: 16),
-        buildEventCard(
-          "Affiliate Summit 2026",
-          "12 Aug 2026",
-        ),
-        buildEventCard(
-          "Creator Economy Meetup",
-          "28 Aug 2026",
-        ),
-      ],
-    );
-  }
-
-  Widget buildEventCard(
-    String title,
-    String date,
-  ) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            backgroundColor: themeColor,
-            child: Icon(Icons.event, color: Colors.white),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                const SizedBox(height: 2),
-                Text(date, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 100,
-            height: 36,
-            child: ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.zero,
+        child: Row(
+          children: [
+            Container(
+              width: 32, height: 32,
+              decoration: BoxDecoration(color: primary, borderRadius: BorderRadius.circular(8)),
+              child: Center(
+                child: Text(selectedItems.length.toString(),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13)),
               ),
-              child: const Text("Register"),
             ),
-          ),
-        ],
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Selected",
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
+                  Text("Tap to promote",
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Color(0xFF88AAAA), fontSize: 10)),
+                ],
+              ),
+            ),
+            GestureDetector(
+              onTap: saveSelectedItems,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                decoration: BoxDecoration(
+                  color: primary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.add_rounded, color: Colors.white, size: 14),
+                    SizedBox(width: 4),
+                    Text("Add to List",
+                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget buildBottomNav() {
-    return BottomNavigationBar(
-      currentIndex: currentIndex,
-      selectedItemColor: themeColor,
-      unselectedItemColor: Colors.grey,
-      onTap: (index) {
-        setState(() {
-          currentIndex = index;
-        });
-      },
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home),
-          label: "Home",
+  // ── Bottom Nav ──────────────────────────────────────────────────
+  Widget _buildBottomNav() {
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 16, offset: const Offset(0, -2))],
+      ),
+      child: SafeArea(
+        child: SizedBox(
+          height: 60,
+          child: Row(
+            children: [
+              _navItem(Icons.home_rounded, Icons.home_outlined, "Home", 0),
+              _navItem(Icons.storefront_rounded, Icons.storefront_outlined, "Market", 1),
+              _navItem(Icons.favorite_rounded, Icons.favorite_outline_rounded, "Wishlist", 2),
+              _navItem(Icons.person_rounded, Icons.person_outline_rounded, "Profile", 3),
+            ],
+          ),
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.store),
-          label: "Marketplace",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.favorite),
-          label: "Wishlist",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: "Profile",
-        ),
-      ],
+      ),
     );
   }
 
+  Widget _navItem(IconData activeIcon, IconData icon, String label, int index) {
+    final isActive = currentIndex == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => currentIndex = index),
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(isActive ? activeIcon : icon,
+                size: 22, color: isActive ? primary : textSecondary),
+            const SizedBox(height: 3),
+            Text(label,
+                maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                    color: isActive ? primary : textSecondary)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Filter Sheet ────────────────────────────────────────────────
   void openFilterSheet() {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
-      builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                "Marketplace Filters",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-              DropdownButtonFormField(
-                isExpanded: true,
-                items: const [
-                  DropdownMenuItem(
-                    value: "All",
-                    child: Text("All Categories"),
-                  ),
-                ],
-                onChanged: (_) {},
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: const Text("Apply Filters"),
-                ),
-              ),
+      backgroundColor: cardBg,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Filters",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textPrimary)),
+            const SizedBox(height: 16),
+            const Text("Category",
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textSecondary)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8, runSpacing: 8,
+              children: ["All", "B2C", "B2B", "Services", "Training"].map((c) {
+                return ChoiceChip(
+                  label: Text(c, style: const TextStyle(fontSize: 12)),
+                  selected: c == "All",
+                  selectedColor: primary,
+                  labelStyle: TextStyle(color: c == "All" ? Colors.white : textPrimary),
+                  onSelected: (_) {},
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: _solidButton("Apply Filters", () => Navigator.pop(context), height: 44),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Shared Helpers ──────────────────────────────────────────────
+  Widget _imagePlaceholder(double height, {IconData icon = Icons.image_rounded}) {
+    return Container(
+      height: height,
+      width: double.infinity,
+      color: primaryLight,
+      child: Icon(icon, size: 36, color: primary),
+    );
+  }
+
+  Widget _selectionCircle(bool selected) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      width: 22, height: 22,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: selected ? primary : Colors.white.withOpacity(0.9),
+        border: Border.all(color: selected ? primary : Colors.grey.shade300, width: 1.5),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 4)],
+      ),
+      child: selected
+          ? const Icon(Icons.check_rounded, size: 13, color: Colors.white)
+          : null,
+    );
+  }
+
+  Widget _tinyButton(String label, IconData? icon, VoidCallback onTap,
+      {Color bgColor = primary, Color textColor = Colors.white}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: icon != null ? 8 : 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 11, color: textColor),
+              const SizedBox(width: 3),
             ],
-          ),
-        );
-      },
+            Text(label,
+                maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textColor)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _solidButton(String label, VoidCallback onTap, {double height = 40}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: primary,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        alignment: Alignment.center,
+        child: Text(label,
+            maxLines: 1, overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+                color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+      ),
+    );
+  }
+
+  Widget _outlineButton(String label, VoidCallback onTap,
+      {Color borderColor = primary, Color textColor = primary, double height = 40}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          border: Border.all(color: borderColor),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        alignment: Alignment.center,
+        child: Text(label,
+            maxLines: 1, overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+                color: textColor, fontSize: 12, fontWeight: FontWeight.w700)),
+      ),
     );
   }
 }

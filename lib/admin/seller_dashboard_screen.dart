@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:trading_ecommerce_admin/screens/seller_profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -45,6 +46,9 @@ class SellerCentralApp extends StatelessWidget {
       ],
       supportedLocales: const [Locale('en', 'US')],
       home: const SellerDashboard(),
+      routes: {
+        '/user/profile': (context) => const SellerProfileScreen(),
+      },
     );
   }
 }
@@ -490,28 +494,32 @@ class _SellerDashboardState extends State<SellerDashboard> {
             ],
           ),
         ],
-        GestureDetector(
+        InkWell(
+          borderRadius: BorderRadius.circular(22),
           onTap: () {
-            Navigator.pushNamed(context, '/user/profile');
+            Navigator.of(context, rootNavigator: true).pushNamed('/user/profile');
           },
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: const Color(0xff006565).withValues(alpha: 0.2),
-                width: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xff006565).withValues(alpha: 0.2),
+                  width: 2,
+                ),
               ),
-            ),
-            child: const CircleAvatar(
-              radius: 18,
-              backgroundColor: Color(0xffe5f7f7),
-              backgroundImage: NetworkImage(
-                "https://i.pravatar.cc/150?img=33",
+              child: const CircleAvatar(
+                radius: 18,
+                backgroundColor: Color(0xffe5f7f7),
+                backgroundImage: NetworkImage(
+                  "https://i.pravatar.cc/150?img=33",
+                ),
               ),
             ),
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 12),
       ],
     );
   }
@@ -539,7 +547,7 @@ class DashboardDrawer extends StatelessWidget {
                       Icons.manage_accounts_rounded, "Account Settings", false,
                       onTap: () {
                         Navigator.pop(context); // Close drawer
-                        Navigator.pushNamed(context, '/user/profile');
+                        Navigator.of(context, rootNavigator: true).pushNamed('/user/profile');
                       }),
                 ],
               ),

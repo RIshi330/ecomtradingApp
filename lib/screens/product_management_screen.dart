@@ -301,7 +301,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
           ? 'new_apis/product_btb_vendors_API 3.php'
           : 'new_apis/product_vendors_API 3.php';
 
-      final marketplaceId = selectedTab == 2 ? 51 : (selectedTab == 1 ? 51 : 51);
+      final marketplaceId = selectedTab == 2 ? 52 : (selectedTab == 1 ? 16 : 5);
 
       final response = await Database().getJsonData({
         'action': 'get_product_collateral',
@@ -1258,7 +1258,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                 children: [
                   Checkbox(
                     value: isSelected,
-                    activeColor: darkPurple,
+                    activeColor: Colors.grey,
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     visualDensity: VisualDensity.compact,
                     onChanged: (value) {

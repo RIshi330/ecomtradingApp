@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../Database/Database.dart';
 import '../index.dart';
 import 'selected_items_screen.dart';
@@ -45,20 +46,37 @@ class _ClientPaymentModalState extends State<ClientPaymentModal> {
   double appliedEwallet = 0.0;
   double remainingAmount = 0.0;
 
+  dynamic _razorpay;
+
   @override
   void initState() {
     super.initState();
     basePrice = widget.totalRawPrice;
     remainingAmount = widget.totalRawPrice;
     _fetchBalances();
+    _initRazorpay();
   }
 
   @override
   void dispose() {
     ecashController.dispose();
     ewalletController.dispose();
+    _razorpay?.clear();
     super.dispose();
   }
+
+  void _initRazorpay() {
+    try {
+      _razorpay = _RazorpayWrapper();
+      _razorpay.onSuccess = _handlePaymentSuccess;
+      _razorpay.onError = _handlePaymentError;
+      _razorpay.onWallet = _handleExternalWallet;
+    } catch (e) {
+      debugPrint("Razorpay wrapper initialization skipped: $e");
+    }
+  }
+
+
 
   Future<void> _fetchBalances() async {
     setState(() {
@@ -96,9 +114,15 @@ class _ClientPaymentModalState extends State<ClientPaymentModal> {
     double ecashUsed = useEcash ? rawEcash : 0.0;
     double ewalletUsed = useEwallet ? rawEwallet : 0.0;
 
-    // Constrain to available balances
-    if (ecashUsed > ecashBalance) ecashUsed = ecashBalance;
-    if (ewalletUsed > ewalletBalance) ewalletUsed = ewalletBalance;
+    // Clamp available limits to 0 if negative
+    final double limitEcash = ecashBalance > 0 ? ecashBalance : 0.0;
+    final double limitEwallet = ewalletBalance > 0 ? ewalletBalance : 0.0;
+
+    // Constrain to available positive balances
+    if (ecashUsed > limitEcash) ecashUsed = limitEcash;
+    if (ecashUsed < 0) ecashUsed = 0.0;
+    if (ewalletUsed > limitEwallet) ewalletUsed = limitEwallet;
+    if (ewalletUsed < 0) ewalletUsed = 0.0;
 
     // Prioritize E-wallet deduction first
     double remaining = basePrice;
@@ -151,9 +175,14 @@ class _ClientPaymentModalState extends State<ClientPaymentModal> {
 
       if (response['success'] == true) {
         if (mounted) {
-          final String orderId = response['order_id']?.toString() ?? "#SER-${1000 + (DateTime.now().millisecond % 9000)}";
-          Navigator.pop(context, true); // Close bottom sheet
-          _showSuccessDialog(orderId: orderId);
+          final data = response['data'];
+          if (data != null && data['razorpay'] == true) {
+            _openRazorpay(data);
+          } else {
+            final String orderId = response['order_id']?.toString() ?? "#SER-${1000 + (DateTime.now().millisecond % 9000)}";
+            Navigator.pop(context, true); // Close bottom sheet
+            _showSuccessDialog(orderId: orderId);
+          }
         }
         return;
       } else {
@@ -170,6 +199,83 @@ class _ClientPaymentModalState extends State<ClientPaymentModal> {
         });
       }
     }
+  }
+
+  void _openRazorpay(Map<String, dynamic> razorpayData) {
+    final String contactPhone = widget.clientPhone.isNotEmpty
+        ? widget.clientPhone
+        : '9999999999';
+
+    final options = {
+      'key': razorpayData['key'],
+      'amount': razorpayData['amount'],
+      'currency': razorpayData['currency'] ?? 'INR',
+      'name': 'Ideal Village Client Purchase',
+      'order_id': razorpayData['razorpay_order_id'],
+      'description': widget.product.name,
+      'prefill': {
+        'contact': contactPhone,
+        'email': 'customer@idealvillage.in',
+      },
+      'theme': {
+        'color': '#006565',
+      },
+    };
+
+    debugPrint("RAZORPAY OPTIONS: $options");
+
+    try {
+      _razorpay.open(options);
+    } catch (e) {
+      debugPrint("Razorpay open error: $e");
+      _showErrorDialog("Razorpay failed to launch: $e");
+    }
+  }
+
+  void _handlePaymentSuccess(dynamic response) async {
+    _showLoadingDialog();
+    try {
+      final db = Database();
+      final res = await db.getJsonData({
+        'action': 'verify_client_purchase',
+        'razorpay_payment_id': response.paymentId ?? '',
+        'razorpay_order_id': response.orderId ?? '',
+        'razorpay_signature': response.signature ?? '',
+      }, endpoint: 'new_apis/payment_modal_API.php');
+
+      if (!mounted) return;
+      Navigator.pop(context); // Pop loader
+
+      if (res['success'] == true) {
+        Navigator.pop(context, true); // Close bottom sheet
+        _showSuccessDialog(orderId: response.orderId ?? '');
+      } else {
+        _showErrorDialog(res['message'] ?? "Payment verification failed.");
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Pop loader
+        _showErrorDialog("Verification error: $e");
+      }
+    }
+  }
+
+  void _handlePaymentError(dynamic response) {
+    _showErrorDialog("Razorpay Payment Cancelled / Failed.");
+  }
+
+  void _handleExternalWallet(dynamic response) {
+    debugPrint("External wallet payment: $response");
+  }
+
+  void _showLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
   }
 
   void _showSimulateDialog() {
@@ -674,7 +780,7 @@ class _ClientPaymentModalState extends State<ClientPaymentModal> {
                                 setState(() {
                                   useEwallet = val;
                                   if (val) {
-                                    ewalletController.text = ewalletBalance.toString();
+                                    ewalletController.text = ewalletBalance > 0 ? ewalletBalance.toString() : '0';
                                   } else {
                                     ewalletController.text = '';
                                   }
@@ -747,7 +853,7 @@ class _ClientPaymentModalState extends State<ClientPaymentModal> {
                                 setState(() {
                                   useEcash = val;
                                   if (val) {
-                                    ecashController.text = ecashBalance.toString();
+                                    ecashController.text = ecashBalance > 0 ? ecashBalance.toString() : '0';
                                   } else {
                                     ecashController.text = '';
                                   }
@@ -860,11 +966,7 @@ class _ClientPaymentModalState extends State<ClientPaymentModal> {
                     onPressed: _isPaying
                         ? null
                         : () {
-                            if (remainingAmount > 0) {
-                              _showSimulateDialog();
-                            } else {
-                              _processCheckout();
-                            }
+                            _processCheckout();
                           },
                     child: _isPaying
                         ? const CircularProgressIndicator(color: Colors.white)
@@ -873,8 +975,8 @@ class _ClientPaymentModalState extends State<ClientPaymentModal> {
                                 ? "Proceed to Pay ₹${remainingAmount.toStringAsFixed(2)}"
                                 : "Proceed to Purchase",
                             style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                             ),
                           ),
                   ),
@@ -885,5 +987,58 @@ class _ClientPaymentModalState extends State<ClientPaymentModal> {
         ),
       ),
     );
+  }
+}
+
+// =============================================================================
+//  RAZORPAY WRAPPER (isolates platform-specific import)
+// =============================================================================
+class _RazorpayWrapper {
+  dynamic _instance;
+
+  Function(dynamic)? onSuccess;
+  Function(dynamic)? onError;
+  Function(dynamic)? onWallet;
+
+  _RazorpayWrapper() {
+    try {
+      _instance = _createInstance();
+    } catch (e) {
+      _instance = null;
+    }
+  }
+
+  dynamic _createInstance() {
+    if (kIsWeb) return null;
+    try {
+      final r = Razorpay();
+      r.on(Razorpay.EVENT_PAYMENT_SUCCESS, (PaymentSuccessResponse response) {
+        onSuccess?.call(response);
+      });
+      r.on(Razorpay.EVENT_PAYMENT_ERROR, (PaymentFailureResponse response) {
+        onError?.call(response);
+      });
+      r.on(Razorpay.EVENT_EXTERNAL_WALLET, (ExternalWalletResponse response) {
+        onWallet?.call(response);
+      });
+      return r;
+    } catch (e) {
+      debugPrint("Error creating Razorpay instance: $e");
+      return null;
+    }
+  }
+
+  void open(Map<String, dynamic> options) {
+    if (_instance != null) {
+      _instance.open(options);
+    } else {
+      throw UnsupportedError("Razorpay not available on this platform");
+    }
+  }
+
+  void clear() {
+    try {
+      _instance?.clear();
+    } catch (_) {}
   }
 }

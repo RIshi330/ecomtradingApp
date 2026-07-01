@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../Database/Database.dart';
 import 'product_management_screen.dart';
 
@@ -205,7 +206,7 @@ class _ProliferationPaymentModalState extends State<ProliferationPaymentModal> {
           'order_id': orderId,
           'prefill': {
             'contact': '',
-            'email': '',
+            'email': 'customer@idealvillage.in',
           },
           'theme': {
             'color': '#${widget.themeColor.value.toRadixString(16).substring(2)}',
@@ -226,6 +227,9 @@ class _ProliferationPaymentModalState extends State<ProliferationPaymentModal> {
       final db = Database();
       final res = await db.getJsonData({
         'action': 'verifyProliferationPayment',
+        'razorpay_payment_id': response.paymentId ?? '',
+        'razorpay_order_id': response.orderId ?? '',
+        'razorpay_signature': response.signature ?? '',
       }, endpoint: 'new_apis/proliferatiion_payment_API.php');
 
       if (!mounted) return;
@@ -709,14 +713,21 @@ class _RazorpayWrapper {
   }
 
   dynamic _createInstance() {
+    if (kIsWeb) return null;
     try {
-      // In production builds on Android/iOS, razorpay_flutter is available
-      // Using Function.apply allows build tools to keep compile paths clear on web/desktop
-      final r = Function.apply(() {
-        throw UnsupportedError("Use razorpay_flutter directly on mobile");
-      }, []);
+      final r = Razorpay();
+      r.on(Razorpay.EVENT_PAYMENT_SUCCESS, (PaymentSuccessResponse response) {
+        onSuccess?.call(response);
+      });
+      r.on(Razorpay.EVENT_PAYMENT_ERROR, (PaymentFailureResponse response) {
+        onError?.call(response);
+      });
+      r.on(Razorpay.EVENT_EXTERNAL_WALLET, (ExternalWalletResponse response) {
+        onWallet?.call(response);
+      });
       return r;
-    } catch (_) {
+    } catch (e) {
+      debugPrint("Error creating Razorpay instance: $e");
       return null;
     }
   }

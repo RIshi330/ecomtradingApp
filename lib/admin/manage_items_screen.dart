@@ -50,9 +50,11 @@ class _ManageItemsScreenState extends State<ManageItemsScreen> {
     } catch (e) {
       print("Error loading initial data: $e");
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -67,42 +69,45 @@ class _ManageItemsScreenState extends State<ManageItemsScreen> {
 
       if (res != null && res['success'] == true) {
         final List<dynamic> itemsList = res['data']['items'] ?? [];
-        setState(() {
-          _items = itemsList.map((itemData) {
-            final String categoryTitle = itemData['cat_id']?.toString() ?? 'Fashion';
-            final String subCategoryTitle = itemData['sub_cat_id']?.toString() ?? '';
-            final String childCategoryTitle = itemData['child_cat_id']?.toString() ?? '';
-            final List<String> variantsList = List<String>.from(itemData['variants'] ?? []);
+        if (mounted) {
+          setState(() {
+            _items = itemsList.map((itemData) {
+              final String categoryTitle = itemData['cat_id']?.toString() ?? 'Fashion';
+              final String subCategoryTitle = itemData['sub_cat_id']?.toString() ?? '';
+              final String childCategoryTitle = itemData['child_cat_id']?.toString() ?? '';
+              final List<String> variantsList = List<String>.from(itemData['variants'] ?? []);
 
-            // Generate deterministic mock numbers for stats based on item ID
-            final int idVal = int.tryParse(itemData['id']?.toString() ?? '1') ?? 1;
-            final int mockQty = idVal % 3 == 0 ? 8 : (40 + (idVal % 60));
-            final double mockWeight = 100.0 + (idVal % 8) * 120.0;
-            final String mockPackaging = idVal % 2 == 0 ? "Eco-Box" : "Retail Slim";
+              // Generate deterministic mock numbers for stats based on item ID
+              final int idVal = int.tryParse(itemData['id']?.toString() ?? '1') ?? 1;
+              final int mockQty = idVal % 3 == 0 ? 8 : (40 + (idVal % 60));
+              final double mockWeight = 100.0 + (idVal % 8) * 120.0;
+              final String mockPackaging = idVal % 2 == 0 ? "Eco-Box" : "Retail Slim";
 
-            return ItemModel(
-              id: idVal,
-              title: itemData['item_name'] ?? '',
-              image: itemData['image'] != null && itemData['image'].toString().isNotEmpty
-                  ? itemData['image'].toString()
-                  : "https://images.unsplash.com/photo-1523170335258-f5ed11844a49", // default fallback
-              category: categoryTitle,
-              subcategory: subCategoryTitle,
-              childCategory: childCategoryTitle,
-              quantity: mockQty,
-              weight: mockWeight,
-              packaging: mockPackaging,
-              marketplace: "All Marketplaces",
-              variants: variantsList,
-              tags: [
-                "Category: $categoryTitle",
-                if (subCategoryTitle.isNotEmpty) "Sub: $subCategoryTitle",
-                if (variantsList.isNotEmpty) "Variants: ${variantsList.join(', ')}",
-              ],
-            );
-          }).toList();
-        });
+              return ItemModel(
+                id: idVal,
+                title: itemData['item_name'] ?? '',
+                image: itemData['image'] != null && itemData['image'].toString().isNotEmpty
+                    ? itemData['image'].toString()
+                    : "https://images.unsplash.com/photo-1523170335258-f5ed11844a49", // default fallback
+                category: categoryTitle,
+                subcategory: subCategoryTitle,
+                childCategory: childCategoryTitle,
+                quantity: mockQty,
+                weight: mockWeight,
+                packaging: mockPackaging,
+                marketplace: "All Marketplaces",
+                variants: variantsList,
+                tags: [
+                  "Category: $categoryTitle",
+                  if (subCategoryTitle.isNotEmpty) "Sub: $subCategoryTitle",
+                  if (variantsList.isNotEmpty) "Variants: ${variantsList.join(', ')}",
+                ],
+              );
+            }).toList();
+          });
+        }
       }
+
     } catch (e) {
       print("Error fetching items: $e");
     }
@@ -906,12 +911,14 @@ class _AddItemSheetState extends State<AddItemSheet> {
       }, endpoint: 'new_apis/items_api.php');
       if (res != null && res['success'] == true) {
         final List<dynamic> list = res['data']['subcategories'] ?? [];
-        setState(() {
-          _subcategories = list.map((s) => s['title']?.toString() ?? '').toList();
-          _selectedSubCategory = null;
-          _selectedChildCategory = null;
-          _childcategories = [];
-        });
+        if (mounted) {
+          setState(() {
+            _subcategories = list.map((s) => s['title']?.toString() ?? '').toList();
+            _selectedSubCategory = null;
+            _selectedChildCategory = null;
+            _childcategories = [];
+          });
+        }
       }
     } catch (e) {
       print("Error loading subcategories: $e");
@@ -926,10 +933,12 @@ class _AddItemSheetState extends State<AddItemSheet> {
       }, endpoint: 'new_apis/items_api.php');
       if (res != null && res['success'] == true) {
         final List<dynamic> list = res['data']['child_categories'] ?? [];
-        setState(() {
-          _childcategories = list.map((c) => c['title']?.toString() ?? '').toList();
-          _selectedChildCategory = null;
-        });
+        if (mounted) {
+          setState(() {
+            _childcategories = list.map((c) => c['title']?.toString() ?? '').toList();
+            _selectedChildCategory = null;
+          });
+        }
       }
     } catch (e) {
       print("Error loading child categories: $e");

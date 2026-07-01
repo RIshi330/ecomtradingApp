@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../Database/Database.dart';
+import '../core/theme/app_theme.dart';
 import '../index.dart';
 import 'client_payment_modal.dart';
 
@@ -67,14 +68,13 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
   int quantity = 1;
   final TextEditingController clientNameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
-  String selectedClient = "R. Roy";
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
+  String selectedClientName = "";
+  String selectedClientId = "";
   double unitPrice = 2499.0;
 
-  final List<String> existingClients = [
-    "R. Roy",
-    "A. Joshi",
-    "S. Mehta",
-  ];
+  List<Map<String, String>> existingClients = [];
 
   final List<SelectedProduct> mockProducts = [
     SelectedProduct(
@@ -115,13 +115,42 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
     super.initState();
     _fetchSelectedItems();
     _fetchWebsites();
+    _loadClients();
   }
 
   @override
   void dispose() {
     clientNameController.dispose();
     phoneController.dispose();
+    emailController.dispose();
+    addressController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadClients() async {
+    try {
+      final db = Database();
+      final res = await db.getJsonData({
+        'action': 'fetch_clients',
+      }, endpoint: 'new_apis/combo_pack_api.php');
+      if (res != null && res['clients'] != null) {
+        final List<dynamic> list = res['clients'];
+        if (mounted) {
+          setState(() {
+            existingClients = list.map((c) => {
+              'id': c['id']?.toString() ?? '',
+              'name': c['name']?.toString() ?? '',
+            }).toList();
+            if (existingClients.isNotEmpty) {
+              selectedClientName = existingClients.first['name'] ?? '';
+              selectedClientId = existingClients.first['id'] ?? '';
+            }
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error loading clients: $e");
+    }
   }
 
   Future<void> _fetchSelectedItems() async {
@@ -428,28 +457,43 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Buy For Client",
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Buy For Client",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 20, color: AppTheme.textSecondary),
+                          onPressed: () => Navigator.pop(context),
+                          style: IconButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: const Size(32, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
                     buildClientSelector(sheetSetState),
-                    const SizedBox(height: 20),
-                    buildNewClientForm(),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
+                    buildNewClientForm(sheetSetState),
+                    const SizedBox(height: 16),
                     buildCartItem(product, sheetSetState),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
                     buildPriceSummary(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
-                      height: 50,
+                      height: 48,
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          if (clientNameController.text.isEmpty && selectedClient.isEmpty) {
+                          if (clientNameController.text.isEmpty && selectedClientId.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text("Please select or add a client"),
@@ -459,14 +503,84 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
                             );
                             return;
                           }
-                          payNow(product);
+
+                          if (clientNameController.text.isNotEmpty) {
+                            if (phoneController.text.isEmpty || emailController.text.isEmpty || addressController.text.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("All fields (Name, Phone, Email, Address) are required for a new client"),
+                                  backgroundColor: Colors.red,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                              return;
+                            }
+
+                            // Show loading dialog
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (ctx) => const Center(child: CircularProgressIndicator()),
+                            );
+
+                            Database().getJsonData({
+                              'action': 'addUser',
+                              'user_name': clientNameController.text,
+                              'user_email': emailController.text,
+                              'user_mobile': phoneController.text,
+                              'user_address': addressController.text,
+                              'user_type': '52',
+                            }, endpoint: 'new_apis/user_manager_API.php').then((res) {
+                              Navigator.pop(context); // Close loading indicator
+                              if (res != null && res['success'] == true) {
+                                final String newId = res['data']['user_id']?.toString() ?? '';
+                                final String newName = res['data']['user_name']?.toString() ?? clientNameController.text;
+                                final String newPhone = phoneController.text;
+
+                                _loadClients();
+
+                                setState(() {
+                                  selectedClientId = newId;
+                                  selectedClientName = newName;
+                                });
+
+                                clientNameController.clear();
+                                phoneController.clear();
+                                emailController.clear();
+                                addressController.clear();
+
+                                payNow(product, newName, newPhone);
+                              } else {
+                                final String errorMsg = res != null ? res['message']?.toString() ?? "Failed to add client" : "Failed to add client";
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(errorMsg),
+                                    backgroundColor: Colors.red,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            }).catchError((e) {
+                              Navigator.pop(context); // Close loading indicator
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("Error: $e"),
+                                  backgroundColor: Colors.red,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            });
+                          } else {
+                            payNow(product, selectedClientName, "");
+                          }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: themeColor,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          backgroundColor: AppTheme.primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
+                          elevation: 0,
                         ),
-                        icon: const Icon(Icons.payments, color: Colors.white),
-                        label: const Text("Pay Now", style: TextStyle(color: Colors.white, fontSize: 16)),
+                        icon: const Icon(Icons.lock_outline, color: Colors.white, size: 18),
+                        label: const Text("Pay Now", style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],
@@ -485,39 +599,70 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
       children: [
         const Text(
           "Select Existing Client",
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.textSecondary),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         SizedBox(
-          height: 90,
+          height: 85,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: existingClients.length,
             itemBuilder: (context, index) {
               final client = existingClients[index];
-              final selected = selectedClient == client;
+              final name = client['name'] ?? '';
+              final id = client['id'] ?? '';
+              final selected = selectedClientId == id;
 
               return GestureDetector(
                 onTap: () {
                   sheetSetState(() {
-                    selectedClient = client;
+                    selectedClientName = name;
+                    selectedClientId = id;
+                    clientNameController.clear();
+                    phoneController.clear();
+                    emailController.clear();
+                    addressController.clear();
                   });
                 },
                 child: Container(
-                  width: 90,
+                  width: 75,
                   margin: const EdgeInsets.only(right: 12),
                   child: Column(
                     children: [
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundColor: selected ? themeColor : Colors.grey.shade300,
-                        child: Text(
-                          client.substring(0, 1),
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: selected ? AppTheme.primary : Colors.transparent,
+                            width: 2,
+                          ),
+                        ),
+                        child: CircleAvatar(
+                          radius: 22,
+                          backgroundColor: selected ? AppTheme.primary : Colors.grey.shade200,
+                          child: Text(
+                            name.isNotEmpty ? name.substring(0, 1).toUpperCase() : "",
+                            style: TextStyle(
+                              color: selected ? Colors.white : AppTheme.textSecondary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Text(client, style: TextStyle(fontWeight: selected ? FontWeight.bold : FontWeight.normal)),
+                      const SizedBox(height: 4),
+                      Text(
+                        name,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                          color: selected ? AppTheme.primary : AppTheme.textSecondary,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -529,37 +674,75 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
     );
   }
 
-  Widget buildNewClientForm() {
+  Widget buildNewClientForm(StateSetter sheetSetState) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(16),
+        color: AppTheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              "Or Add New Client",
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
+          const Text(
+            "Or Add New Client",
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.textPrimary),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           TextField(
             controller: clientNameController,
-            decoration: const InputDecoration(
+            style: const TextStyle(fontSize: 13),
+            onChanged: (val) {
+              sheetSetState(() {
+                selectedClientName = val;
+                selectedClientId = "";
+              });
+            },
+            decoration: InputDecoration(
               labelText: "Client Name",
-              border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+              labelStyle: const TextStyle(fontSize: 12),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(AppTheme.radius))),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           TextField(
             controller: phoneController,
             keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
+            style: const TextStyle(fontSize: 13),
+            decoration: InputDecoration(
               labelText: "Phone Number",
-              border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+              labelStyle: const TextStyle(fontSize: 12),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(AppTheme.radius))),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: emailController,
+            keyboardType: TextInputType.emailAddress,
+            style: const TextStyle(fontSize: 13),
+            decoration: InputDecoration(
+              labelText: "Email Address",
+              labelStyle: const TextStyle(fontSize: 12),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(AppTheme.radius))),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: addressController,
+            keyboardType: TextInputType.streetAddress,
+            style: const TextStyle(fontSize: 13),
+            decoration: InputDecoration(
+              labelText: "Client Address",
+              labelStyle: const TextStyle(fontSize: 12),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(AppTheme.radius))),
             ),
           ),
         ],
@@ -569,46 +752,57 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
 
   Widget buildCartItem(SelectedProduct product, StateSetter setSheetState) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: AppTheme.cardShadow,
       ),
       child: Row(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             child: product.image.isNotEmpty
                 ? Image.network(
                     product.image,
-                    width: 60,
-                    height: 60,
+                    width: 50,
+                    height: 50,
                     fit: BoxFit.cover,
                     errorBuilder: (ctx, err, stack) => Container(
-                      width: 60,
-                      height: 60,
-                      color: Colors.grey.shade200,
-                      child: const Icon(Icons.image, color: Colors.grey),
+                      width: 50,
+                      height: 50,
+                      color: Colors.grey.shade100,
+                      child: const Icon(Icons.image, color: Colors.grey, size: 20),
                     ),
                   )
                 : Container(
-                    width: 60,
-                    height: 60,
-                    color: Colors.grey.shade200,
-                    child: const Icon(Icons.image, color: Colors.grey),
+                    width: 50,
+                    height: 50,
+                    color: Colors.grey.shade100,
+                    child: const Icon(Icons.image, color: Colors.grey, size: 20),
                   ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text("₹${product.price.toStringAsFixed(2)}", style: const TextStyle(color: Colors.grey)),
+                Text(
+                  product.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textPrimary),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "₹${product.price.toStringAsFixed(2)}",
+                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                ),
               ],
             ),
           ),
+          const SizedBox(width: 10),
           buildQuantitySelector(setSheetState),
         ],
       ),
@@ -618,13 +812,15 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
   Widget buildQuantitySelector(StateSetter setSheetState) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade400),
-        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
             onPressed: () {
               setSheetState(() {
                 if (quantity > 1) {
@@ -632,19 +828,24 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
                 }
               });
             },
-            icon: const Icon(Icons.remove, size: 16),
+            icon: const Icon(Icons.remove, size: 14, color: AppTheme.textSecondary),
           ),
-          Text(
-            quantity.toString(),
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              quantity.toString(),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textPrimary),
+            ),
           ),
           IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
             onPressed: () {
               setSheetState(() {
                 quantity++;
               });
             },
-            icon: const Icon(Icons.add, size: 16),
+            icon: const Icon(Icons.add, size: 14, color: AppTheme.textSecondary),
           ),
         ],
       ),
@@ -653,17 +854,17 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
 
   Widget buildPriceSummary() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(16),
+        color: AppTheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
       child: Column(
         children: [
           buildSummaryRow("Item Total", "₹${itemTotal.toStringAsFixed(2)}"),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           buildSummaryRow("Tax (GST 18%)", "₹${gstAmount.toStringAsFixed(2)}"),
-          const Divider(),
+          const Divider(height: 16),
           buildSummaryRow(
             "Total Payable",
             "₹${finalTotal.toStringAsFixed(2)}",
@@ -682,7 +883,8 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
             title,
             style: TextStyle(
               fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              fontSize: isTotal ? 16 : 14,
+              fontSize: isTotal ? 13 : 12,
+              color: isTotal ? AppTheme.textPrimary : AppTheme.textSecondary,
             ),
           ),
         ),
@@ -690,15 +892,15 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
           value,
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: isTotal ? themeColor : null,
-            fontSize: isTotal ? 18 : 14,
+            color: isTotal ? AppTheme.primary : AppTheme.textPrimary,
+            fontSize: isTotal ? 14 : 12,
           ),
         ),
       ],
     );
   }
 
-  void payNow(SelectedProduct product) {
+  void payNow(SelectedProduct product, String name, String phone) {
     Navigator.pop(context);
     showModalBottomSheet(
       context: context,
@@ -711,8 +913,8 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
         quantity: quantity,
         totalRawPrice: finalTotal,
         themeColor: themeColor,
-        clientName: clientNameController.text.isNotEmpty ? clientNameController.text : selectedClient,
-        clientPhone: phoneController.text,
+        clientName: name,
+        clientPhone: phone,
       ),
     );
   }

@@ -1502,19 +1502,25 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           ),
         ],
         const SizedBox(width: 12),
-        Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: const Color(0xff006565).withOpacity(0.2),
-              width: 2,
+        InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: () {
+            Navigator.of(context, rootNavigator: true).pushNamed('/user/profile');
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: const Color(0xff006565).withOpacity(0.2),
+                width: 2,
+              ),
             ),
-          ),
-          child: const CircleAvatar(
-            radius: 18,
-            backgroundColor: Color(0xffe5f7f7),
-            backgroundImage: NetworkImage(
-              "https://i.pravatar.cc/150?img=33",
+            child: const CircleAvatar(
+              radius: 18,
+              backgroundColor: Color(0xffe5f7f7),
+              backgroundImage: NetworkImage(
+                "https://i.pravatar.cc/150?img=33",
+              ),
             ),
           ),
         ),
@@ -1616,7 +1622,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           ),
           child: InkWell(
             onTap: () {
-              setState(() => _currentIndex = 11);
+              Navigator.of(context, rootNavigator: true).pushNamed('/user/profile');
             },
             child: const CircleAvatar(
               radius: 16,

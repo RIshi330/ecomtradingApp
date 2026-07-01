@@ -11,71 +11,110 @@ class WalletAdminScreen extends StatefulWidget {
 }
 
 class _WalletAdminScreenState extends State<WalletAdminScreen> {
-  List<dynamic> _transactions = [];
+  List<dynamic> _withdrawalRequests = [];
+  List<dynamic> _allTransactions = [];
   bool _isLoading = false;
+  int _txnTabIndex = 0; // 0 = All Transactions, 1 = Withdrawal Requests
 
-  // Dynamic balances
-  double _availableBalance = 24500.0;
-  double _pendingBalance = 1250.0;
-  double _totalEcash = 45200.0;
-  double _totalWallet = 169700.0;
+  // Dynamic balances — start at 0, loaded from API
+  double _availableBalance = 0;
+  double _pendingBalance = 0;
+  double _totalEcash = 0;
+  double _totalWallet = 0;
+
+  // Dynamic stat card values — computed from real transaction data
+  double _totalRevenue = 0;
+  double _totalExpenses = 0;
+  double _totalIncome = 0;
+  double _pendingDues = 0;
 
   @override
   void initState() {
     super.initState();
-    _fetchWithdrawalHistory();
+    _fetchAllWalletData();
   }
 
-  // API Call: Fetch withdrawal requests list and current wallet balances dynamically
-  Future<void> _fetchWithdrawalHistory() async {
+  // Fetch all wallet data: balances, all transactions, and withdrawal requests
+  Future<void> _fetchAllWalletData() async {
     setState(() {
       _isLoading = true;
     });
     try {
       final db = Database();
-      
-      // 1. Fetch withdrawal history
-      final res = await db.getData({
+
+      // 1. Fetch wallet summary (balances + all transactions) from wallet_API.php
+      final walletRes = await db.getData({
+        'action': 'get_wallet',
+      });
+
+      // 2. Fetch withdrawal requests history
+      final withdrawRes = await db.getData({
         'action': 'getWithdrawRequests',
       }, endpoint: 'new_apis/withdrawl_request_api.php');
-
-      // 2. Fetch current wallet balances dynamically from the payment modal API
-      final balanceRes = await db.getJsonData({
-        'action': 'get_balances',
-      }, endpoint: 'new_apis/payment_modal_API 1.php');
 
       if (!mounted) return;
 
       setState(() {
-        if (res['success'] == true || res['status'] == 200 || res.containsKey('data')) {
-          _transactions = res['data'] ?? [];
-          
-          // Compute dynamic pending balance from list
+        // Parse wallet balances and transactions
+        if (walletRes != null && (walletRes['success'] == true || walletRes['status'] == 200) && walletRes['data'] != null) {
+          final data = walletRes['data'];
+          final balances = data['balances'];
+          if (balances != null) {
+            _totalEcash = double.tryParse(balances['total_ebanking']?.toString() ?? '0') ?? 0;
+            _availableBalance = double.tryParse(balances['available_ebanking']?.toString() ?? '0') ?? 0;
+            _totalWallet = double.tryParse(balances['ewallet']?.toString() ?? '0') ?? 0;
+            _pendingBalance = double.tryParse(balances['pending_requests']?.toString() ?? '0') ?? 0;
+          }
+
+          // Parse all transactions
+          final txns = data['transactions'];
+          if (txns is List) {
+            _allTransactions = txns;
+
+            // Compute stat card values from real transaction data
+            double credits = 0;
+            double debits = 0;
+            double pendingAmt = 0;
+            for (var t in txns) {
+              final nature = t['nature']?.toString().toUpperCase() ?? '';
+              final status = t['status']?.toString().toUpperCase() ?? '';
+              final amt = double.tryParse(t['amount']?.toString() ?? '0') ?? 0;
+              if (nature == 'CREDIT' || nature == 'REFUND') {
+                credits += amt;
+              } else if (nature == 'DEBIT') {
+                debits += amt;
+              }
+              if (status == 'PENDING') {
+                pendingAmt += amt;
+              }
+            }
+            _totalRevenue = credits;
+            _totalExpenses = debits;
+            _totalIncome = credits - debits;
+            _pendingDues = pendingAmt;
+          }
+        }
+
+        // Parse withdrawal requests
+        if (withdrawRes['success'] == true || withdrawRes['status'] == 200 || withdrawRes.containsKey('data')) {
+          _withdrawalRequests = withdrawRes['data'] ?? [];
+
+          // Override pending from withdrawal requests if available
           double pendingSum = 0.0;
-          for (var item in _transactions) {
-            final status = item['status']?.toString().toLowerCase();
-            if (status == 'pending') {
-              final amt = double.tryParse(item['requestedAmount']?.toString() ?? '0') ?? 0.0;
+          for (var item in _withdrawalRequests) {
+            final status = item['status_label']?.toString().toLowerCase() ?? item['status']?.toString().toLowerCase() ?? '';
+            if (status == 'pending' || status == '0') {
+              final amt = double.tryParse(item['requested_amount']?.toString() ?? item['requestedAmount']?.toString() ?? '0') ?? 0.0;
               pendingSum += amt;
             }
           }
-          _pendingBalance = pendingSum;
-        }
-
-        if (balanceRes['success'] == true || balanceRes['status'] == 200 || balanceRes.containsKey('data')) {
-          final data = balanceRes['data'];
-          if (data != null) {
-            final ecash = double.tryParse(data['ecash_balance']?.toString() ?? '0') ?? 0.0;
-            final ewallet = double.tryParse(data['ewallet_balance']?.toString() ?? '0') ?? 0.0;
-            
-            _totalEcash = ecash;
-            _availableBalance = ecash;
-            _totalWallet = ewallet;
+          if (pendingSum > 0) {
+            _pendingDues = pendingSum;
           }
         }
       });
     } catch (e) {
-      print("Error fetching withdrawal history or balances: $e");
+      print("Error fetching wallet data: $e");
     } finally {
       if (mounted) {
         setState(() {
@@ -116,7 +155,7 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-        _fetchWithdrawalHistory();
+        _fetchAllWalletData();
       } else {
         _showErrorDialog(res['error']?.toString() ?? "Failed to request withdrawal.");
       }
@@ -152,7 +191,7 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-        _fetchWithdrawalHistory();
+        _fetchAllWalletData();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -222,7 +261,7 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Color(0xff006565)),
-            onPressed: _fetchWithdrawalHistory,
+            onPressed: _fetchAllWalletData,
           ),
           const SizedBox(width: 8),
           GestureDetector(
@@ -308,57 +347,57 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
             ),
 
       body: RefreshIndicator(
-        onRefresh: _fetchWithdrawalHistory,
+        onRefresh: _fetchAllWalletData,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
 
-              // Stats Cards
+              // Stats Cards — computed from real transaction data
               SizedBox(
                 height: 120,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  children: const [
+                  children: [
                     SizedBox(
                       width: 140,
                       child: StatCard(
                         title: "Total Revenue",
-                        value: "₹1,28,430",
+                        value: "₹${_formatCurrency(_totalRevenue)}",
                         icon: Icons.payments,
-                        growth: "+12%",
-                        positive: true,
-                      ),
-                    ),
-                    SizedBox(width: 12),
-                    SizedBox(
-                      width: 140,
-                      child: StatCard(
-                        title: "Total Expenses",
-                        value: "₹42,150",
-                        icon: Icons.account_balance_wallet,
-                        growth: "-5%",
-                        positive: false,
-                      ),
-                    ),
-                    SizedBox(width: 12),
-                    SizedBox(
-                      width: 140,
-                      child: StatCard(
-                        title: "Total Income",
-                        value: "₹86,280",
-                        icon: Icons.trending_up,
                         growth: "",
                         positive: true,
                       ),
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      width: 140,
+                      child: StatCard(
+                        title: "Total Expenses",
+                        value: "₹${_formatCurrency(_totalExpenses)}",
+                        icon: Icons.account_balance_wallet,
+                        growth: "",
+                        positive: false,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      width: 140,
+                      child: StatCard(
+                        title: "Net Income",
+                        value: "₹${_formatCurrency(_totalIncome)}",
+                        icon: Icons.trending_up,
+                        growth: "",
+                        positive: _totalIncome >= 0,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
                     SizedBox(
                       width: 140,
                       child: StatCard(
                         title: "Pending Dues",
-                        value: "₹4,500",
+                        value: "₹${_formatCurrency(_pendingDues)}",
                         icon: Icons.pending_actions,
                         growth: "",
                         positive: false,
@@ -416,123 +455,77 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
 
               const SizedBox(height: 24),
 
+              // Transaction tabs
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
-                    "Transaction History",
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _txnTabIndex = 0),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: _txnTabIndex == 0 ? const Color(0xff006565) : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          "All Transactions",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: _txnTabIndex == 0 ? const Color(0xff006565) : Colors.grey,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                  Row(
-                    children: [
-                      Icon(Icons.search),
-                      SizedBox(width: 8),
-                      Icon(Icons.filter_list),
-                    ],
-                  )
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _txnTabIndex = 1),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: _txnTabIndex == 1 ? const Color(0xff006565) : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          "Withdrawal Requests",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: _txnTabIndex == 1 ? const Color(0xff006565) : Colors.grey,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
 
               const SizedBox(height: 16),
-              
+
+              // Tab content
               _isLoading
                   ? const Center(child: CircularProgressIndicator(color: Color(0xff006565)))
-                  : _transactions.isEmpty
-                      ? Container(
-                          padding: const EdgeInsets.symmetric(vertical: 40),
-                          alignment: Alignment.center,
-                          child: const Text("No withdrawal history found.", style: TextStyle(color: Colors.grey)),
-                        )
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: _transactions.length,
-                          itemBuilder: (context, idx) {
-                            final item = _transactions[idx];
-                            final String txId = item['transaction_id']?.toString() ?? item['id']?.toString() ?? "N/A";
-                            final String desc = item['description']?.toString() ?? "Withdrawal";
-                            final String amount = item['requestedAmount']?.toString() ?? "0";
-                            final String receive = item['receiveTo']?.toString() ?? "Wallet";
-                            final String status = item['status']?.toString() ?? "Pending";
-                            final bool isPending = status.toLowerCase() == 'pending';
-                            final bool isApproved = status.toLowerCase() == 'approved' || status.toLowerCase() == 'success';
-                            
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: isApproved
-                                      ? Colors.green.shade50
-                                      : (isPending ? Colors.amber.shade50 : Colors.red.shade50),
-                                  child: Icon(
-                                    isApproved
-                                        ? Icons.check
-                                        : (isPending ? Icons.hourglass_empty : Icons.close),
-                                    color: isApproved
-                                        ? Colors.green
-                                        : (isPending ? Colors.amber.shade800 : Colors.red),
-                                  ),
-                                ),
-                                title: Text(
-                                  "$desc (via $receive)",
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                subtitle: Text("#$txId • Status: $status"),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      "-₹$amount",
-                                      style: TextStyle(
-                                        color: isApproved ? Colors.green : (isPending ? Colors.amber.shade800 : Colors.red),
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    if (isPending) ...[
-                                      const SizedBox(width: 8),
-                                      IconButton(
-                                        icon: const Icon(Icons.cancel, color: Colors.redAccent, size: 20),
-                                        onPressed: () {
-                                          showDialog(
-                                            context: context,
-                                            builder: (ctx) => AlertDialog(
-                                              title: const Text("Cancel Withdrawal"),
-                                              content: const Text("Are you sure you want to cancel this withdrawal request?"),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () => Navigator.pop(ctx),
-                                                  child: const Text("No"),
-                                                ),
-                                                TextButton(
-                                                  onPressed: () {
-                                                    Navigator.pop(ctx);
-                                                    _cancelWithdrawalRequest(txId);
-                                                  },
-                                                  child: const Text("Yes, Cancel", style: TextStyle(color: Colors.red)),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                  : _txnTabIndex == 0
+                      ? _buildAllTransactionsList()
+                      : _buildWithdrawalRequestsList(),
 
               const SizedBox(height: 20),
 
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _fetchWithdrawalHistory,
+                  onPressed: _fetchAllWalletData,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xffD4E6E5),
                     foregroundColor: const Color(0xff006565),
@@ -548,6 +541,222 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  // Format currency with Indian comma style
+  String _formatCurrency(double amount) {
+    final isNegative = amount < 0;
+    String str = amount.abs().toStringAsFixed(0);
+    if (str.length <= 3) return isNegative ? '-$str' : str;
+    String lastThree = str.substring(str.length - 3);
+    String other = str.substring(0, str.length - 3);
+    String result = "";
+    int count = 0;
+    for (int i = other.length - 1; i >= 0; i--) {
+      result = other[i] + result;
+      count++;
+      if (count == 2 && i > 0) {
+        result = ",$result";
+        count = 0;
+      }
+    }
+    final formatted = "$result,$lastThree";
+    return isNegative ? '-$formatted' : formatted;
+  }
+
+  // Build the "All Transactions" list from wallet_API.php data
+  Widget _buildAllTransactionsList() {
+    if (_allTransactions.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        alignment: Alignment.center,
+        child: const Text("No transactions found.", style: TextStyle(color: Colors.grey)),
+      );
+    }
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _allTransactions.length,
+      itemBuilder: (context, idx) {
+        final item = _allTransactions[idx];
+        final String txnId = item['id']?.toString() ?? 'N/A';
+        final String desc = item['description']?.toString() ?? 'Wallet Transaction';
+        final String nature = item['nature']?.toString().toUpperCase() ?? '';
+        final String status = item['status']?.toString() ?? '';
+        final double amt = double.tryParse(item['amount']?.toString() ?? '0') ?? 0;
+        final String transactFrom = item['transact_from']?.toString() ?? '';
+        final String dateStr = item['date']?.toString() ?? '';
+        final bool isCredit = nature == 'CREDIT' || nature == 'REFUND';
+        final bool isPending = status.toUpperCase() == 'PENDING';
+
+        String sourceLabel;
+        if (transactFrom == 'ebanking') {
+          sourceLabel = 'E-Banking';
+        } else if (transactFrom == 'ewallet' || transactFrom == 'EWALLET') {
+          sourceLabel = 'E-Wallet';
+        } else if (transactFrom == 'razorpay') {
+          sourceLabel = 'Razorpay';
+        } else {
+          sourceLabel = transactFrom;
+        }
+
+        // Format date
+        String formattedDate = '';
+        if (dateStr.isNotEmpty) {
+          final dt = DateTime.tryParse(dateStr);
+          if (dt != null) {
+            formattedDate = '${dt.day}/${dt.month}/${dt.year}';
+          }
+        }
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: isCredit ? Colors.green.shade50 : (isPending ? Colors.amber.shade50 : Colors.red.shade50),
+              child: Icon(
+                isCredit ? Icons.arrow_downward : Icons.arrow_upward,
+                color: isCredit ? Colors.green : (isPending ? Colors.amber.shade800 : Colors.red),
+              ),
+            ),
+            title: Text(
+              desc,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              '#TXN$txnId • $sourceLabel • $formattedDate',
+              style: const TextStyle(fontSize: 11, color: Colors.grey),
+            ),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${isCredit ? '+' : '-'}₹${_formatCurrency(amt)}',
+                  style: TextStyle(
+                    color: isCredit ? Colors.green : Colors.red,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  status,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isPending ? Colors.amber.shade800 : Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Build the "Withdrawal Requests" list
+  Widget _buildWithdrawalRequestsList() {
+    if (_withdrawalRequests.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        alignment: Alignment.center,
+        child: const Text("No withdrawal requests found.", style: TextStyle(color: Colors.grey)),
+      );
+    }
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _withdrawalRequests.length,
+      itemBuilder: (context, idx) {
+        final item = _withdrawalRequests[idx];
+        final String txId = item['transaction_id']?.toString() ?? item['id']?.toString() ?? "N/A";
+        final String desc = item['description']?.toString() ?? "Withdrawal";
+        final String amount = item['requested_amount']?.toString() ?? item['requestedAmount']?.toString() ?? "0";
+        final String statusLabel = item['status_label']?.toString() ?? 'Pending';
+        final bool isPending = statusLabel.toLowerCase() == 'pending';
+        final bool isApproved = statusLabel.toLowerCase() == 'approved' || statusLabel.toLowerCase() == 'success';
+        final String dateStr = item['requested_date']?.toString() ?? '';
+
+        String formattedDate = '';
+        if (dateStr.isNotEmpty) {
+          final dt = DateTime.tryParse(dateStr);
+          if (dt != null) {
+            formattedDate = '${dt.day}/${dt.month}/${dt.year}';
+          }
+        }
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: isApproved
+                  ? Colors.green.shade50
+                  : (isPending ? Colors.amber.shade50 : Colors.red.shade50),
+              child: Icon(
+                isApproved
+                    ? Icons.check
+                    : (isPending ? Icons.hourglass_empty : Icons.close),
+                color: isApproved
+                    ? Colors.green
+                    : (isPending ? Colors.amber.shade800 : Colors.red),
+              ),
+            ),
+            title: Text(
+              desc,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text('#$txId • $statusLabel • $formattedDate', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '-₹$amount',
+                  style: TextStyle(
+                    color: isApproved ? Colors.green : (isPending ? Colors.amber.shade800 : Colors.red),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                if (isPending) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.cancel, color: Colors.redAccent, size: 20),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text("Cancel Withdrawal"),
+                          content: const Text("Are you sure you want to cancel this withdrawal request?"),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text("No"),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _cancelWithdrawalRequest(txId);
+                              },
+                              child: const Text("Yes, Cancel", style: TextStyle(color: Colors.red)),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
