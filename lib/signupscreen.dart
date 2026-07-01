@@ -18,7 +18,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _email = TextEditingController();
   final _mobile = TextEditingController();
   final _password = TextEditingController();
-  bool _isRecruiter = false;
+  int _selectedSignupType = 0; // 0: Vendor, 1: Community Admin, 2: Admin
   bool _isLoading = false;
   bool _obscurePassword = true;
 
@@ -53,16 +53,22 @@ class _SignupScreenState extends State<SignupScreen> {
       if (!mounted) return;
 
       if (data['success'] == true || data['status'] == 200) {
+        final vendorType = _selectedSignupType == 2
+            ? '1'
+            : _selectedSignupType == 1
+                ? '200'
+                : '20';
+
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => OtpScreen(
               email: _email.text.trim(),
-              isRecruiter: _isRecruiter,
+              isRecruiter: _selectedSignupType == 2,
               name: _name.text.trim(),
               mobile: _mobile.text.trim(),
               password: _password.text.trim(),
-              vendorType: _isRecruiter ? '1' : '20',
+              vendorType: vendorType,
             ),
           ),
         );
@@ -166,12 +172,12 @@ class _SignupScreenState extends State<SignupScreen> {
                     children: [
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => setState(() => _isRecruiter = false),
+                          onTap: () => setState(() => _selectedSignupType = 0),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
-                              color: !_isRecruiter
+                              color: _selectedSignupType == 0
                                   ? lavender
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(10),
@@ -180,9 +186,9 @@ class _SignupScreenState extends State<SignupScreen> {
                               'Vendor',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: !_isRecruiter ? white : grey,
+                                color: _selectedSignupType == 0 ? white : grey,
                                 fontWeight: FontWeight.w700,
-                                fontSize: 15,
+                                fontSize: 13,
                               ),
                             ),
                           ),
@@ -190,12 +196,36 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => setState(() => _isRecruiter = true),
+                          onTap: () => setState(() => _selectedSignupType = 1),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
-                              color: _isRecruiter
+                              color: _selectedSignupType == 1
+                                  ? lavender
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              'Community Admin',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: _selectedSignupType == 1 ? white : grey,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _selectedSignupType = 2),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: _selectedSignupType == 2
                                   ? lavender
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(10),
@@ -204,9 +234,9 @@ class _SignupScreenState extends State<SignupScreen> {
                               'Admin',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: _isRecruiter ? white : grey,
+                                color: _selectedSignupType == 2 ? white : grey,
                                 fontWeight: FontWeight.w700,
-                                fontSize: 15,
+                                fontSize: 13,
                               ),
                             ),
                           ),
@@ -230,21 +260,27 @@ class _SignupScreenState extends State<SignupScreen> {
                   child: Row(
                     children: [
                       Icon(
-                        _isRecruiter
+                        _selectedSignupType == 2
                             ? Icons.admin_panel_settings_outlined
-                            : Icons.storefront_outlined,
+                            : _selectedSignupType == 1
+                                ? Icons.group_outlined
+                                : Icons.storefront_outlined,
                         color: lavender,
                         size: 20,
                       ),
                       const SizedBox(width: 10),
-                      Text(
-                        _isRecruiter
-                            ? 'Access administrative control panel'
-                            : 'Register as a vendor to sell products',
-                        style: const TextStyle(
-                          color: black,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                      Expanded(
+                        child: Text(
+                          _selectedSignupType == 2
+                              ? 'Access administrative control panel'
+                              : _selectedSignupType == 1
+                                  ? 'Manage community discussions & events'
+                                  : 'Register as a vendor to sell products',
+                          style: const TextStyle(
+                            color: black,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ],

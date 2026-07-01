@@ -3,6 +3,7 @@ import 'package:trading_ecommerce_admin/app_constants.dart';
 import 'package:trading_ecommerce_admin/user/create_profile_screen.dart';
 import 'package:trading_ecommerce_admin/admin/Community_Admin_Dashboard.dart';
 import 'package:trading_ecommerce_admin/admin/business_user_dashboard_screen.dart';
+import 'package:trading_ecommerce_admin/admin/seller_dashboard_screen.dart';
 import 'package:trading_ecommerce_admin/services/auth_service.dart';
 import 'package:trading_ecommerce_admin/common/industries_screen.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
@@ -125,12 +126,18 @@ class _OtpScreenState extends State<OtpScreen> {
             data['full_data']?['vendor_type']?.toString() ??
             data['LOGIN_RESPONSE']?['vendor_type']?.toString() ??
             data['LOGIN_RESPONSE']?['full_data']?['vendor_type']?.toString() ??
-            (widget.isRecruiter ? '1' : '20');
+            (widget.vendorType ?? (widget.isRecruiter ? '1' : '20'));
 
         if (vendorType != '500' && vendorType != '1') {
+          Widget dashboardWidget;
+          if (vendorType == '20') {
+            dashboardWidget = const SellerDashboardScreen();
+          } else {
+            dashboardWidget = const CommunityAdminDashboard();
+          }
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const BusinessUserDashboard()),
+            MaterialPageRoute(builder: (_) => dashboardWidget),
             (route) => false,
           );
           return;

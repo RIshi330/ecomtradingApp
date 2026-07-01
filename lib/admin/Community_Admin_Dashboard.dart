@@ -58,7 +58,48 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   // 7: Wallet, 8: Withdrawal Requests, 9: Seller Bank Details,
   // 10: Membership Plans, 11: Profile, 15: Community Approvals
   // 12: Seller Dashboard (Default)
-  int _currentIndex = 12;
+  int _currentIndex = 0;
+  String _vendorType = '200';
+
+  // Home Feed Interaction States
+  int _sarahMitchellLikes = 24;
+  bool _sarahMitchellLiked = false;
+  int _davidChenLikes = 142;
+  bool _davidChenLiked = false;
+  bool _commentsExpanded = false;
+  final TextEditingController _commentController = TextEditingController();
+  final TextEditingController _memberSearchController = TextEditingController();
+
+  final List<Map<String, dynamic>> _activeMembers = [
+    {
+      "name": "Marcus Knight",
+      "initials": "MK",
+      "role": "Head of Operations",
+      "status": "ACTIVE",
+      "statusColor": const Color(0xFF008080),
+      "progress": 0.82,
+    },
+    {
+      "name": "Sarah Chen",
+      "initials": "SC",
+      "role": "Community Lead",
+      "status": "GROWING",
+      "statusColor": const Color(0xFF6750A4),
+      "progress": 0.65,
+    },
+    {
+      "name": "David Blake",
+      "initials": "DB",
+      "role": "Regional Director",
+      "status": "MODERATED",
+      "statusColor": const Color(0xFFB45309),
+      "progress": 0.40,
+    },
+  ];
+
+  final List<String> _sarahComments = [
+    "Excellent insights on the governance shift. Looking forward to the full report."
+  ];
 
   // Colors
   static const Color primaryPurple = Color(0xFF006565); // Changed to Teal matching AppTheme.primary
@@ -98,6 +139,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   @override
   void initState() {
     super.initState();
+    _loadVendorType();
     _fetchUsersList();
     _fetchPendingApprovals();
     _fetchWithdrawals();
@@ -118,6 +160,19 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         });
       }
     });
+  }
+
+  Future<void> _loadVendorType() async {
+    final userData = await AuthService.getCachedUserData();
+    if (userData != null) {
+      final type = userData['vendor_type']?.toString();
+      if (type != null) {
+        setState(() {
+          _vendorType = type;
+          _currentIndex = (_vendorType == '200') ? 0 : 12;
+        });
+      }
+    }
   }
 
   Future<void> _fetchOpportunities() async {
@@ -648,37 +703,36 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       child: Scaffold(
       key: _scaffoldKey,
       backgroundColor: bgLight,
-      floatingActionButton: (_currentIndex == 18 || _currentIndex == 19)
-          ? FloatingActionButton.small(
-              backgroundColor: primaryPurple,
-              foregroundColor: Colors.white,
-              onPressed: () {
-                Navigator.pushNamed(context, AppRoutes.createOpportunity).then((didCreate) {
-                  if (didCreate == true) {
-                    _fetchOpportunities();
-                    _fetchMyListings();
-                  }
-                });
-              },
-              child: const Icon(Icons.add),
-            )
-          : null,
-      appBar: (_currentIndex == 0 || _currentIndex == 12)
+      floatingActionButton: (_vendorType == '200')
+          ? _buildCommunityAdminFAB()
+          : ((_currentIndex == 18 || _currentIndex == 19)
+              ? FloatingActionButton.small(
+                  backgroundColor: primaryPurple,
+                  foregroundColor: Colors.white,
+                  onPressed: () {
+                    Navigator.pushNamed(context, AppRoutes.createOpportunity).then((didCreate) {
+                      if (didCreate == true) {
+                        _fetchOpportunities();
+                        _fetchMyListings();
+                      }
+                    });
+                  },
+                  child: const Icon(Icons.add),
+                )
+              : null),
+      appBar: (_currentIndex == 0 || _currentIndex == 12 || _currentIndex == 50)
           ? _buildSellerHeader()
               : AppBar(
               backgroundColor: Colors.white,
               elevation: 1,
-              leading: Navigator.canPop(context)
-                  ? IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Color(0xFF006565)),
-                      onPressed: () => Navigator.pop(context),
-                    )
-                  : Builder(
-                      builder: (context) => IconButton(
-                        icon: const Icon(Icons.menu, color: Color(0xFF006565)),
-                        onPressed: () => Scaffold.of(context).openDrawer(),
-                      ),
-                    ),
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Color(0xFF006565)),
+                onPressed: () {
+                  setState(() {
+                    _currentIndex = (_vendorType == '200') ? 0 : 12;
+                  });
+                },
+              ),
               centerTitle: true,
                   title: Text(
                     _getAppBarTitle(),
@@ -789,8 +843,18 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 child: ListView(
                   padding: EdgeInsets.zero,
                   children: [
-                    // _buildDrawerItem(0, Icons.dashboard_rounded, "Dashboard"),
-                    _buildDrawerItem(12, Icons.storefront_rounded, "Seller Dashboard"),
+                    if (_vendorType == '200') ...[
+                      _buildDrawerItem(0, Icons.dashboard_rounded, "Community Dashboard"),
+                      _buildDrawerItem(19, Icons.forum_rounded, "Manage Communities"),
+                      _buildDrawerItem(15, Icons.people_rounded, "Manage Members"),
+                      _buildDrawerItem(20, Icons.post_add_rounded, "Manage Posts"),
+                      _buildDrawerItem(10, Icons.monetization_on_rounded, "Community Monetization"),
+                      _buildDrawerItem(3, Icons.receipt_long_rounded, "Orders"),
+                      _buildDrawerItem(27, Icons.schedule_rounded, "Campaign Scheduler"),
+                      _buildDrawerItem(6, Icons.settings_rounded, "Settings"),
+                    ] else ...[
+                      // _buildDrawerItem(0, Icons.dashboard_rounded, "Dashboard"),
+                      _buildDrawerItem(12, Icons.storefront_rounded, "Seller Dashboard"),
                     _buildDrawerItem(33, Icons.chat_bubble_outline_rounded, "Inbox"),
                     // _buildDrawerItem(13, Icons.supervised_user_circle_rounded, "Seller Management"),
                     // _buildDrawerItem(1, Icons.people_rounded, "Users"),
@@ -1150,8 +1214,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       ),
                     ),
                     
-                    _buildDrawerItem(6, Icons.settings_input_component_rounded, "Platform Settings"),
-                    // _buildDrawerItem(11, Icons.person_rounded, "Profile"),
+                      _buildDrawerItem(6, Icons.settings_input_component_rounded, "Platform Settings"),
+                      // _buildDrawerItem(11, Icons.person_rounded, "Profile"),
+                    ],
                   ],
                 ),
               ),
@@ -1198,11 +1263,15 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _getBottomNavBarIndex(),
         onTap: (index) {
-          if (index == 4) {
-            // Tapping 'More' opens Left Navigation Drawer
-            _scaffoldKey.currentState?.openDrawer();
-          } else {
+          if (_vendorType == '200') {
             _setTabFromBottomNav(index);
+          } else {
+            if (index == 4) {
+              // Tapping 'More' opens Left Navigation Drawer
+              _scaffoldKey.currentState?.openDrawer();
+            } else {
+              _setTabFromBottomNav(index);
+            }
           }
         },
         backgroundColor: Colors.white,
@@ -1213,20 +1282,36 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         showUnselectedLabels: true,
         selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
         unselectedLabelStyle: const TextStyle(fontSize: 11),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: "Dashboard"),
-          BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: "Orders"),
-          BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_rounded), label: "Products"),
-          BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_rounded), label: "Wallet"),
-          BottomNavigationBarItem(icon: Icon(Icons.more_horiz_rounded), label: "More"),
-        ],
+        items: _vendorType == '200'
+            ? const [
+                BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: "Dashboard"),
+                BottomNavigationBarItem(icon: Icon(Icons.people_rounded), label: "Members"),
+                BottomNavigationBarItem(icon: Icon(Icons.card_membership_rounded), label: "Packages"),
+                BottomNavigationBarItem(icon: Icon(Icons.forum_rounded), label: "Communities"),
+                BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: "Profile"),
+              ]
+            : const [
+                BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: "Dashboard"),
+                BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: "Orders"),
+                BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_rounded), label: "Products"),
+                BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_rounded), label: "Wallet"),
+                BottomNavigationBarItem(icon: Icon(Icons.more_horiz_rounded), label: "More"),
+              ],
       ),
     ),);
   }
 
   // Map Drawer views to Bottom Nav indexes
   int _getBottomNavBarIndex() {
-    if (_currentIndex == 0) return 0;
+    if (_vendorType == '200') {
+      if (_currentIndex == 0 || _currentIndex == 12) return 0;
+      if (_currentIndex == 15) return 1; // Members
+      if (_currentIndex == 10) return 2; // Packages
+      if (_currentIndex == 19) return 3; // Communities
+      if (_currentIndex == 11) return 4; // Profile
+      return 0;
+    }
+    if (_currentIndex == 0 || _currentIndex == 12) return 0;
     if (_currentIndex == 3) return 1; // Orders
     if (_currentIndex == 2) return 2; // Products
     if (_currentIndex == 7) return 3; // Wallet
@@ -1235,6 +1320,18 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
 
   // Navigate from bottom bar tabs
   void _setTabFromBottomNav(int bottomIndex) {
+    if (_vendorType == '200') {
+      setState(() {
+        switch (bottomIndex) {
+          case 0: _currentIndex = 0; break; // Dashboard
+          case 1: _currentIndex = 15; break; // Members
+          case 2: _currentIndex = 10; break; // Packages
+          case 3: _currentIndex = 19; break; // Communities
+          case 4: _currentIndex = 11; break; // Profile
+        }
+      });
+      return;
+    }
     if (bottomIndex == 3) {
       Navigator.pushNamed(context, '/wallet', arguments: 'admin');
     } else {
@@ -1309,7 +1406,23 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   }
 
   String _getAppBarTitle() {
+    if (_vendorType == '200') {
+      switch (_currentIndex) {
+        case 0:
+        case 12: return "Community Intelligence";
+        case 50: return "Community Intelligence";
+        case 19: return "Manage Communities";
+        case 15: return "Manage Members";
+        case 20: return "Manage Posts";
+        case 10: return "Community Monetization";
+        case 3: return "Orders";
+        case 27: return "Campaign Scheduler";
+        case 6: return "Settings";
+        default: return "Serene Commerce";
+      }
+    }
     switch (_currentIndex) {
+      case 50: return "Community Intelligence";
       case 4: return "Category Management";
       case 5: return "List Items";
       case 7: return "Wallet";
@@ -1347,7 +1460,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   // Render Body based on index
   Widget _buildBodyContent() {
     switch (_currentIndex) {
-      case 0: return const SellerDashboardScreen(isEmbedded: true);
+      case 0: return _buildDashboardView(); // Render main Community dashboard statistics view
+      case 12: return const SellerDashboardScreen(isEmbedded: true); // Render main Seller dashboard statistics view
+      case 50: return _buildHomeFeedView();
       case 1: return _buildTextUsersView(); // renamed custom users view helper below
       case 2: return const ProductManagementScreen(isEmbedded: true);
       case 31: return const LowStockInventoryScreen(isEmbedded: true);
@@ -1360,7 +1475,6 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       case 9: return _buildBankDetailsView();
       case 10: return const MembershipPlansScreen(isEmbedded: true);
       case 11: return _buildProfileView();
-      case 12: return const SellerDashboardScreen(isEmbedded: true);
       case 13: return const SellerManagementScreen(isEmbedded: true);
       case 14: return const MembershipBuilderScreen(isEmbedded: true);
       case 15: return _buildCommunityApprovalsView();
@@ -1421,19 +1535,23 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
               color: const Color(0xff006565).withOpacity(0.08),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
-              Icons.storefront,
-              color: Color(0xff006565),
+            child: Icon(
+              (_currentIndex == 0 || _currentIndex == 50)
+                  ? (_vendorType == '200' ? Icons.forum_rounded : Icons.group_work)
+                  : Icons.storefront,
+              color: const Color(0xff006565),
               size: 22,
             ),
           ),
           const SizedBox(width: 12),
-          const Flexible(
+          Flexible(
             child: Text(
-              "Seller Central",
+              (_currentIndex == 0 || _currentIndex == 50)
+                  ? (_vendorType == '200' ? "Community Intelligence" : "Community Admin")
+                  : "Seller Central",
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Color(0xff006565),
                 fontWeight: FontWeight.w700,
                 fontSize: 18,
@@ -1444,6 +1562,19 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         ],
       ),
       actions: [
+        if (_vendorType == '200')
+          IconButton(
+            icon: Icon(
+              Icons.home_rounded,
+              color: _currentIndex == 50 ? const Color(0xff008080) : const Color(0xff006565),
+            ),
+            onPressed: () {
+              setState(() {
+                _currentIndex = 50; // Navigate to Home Feed
+              });
+            },
+            tooltip: "Home Feed",
+          ),
         Container(
           margin: const EdgeInsets.only(right: 8),
           decoration: BoxDecoration(
@@ -1640,110 +1771,278 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   // 1. Dashboard View
   Widget _buildDashboardView() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Section 1: Statistics Slider
           const Text(
-            "Good Morning,",
+            "CORE PERFORMANCE",
             style: TextStyle(
-              fontSize: 26,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1C1B1B),
-              height: 1.2,
+              letterSpacing: 0.8,
+              color: Color(0xFF3E4949),
             ),
           ),
-          const Text(
-            "Alex",
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1C1B1B),
-              height: 1.2,
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 120,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _buildDossierStatCard("Total Members", "42.8k", trend: "+12%", hasAccent: true),
+                const SizedBox(width: 12),
+                _buildDossierActiveCard("Active Today", "8.5k", progress: 0.75),
+                const SizedBox(width: 12),
+                _buildDossierTextCard("Eng. Rate", "68%", "Above benchmark"),
+                const SizedBox(width: 12),
+                _buildDossierTextCard("Pending", "124", "Review required", valColor: const Color(0xFFB45309)),
+                const SizedBox(width: 12),
+                _buildDossierTextCard("Net Revenue", r"₹52.4k", "MTD Goal: 92%", valColor: const Color(0xFF1C1B1B)),
+              ],
             ),
-          ),
-          const SizedBox(height: 24),
-          const Text("Overview Status", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textDark)),
-          const SizedBox(height: 16),
-          // Stats Row
-          Row(
-            children: [
-              Expanded(child: _buildStatCard("Total Revenue", "₹438,200", Icons.monetization_on_rounded, Colors.green)),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatCard(
-                  "Active Sellers",
-                  "84",
-                  Icons.people_rounded,
-                  primaryPurple,
-                  onTap: () => Navigator.pushNamed(context, '/seller_management'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(child: _buildStatCard("Total Sales", "1,248", Icons.shopping_cart_rounded, Colors.orange)),
-              const SizedBox(width: 16),
-              Expanded(child: _buildStatCard("Withdrawal Requests", "3 Pending", Icons.account_balance_wallet_rounded, Colors.redAccent)),
-            ],
           ),
 
-          const SizedBox(height: 24),
-          // Recent Orders Card
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: cardColor,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10, offset: const Offset(0, 4))],
-            ),
+          const SizedBox(height: 28),
+
+          // Section 2: Visitor Analytics Map
+          _buildDossierCard(
+            padding: EdgeInsets.zero,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Recent Orders", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
-                const SizedBox(height: 12),
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _mockOrders.length,
-                  separatorBuilder: (context, index) => const Divider(),
-                  itemBuilder: (context, idx) {
-                    final order = _mockOrders[idx];
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const CircleAvatar(
-                        backgroundColor: bgLight,
-                        child: Icon(Icons.receipt_rounded, color: primaryPurple),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Global Visitor Map",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1C1C),
+                        ),
                       ),
-                      title: Text(order["user"], style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text("ID: ${order["id"]}"),
-                      trailing: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(order["amount"], style: const TextStyle(fontWeight: FontWeight.bold, color: primaryPurple)),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: order["status"] == "Delivered" ? Colors.green.withAlpha(25) : Colors.amber.withAlpha(25),
-                              borderRadius: BorderRadius.circular(8),
+                      IconButton(
+                        icon: const Icon(Icons.more_vert, color: Color(0xFF3E4949)),
+                        onPressed: () {},
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                ),
+                Stack(
+                  children: [
+                    AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEEEEED),
+                          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(4)),
+                          image: const DecorationImage(
+                            image: NetworkImage(
+                              "https://lh3.googleusercontent.com/aida-public/AB6AXuBKyWKzKAApID2AoWsIhWnAdfXvmMVtpWXIcqleHqvNo5cVgsYfMKwaR8OjzmTSQh-A_-umlsOzY6ZFOdKfVwlzfZ4_nLk6p4mE-cUL1rBMU8l0V9jBMVcB0P8K8OD4HHvn2LNkkfg28qMK2tDSlMwHOZc3DUNqzqkVsva3Oa1SByDJysgb8IDUP-YT-ro7Z_ZEGfwzhJMfESS19CE_F8qyj7CaxU8JFUC8VCT4pZlUed0CU6JY_Kxh",
                             ),
-                            child: Text(
-                              order["status"],
-                              style: TextStyle(
-                                fontSize: 10, 
-                                color: order["status"] == "Delivered" ? Colors.green : Colors.amber.shade800,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            fit: BoxFit.cover,
+                            opacity: 0.6,
                           ),
-                        ],
+                        ),
                       ),
-                    );
-                  },
+                    ),
+                    // Mock Map Markers
+                    Positioned(
+                      top: 40,
+                      left: 80,
+                      child: _buildMapPulseMarker(),
+                    ),
+                    Positioned(
+                      top: 100,
+                      left: 180,
+                      child: _buildMapPulseMarker(size: 14),
+                    ),
+                    Positioned(
+                      top: 60,
+                      right: 90,
+                      child: _buildMapPulseMarker(size: 8),
+                    ),
+                    Positioned(
+                      bottom: 12,
+                      left: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFBDC9C8)),
+                        ),
+                        child: const Text(
+                          "Real-time Activity: 1,204 nodes",
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF3E4949),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 28),
+
+          // Section 3: Analytical Charts Slider
+          const Text(
+            "ANALYTICAL INSIGHTS",
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.8,
+              color: Color(0xFF3E4949),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 200,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _buildDemographicsChartCard(),
+                const SizedBox(width: 12),
+                _buildSalesTrendChartCard(),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 28),
+
+          // Section 4: Member Approvals
+          const Text(
+            "New Member Approvals",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1A1C1C),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 240,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _buildMemberApprovalCard(
+                  name: "Jordan Smith",
+                  role: "Senior Architect",
+                  avatarUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuBU6C9nJEUf6OeahCGdO0Dq54LFMAAkDfJyyTT5HnNdMFh1U5Tk5gEw5x5Ybn9hjaWDQcVfz1GHfGI7OD_EyBLaN-5IDaVI5ERFYP6clT6jyYUcjQAPX3E5cRTW5nPlzVb2nq8RXOc7Lm6n7izg_ataQFkHt-B2Uti1tJPSkPXOFTDDTnqXG_UHVlxKgtm5xQ0LeT6phH-NhxUAORGrTxFlwtm9ROcnvYTdB7Y9O6uLgp4fQP0Z1xeN",
+                ),
+                const SizedBox(width: 12),
+                _buildMemberApprovalCard(
+                  name: "Sarah Chen",
+                  role: "Product Lead",
+                  avatarUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuAJTrFHxrrETppbTZT7wfYief4z063tC9ynwUDfY0Zauhsm4wzu-QMoLFzssELj8jhQ3elurvFmovcp4WBvUcXFJ7Y9Holeb1zEbvI3rRg_HNJWs11jfqFO9hV6StzNUXjwAP-2olmk8iCp8D33m5WkLjR_osII-lgrvrlGu2xvlPMGmhEgXjW_4oum1mc40hjY8ah6M2V3QstbrVI4AnrPRq_PlQvfJoM6y302jZ8A_Tc42w1nnvKP",
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 28),
+
+          // Section 5: New Post Approvals
+          const Text(
+            "New Post Approvals",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1A1C1C),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildPostApprovalItem("Tech Strategy for Q4", "Mike Donnovan", Icons.article_outlined),
+          const SizedBox(height: 8),
+          _buildPostApprovalItem("Upcoming Meetup FAQ", "Elena Rodriguez", Icons.forum_outlined),
+
+          const SizedBox(height: 28),
+
+          // Section 6: Promotional Package Orders
+          const Text(
+            "Promotional Package Orders",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1A1C1C),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 240,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _buildPromoOrderCard(
+                  title: "Premium Growth Pk",
+                  orderId: "#782-901",
+                  price: r"₹499.00",
+                  client: "Alex Rivera",
+                  company: "TechFlow Inc.",
+                  isPaid: true,
+                  accentColor: const Color(0xFF6750A4),
+                ),
+                const SizedBox(width: 12),
+                _buildPromoOrderCard(
+                  title: "Basic Engagement",
+                  orderId: "#782-895",
+                  price: r"₹199.00",
+                  client: "Jamie Lee",
+                  company: "Creative Co.",
+                  isPaid: false,
+                  accentColor: const Color(0xFF008080),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 28),
+
+          // Section 7: Articles & Blogs
+          const Text(
+            "Articles & Blogs",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1A1C1C),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 290,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _buildArticleBlogCard(
+                  title: "Scaling Engagement in 2024",
+                  category: "Community Strategy",
+                  authorName: "Sarah Chen",
+                  views: "1.2k",
+                  likes: "84",
+                  imageUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuALNKH8mgdlWgYCTWEeiKzMNRwdndqhgbL_Auuzpkopuk7kKzF53vbfi2ELgFOaXZbIC5OWlPAs0olk5ciM9YAOvVUmcyIhBP1HYFyuyvcUXJbz-8lqE_VE-Upt9vvoI3C_FXXmkmTmxegAW1Ugnab6Ywo6DuZ9GiWXRE_VjxJhFlAKtppocXK3v8uoy6Kl5j-s9yeVaAkSf6KwnB9eOGhixAWX3vw54s0ZA-hbThs9PwFyxnSOoY8N",
+                  authorAvatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAJTrFHxrrETppbTZT7wfYief4z063tC9ynwUDfY0Zauhsm4wzu-QMoLFzssELj8jhQ3elurvFmovcp4WBvUcXFJ7Y9Holeb1zEbvI3rRg_HNJWs11jfqFO9hV6StzNUXjwAP-2olmk8iCp8D33m5WkLjR_osII-lgrvrlGu2xvlPMGmhEgXjW_4oum1mc40hjY8ah6M2V3QstbrVI4AnrPRq_PlQvfJoM6y302jZ8A_Tc42w1nnvKP",
+                ),
+                const SizedBox(width: 12),
+                _buildArticleBlogCard(
+                  title: "The Rise of Niche Networks",
+                  category: "Market Insights",
+                  authorName: "Jordan Smith",
+                  views: "850",
+                  likes: "42",
+                  imageUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuDXGJfZscVmWLX6TJlMlsUcZBvaI-tI25XIIQVdfr-qy83rMuZAXK1WcMdfBZHNVq6hTTXdRFCGVxgZ3VJKsf2B15ZBY5YlaRDbyvZEB_E6KZYJccMf5z0yQMkjlwNsLv7MJJmicBBI4qJ4l9_tuGcy-H3M3amP6LjhEH-kDBT0WVYYb4NK1hjSTLWOrVF-MW23wCepUzXlw3nA6PiY__e5GGpkQbkhz1kLYhE0Of_zdmj4pU3P6U9x",
+                  authorAvatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBU6C9nJEUf6OeahCGdO0Dq54LFMAAkDfJyyTT5HnNdMFh1U5Tk5gEw5x5Ybn9hjaWDQcVfz1GHfGI7OD_EyBLaN-5IDaVI5ERFYP6clT6jyYUcjQAPX3E5cRTW5nPlzVb2nq8RXOc7Lm6n7izg_ataQFkHt-B2Uti1tJPSkPXOFTDDTnqXG_UHVlxKgtm5xQ0LeT6phH-NhxUAORGrTxFlwtm9ROcnvYTdB7Y9O6uLgp4fQP0Z1xeN",
+                  isGrowing: true,
                 ),
               ],
             ),
@@ -1753,14 +2052,718 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     );
   }
 
-  Widget _buildStatCard(String title, String val, IconData icon, Color color, {VoidCallback? onTap}) {
-    return StatCard(
-      title: title,
-      value: val,
-      icon: icon,
-      iconColor: color,
-      onTap: onTap,
+  // ==================== DASHBOARD HELPER WIDGETS ====================
+
+  Widget _buildDossierCard({
+    required Widget child,
+    bool hasAccent = false,
+    Color accentColor = const Color(0xFF008080),
+    EdgeInsetsGeometry padding = const EdgeInsets.all(16),
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(4),
+        border: Border(
+          top: const BorderSide(color: Color(0xFFBDC9C8)),
+          bottom: const BorderSide(color: Color(0xFFBDC9C8)),
+          right: const BorderSide(color: Color(0xFFBDC9C8)),
+          left: BorderSide(
+            color: hasAccent ? accentColor : const Color(0xFFBDC9C8),
+            width: hasAccent ? 4 : 1,
+          ),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 2,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      padding: padding,
+      child: child,
     );
+  }
+
+  Widget _buildDossierStatCard(String label, String value, {required String trend, bool hasAccent = false}) {
+    return Container(
+      width: 160,
+      margin: const EdgeInsets.only(bottom: 4),
+      child: _buildDossierCard(
+        hasAccent: hasAccent,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label.toUpperCase(),
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF3E4949)),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A1C1C)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                const Icon(Icons.trending_up, size: 12, color: Color(0xFF15803D)),
+                const SizedBox(width: 2),
+                Text(
+                  trend,
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDossierActiveCard(String label, String value, {required double progress}) {
+    return Container(
+      width: 160,
+      margin: const EdgeInsets.only(bottom: 4),
+      child: _buildDossierCard(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label.toUpperCase(),
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF3E4949)),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A1C1C)),
+            ),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: LinearProgressIndicator(
+                value: progress,
+                backgroundColor: const Color(0xFFEEEEED),
+                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF008080)),
+                minHeight: 4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDossierTextCard(String label, String value, String description, {Color valColor = const Color(0xFF1A1C1C)}) {
+    return Container(
+      width: 160,
+      margin: const EdgeInsets.only(bottom: 4),
+      child: _buildDossierCard(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label.toUpperCase(),
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF3E4949)),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: valColor),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              description,
+              style: const TextStyle(fontSize: 10, color: Color(0xFF3E4949)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMapPulseMarker({double size = 10.0}) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: const Color(0xFF006565),
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF008080).withOpacity(0.6),
+            blurRadius: size,
+            spreadRadius: size / 2,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDemographicsChartCard() {
+    return Container(
+      width: 320,
+      margin: const EdgeInsets.only(bottom: 4),
+      child: _buildDossierCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Community Demographics",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A1C1C)),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                SizedBox(
+                  width: 96,
+                  height: 96,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CustomPaint(
+                        size: const Size(96, 96),
+                        painter: _DemographicsPainter(),
+                      ),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Text(
+                            "42k",
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF006565)),
+                          ),
+                          Text(
+                            "TOTAL",
+                            style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 24),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFF008080), shape: BoxShape.circle)),
+                          const SizedBox(width: 6),
+                          const Text("18-24 (70%)", style: TextStyle(fontSize: 12, color: Color(0xFF3E4949))),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFF6750A4), shape: BoxShape.circle)),
+                          const SizedBox(width: 6),
+                          const Text("25-34 (30%)", style: TextStyle(fontSize: 12, color: Color(0xFF3E4949))),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSalesTrendChartCard() {
+    return Container(
+      width: 320,
+      margin: const EdgeInsets.only(bottom: 4),
+      child: _buildDossierCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Sales Trend (30d)",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A1C1C)),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 70,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(child: _buildTrendBar(0.5)),
+                  const SizedBox(width: 6),
+                  Expanded(child: _buildTrendBar(0.67)),
+                  const SizedBox(width: 6),
+                  Expanded(child: _buildTrendBar(0.5)),
+                  const SizedBox(width: 6),
+                  Expanded(child: _buildTrendBar(0.75)),
+                  const SizedBox(width: 6),
+                  Expanded(child: _buildTrendBar(1.0, isHighlight: true)),
+                  const SizedBox(width: 6),
+                  Expanded(child: _buildTrendBar(0.67)),
+                  const SizedBox(width: 6),
+                  Expanded(child: _buildTrendBar(0.8)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: const [
+                Text("Day 01", style: TextStyle(fontSize: 8, color: Color(0xFF3E4949))),
+                Text("Day 30", style: TextStyle(fontSize: 8, color: Color(0xFF3E4949))),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTrendBar(double fraction, {bool isHighlight = false}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isHighlight ? const Color(0xFF006565) : const Color(0xFF006565).withOpacity(0.15),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+      ),
+      height: 70 * fraction,
+    );
+  }
+
+  Widget _buildMemberApprovalCard({required String name, required String role, required String avatarUrl}) {
+    return Container(
+      width: 240,
+      margin: const EdgeInsets.only(bottom: 4),
+      child: _buildDossierCard(
+        child: Column(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFBDC9C8)),
+                image: DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            Text(role, style: const TextStyle(fontSize: 12, color: Color(0xFF3E4949))),
+            const Spacer(),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF4F3F3),
+                      foregroundColor: const Color(0xFF1A1C1C),
+                      elevation: 0,
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                    ),
+                    onPressed: () => _showActionAlert("Contact User: Hello $name, we've reviewed your request..."),
+                    child: const Text("Contact", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF4F3F3),
+                      foregroundColor: const Color(0xFF1A1C1C),
+                      elevation: 0,
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                    ),
+                    onPressed: () => _showActionAlert("Rejected $name membership"),
+                    child: const Text("Reject", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF006565),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                    ),
+                    onPressed: () => _showActionAlert("Approved $name membership successfully!"),
+                    child: const Text("Approve", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPostApprovalItem(String title, String author, IconData icon) {
+    return _buildDossierCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8E8E8),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: const Color(0xFF006565)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                Text("by $author", style: const TextStyle(fontSize: 12, color: Color(0xFF3E4949))),
+              ],
+            ),
+          ),
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.red),
+                onPressed: () => _showActionAlert("Post rejected"),
+              ),
+              IconButton(
+                icon: const Icon(Icons.check, color: Color(0xFF006565)),
+                onPressed: () => _showActionAlert("Post approved successfully!"),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromoOrderCard({
+    required String title,
+    required String orderId,
+    required String price,
+    required String client,
+    required String company,
+    required bool isPaid,
+    required Color accentColor,
+  }) {
+    return Container(
+      width: 260,
+      margin: const EdgeInsets.only(bottom: 4),
+      child: _buildDossierCard(
+        hasAccent: true,
+        accentColor: accentColor,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  isPaid ? "PREMIUM ORDER" : "STANDARD ORDER",
+                  style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: accentColor),
+                ),
+                Text(
+                  price,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            Text("Order ID: $orderId", style: const TextStyle(fontSize: 11, color: Color(0xFF3E4949))),
+            const SizedBox(height: 8),
+            Container(
+              decoration: const BoxDecoration(
+                border: Border(top: BorderSide(color: Color(0xFFBDC9C8))),
+              ),
+              padding: const EdgeInsets.only(top: 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Client: $client", style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  Text("Company: $company", style: const TextStyle(fontSize: 11, color: Color(0xFF3E4949))),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: isPaid ? const Color(0xFF15803D) : const Color(0xFFB45309),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        isPaid ? "Paid" : "Pending",
+                        style: TextStyle(
+                          fontSize: 9, 
+                          fontWeight: FontWeight.bold, 
+                          color: isPaid ? const Color(0xFF15803D) : const Color(0xFFB45309),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const Spacer(),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF006565)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                    onPressed: () => _showActionAlert("Order summary: $title for $client. Total: $price"),
+                    child: const Text("View Details", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF006565))),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF006565),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                    onPressed: () => _showActionAlert("Reviewing order $orderId"),
+                    child: const Text("Review", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildArticleBlogCard({
+    required String title,
+    required String category,
+    required String authorName,
+    required String views,
+    required String likes,
+    required String imageUrl,
+    required String authorAvatar,
+    bool isGrowing = false,
+  }) {
+    return Container(
+      width: 280,
+      margin: const EdgeInsets.only(bottom: 4),
+      child: _buildDossierCard(
+        padding: EdgeInsets.zero,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                Container(
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEEEEED),
+                    image: DecorationImage(image: NetworkImage(imageUrl), fit: BoxFit.cover),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isGrowing ? const Color(0xFF6750A4) : const Color(0xFF006565),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      category.toUpperCase(),
+                      style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 10,
+                        backgroundImage: NetworkImage(authorAvatar),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(authorName, style: const TextStyle(fontSize: 11, color: Color(0xFF3E4949))),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.visibility_outlined, size: 12, color: Color(0xFF3E4949)),
+                          const SizedBox(width: 2),
+                          Text(views, style: const TextStyle(fontSize: 10, color: Color(0xFF3E4949))),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.favorite_border, size: 12, color: Color(0xFF3E4949)),
+                          const SizedBox(width: 2),
+                          Text(likes, style: const TextStyle(fontSize: 10, color: Color(0xFF3E4949))),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFFBDC9C8)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                            padding: EdgeInsets.zero,
+                          ),
+                          onPressed: () {},
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.share_outlined, size: 12, color: Color(0xFF1A1C1C)),
+                              SizedBox(width: 4),
+                              Text("Share", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF1A1C1C))),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF006565),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                            padding: EdgeInsets.zero,
+                          ),
+                          onPressed: () {},
+                          child: const Text("Read More", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showActionAlert(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFF006565),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Widget? _buildCommunityAdminFAB() {
+    if (_currentIndex == 0 || _currentIndex == 12 || _currentIndex == 50) {
+      return FloatingActionButton.small(
+        backgroundColor: primaryPurple,
+        foregroundColor: Colors.white,
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            builder: (context) => SafeArea(
+              child: Wrap(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.group_add_rounded, color: Color(0xFF006565)),
+                    title: const Text("Create Community"),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.createCommunity);
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.post_add_rounded, color: Color(0xFF006565)),
+                    title: const Text("Create Post"),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showActionAlert("Created post successfully!");
+                    },
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+        child: const Icon(Icons.add),
+      );
+    } else if (_currentIndex == 19) {
+      return FloatingActionButton.small(
+        backgroundColor: primaryPurple,
+        foregroundColor: Colors.white,
+        onPressed: () => Navigator.pushNamed(context, AppRoutes.createCommunity),
+        child: const Icon(Icons.group_add_rounded),
+      );
+    } else if (_currentIndex == 15) {
+      return FloatingActionButton.extended(
+        backgroundColor: primaryPurple,
+        foregroundColor: Colors.white,
+        onPressed: () => _showActionAlert("Sent member invite successfully!"),
+        icon: const Icon(Icons.person_add_rounded),
+        label: const Text("Invite Member"),
+      );
+    } else if (_currentIndex == 20) {
+      return FloatingActionButton.small(
+        backgroundColor: primaryPurple,
+        foregroundColor: Colors.white,
+        onPressed: () => _showActionAlert("Created post successfully!"),
+        child: const Icon(Icons.post_add_rounded),
+      );
+    } else if (_currentIndex == 10) {
+      return FloatingActionButton.extended(
+        backgroundColor: primaryPurple,
+        foregroundColor: Colors.white,
+        onPressed: () => _showActionAlert("Created monetization package successfully!"),
+        icon: const Icon(Icons.add_box_rounded),
+        label: const Text("Create Package"),
+      );
+    }
+    return null;
   }
 
   // Tabbed view for User Management
@@ -2291,96 +3294,447 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   }
 
   // 15. Community Approvals View
+  Widget _buildPendingCard({required String name, required String role, required String avatarUrl}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFBDC9C8)),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 4,
+            child: Container(color: const Color(0xFF006565)),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFBDC9C8)),
+                        image: DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF1C1B1B))),
+                          Text(role, style: const TextStyle(fontSize: 12, color: Color(0xFF3E4949))),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF4F3F3),
+                          foregroundColor: const Color(0xFF1C1B1B),
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        onPressed: () => _showActionAlert("Inquiry dossier sent to $name"),
+                        child: const Text(
+                          "Contact",
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF4F3F3),
+                          foregroundColor: const Color(0xFF1C1B1B),
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        onPressed: () => _showActionAlert("Rejected $name"),
+                        child: const Text(
+                          "Reject",
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF006565),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        onPressed: () => _showActionAlert("Approved $name successfully!"),
+                        child: const Text(
+                          "Approve",
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCommunityApprovalsView() {
-    return _isLoadingApprovals
-        ? const Center(child: CircularProgressIndicator(color: primaryPurple))
-        : _pendingApprovals.isEmpty
-            ? RefreshIndicator(
-                onRefresh: _fetchPendingApprovals,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Container(
-                    height: 400,
-                    alignment: Alignment.center,
-                    child: const Text("No pending community approvals.", style: TextStyle(color: textLight)),
+    final bool isDesktop = MediaQuery.of(context).size.width >= 768;
+
+    final Widget pendingSection = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              "Pending Approval",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A1C1C),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF006565).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text(
+                "2 Pending",
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF006565),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildPendingCard(
+          name: "Jordan Smith",
+          role: "Senior Architect",
+          avatarUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuDv9dwpe9W6NtlVH9LsL3sV3bKoy_ZwN09k6QRZ6OnJhXjdLalg3D4jzhcFcL_pVZn9cWsevQ1APMGLbEnARo8qga9O3sW0ujcYd6LvyOZiMb7Wh3Ju14kq8CQADlv96h22RwNeqL0HhmYQjoby3CkSXV39atQvUZA1mvcYN6UMQDY_ZWm7iy5Q_CKSb2B3miI-adWBrAKIdolEzLxsURUbGNkiocMMZGvevXRM7MfmmKwdI5gyylJK",
+        ),
+        _buildPendingCard(
+          name: "Elena Vance",
+          role: "Policy Researcher",
+          avatarUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuBEodFAtFVTEXdIRERO3JyqGxXKYwOd2J3msehyAdyh0n8valbTd9qJ7FOhwxaMcEz4ruLsXlFQ0erH_QqOmckVrpS0S7_FE-bXY4zY5BgjIVcu-9lWcBjgKpfgWaFu6Y_nwNi3NTehJkDl4mQoMKXNc_a7sAwrXIpPnZUxI2pc_Zk_nqXHEIitz-rMCPMI_m3R1n6h4eOwQZ9Q4BSjwsrMECxCoXjSpxXQfzgVucsMeF6pNjW4AxA-",
+        ),
+      ],
+    );
+
+    // Active Members List Table
+    final String query = _memberSearchController.text.toLowerCase();
+    final List<Map<String, dynamic>> filteredMembers = _activeMembers.where((m) {
+      final String name = m["name"].toString().toLowerCase();
+      final String role = m["role"].toString().toLowerCase();
+      return name.contains(query) || role.contains(query);
+    }).toList();
+
+    final Widget activeMembersSection = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              "Active Members",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A1C1C),
+              ),
+            ),
+            // Search Input
+            SizedBox(
+              width: 180,
+              height: 36,
+              child: TextField(
+                controller: _memberSearchController,
+                onChanged: (val) => setState(() {}),
+                style: const TextStyle(fontSize: 12),
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.search, size: 16, color: Color(0xFF3E4949)),
+                  hintText: "Filter members...",
+                  hintStyle: const TextStyle(fontSize: 11, color: Color(0xFF757575)),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
+                  filled: true,
+                  fillColor: const Color(0xFFF4F3F3),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFFBDC9C8)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFFBDC9C8)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFF006565)),
                   ),
                 ),
-              )
-            : RefreshIndicator(
-                onRefresh: _fetchPendingApprovals,
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: _pendingApprovals.length,
-                  itemBuilder: (context, idx) {
-                    final req = _pendingApprovals[idx];
-                    final String userName = req["user_name"]?.toString() ?? "User";
-                    final String communityName = req["community_name"]?.toString() ?? "Community";
-                    
-                    return Card(
-                      color: cardColor,
-                      elevation: 0,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFBDC9C8)),
+          ),
+          child: Column(
+            children: [
+              // Table Header
+              Container(
+                color: const Color(0xFFF4F3F3),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                child: Row(
+                  children: const [
+                    Expanded(
+                      flex: 4,
+                      child: Text("MEMBER", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949), letterSpacing: 0.5)),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text("STATUS", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949), letterSpacing: 0.5)),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Text("ENGAGEMENT", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949), letterSpacing: 0.5)),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Text("ACTIONS", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949), letterSpacing: 0.5)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: Color(0xFFBDC9C8)),
+              if (filteredMembers.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(32),
+                  child: const Center(
+                    child: Text("No members match filter query", style: TextStyle(color: Color(0xFF757575), fontSize: 13)),
+                  ),
+                )
+              else
+                ...filteredMembers.map((m) {
+                  return Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                         child: Row(
                           children: [
-                            const CircleAvatar(
-                              backgroundColor: bgLight,
-                              child: Icon(Icons.group_add_rounded, color: primaryPurple),
-                            ),
-                            const SizedBox(width: 16),
+                            // Member Initials/Avatar
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              flex: 4,
+                              child: Row(
                                 children: [
-                                  Text(userName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                                  const SizedBox(height: 4),
-                                  Text("Wants to join: $communityName", style: const TextStyle(color: textLight, fontSize: 13)),
+                                  Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF4F3F3),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: const Color(0xFFBDC9C8)),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        m["initials"],
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11,
+                                          color: m["statusColor"],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(m["name"], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1C1B1B)), overflow: TextOverflow.ellipsis),
+                                        Text(m["role"], style: const TextStyle(fontSize: 10, color: Color(0xFF3E4949)), overflow: TextOverflow.ellipsis),
+                                      ],
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
-                            Row(
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.check_circle_rounded, color: Colors.green),
-                                  onPressed: () {
-                                    setState(() {
-                                      _pendingApprovals.removeAt(idx);
-                                    });
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text("Community join request approved!"),
-                                        backgroundColor: Colors.green,
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
-                                  },
+                            // Status tag
+                            Expanded(
+                              flex: 2,
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: (m["statusColor"] as Color).withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    m["status"],
+                                    style: TextStyle(
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold,
+                                      color: m["statusColor"],
+                                    ),
+                                  ),
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.cancel_rounded, color: Colors.red),
-                                  onPressed: () {
-                                    setState(() {
-                                      _pendingApprovals.removeAt(idx);
-                                    });
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text("Community join request rejected!"),
-                                        backgroundColor: Colors.red,
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
-                                  },
+                              ),
+                            ),
+                            // Engagement progress
+                            Expanded(
+                              flex: 3,
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: LinearProgressIndicator(
+                                    value: m["progress"],
+                                    minHeight: 6,
+                                    backgroundColor: const Color(0xFFF4F3F3),
+                                    valueColor: AlwaysStoppedAnimation<Color>(m["statusColor"]),
+                                  ),
                                 ),
-                              ],
+                              ),
+                            ),
+                            // Actions
+                            Expanded(
+                              flex: 2,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.mail_outline_rounded, size: 16, color: Color(0xFF006565)),
+                                    onPressed: () => _showActionAlert("Opened mail box for ${m['name']}"),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  GestureDetector(
+                                    onTap: () => _showActionAlert("Details page for ${m['name']}"),
+                                    child: const Text(
+                                      "VIEW",
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF006565),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
                       ),
-                    );
-                  },
+                      const Divider(height: 1, color: Color(0xFFBDC9C8)),
+                    ],
+                  );
+                }).toList(),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Screen Title Header
+          const Text(
+            "Admin Profile Hub",
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1A1C1C),
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            "Strategic oversight and dossier management for your community network.",
+            style: TextStyle(
+              fontSize: 13,
+              color: Color(0xFF3E4949),
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Statistics Slider
+          SizedBox(
+            height: 110,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _buildDossierTextCard("TOTAL MEMBERS", "12,482", "4% up", valColor: const Color(0xFF1C1B1B)),
+                const SizedBox(width: 12),
+                _buildDossierTextCard("NEW REQUESTS", "48", "URGENT", valColor: const Color(0xFFB45309)),
+                const SizedBox(width: 12),
+                _buildDossierTextCard("ACTIVE TODAY", "3,891", "12% up", valColor: const Color(0xFF008080)),
+                const SizedBox(width: 12),
+                _buildDossierTextCard("MONTHLY GROWTH", "+842", "Growing", valColor: const Color(0xFF6750A4)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+          if (isDesktop)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 4,
+                  child: pendingSection,
                 ),
-              );
+                const SizedBox(width: 24),
+                Expanded(
+                  flex: 8,
+                  child: activeMembersSection,
+                ),
+              ],
+            )
+          else ...[
+            pendingSection,
+            const SizedBox(height: 28),
+            activeMembersSection,
+          ],
+        ],
+      ),
+    );
   }
 
   // 10. Seller Bank Details View
@@ -2855,7 +4209,1572 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       },
     );
   }
+
+  // ==================== HOME FEED SCREEN VIEW (MIGRATED FROM HTML) ====================
+
+  Widget _buildHomeFeedView() {
+    final bool isDesktop = MediaQuery.of(context).size.width >= 768;
+    
+    final Widget mainFeed = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!isDesktop) ...[
+          _buildExecutiveOverviewCard(),
+          const SizedBox(height: 16),
+        ],
+        _buildCreatePostCard(),
+        const SizedBox(height: 24),
+        _buildSarahMitchellPost(),
+        const SizedBox(height: 24),
+        _buildSponsoredProductsSection(),
+        const SizedBox(height: 24),
+        _buildDavidChenPost(),
+        const SizedBox(height: 24),
+        _buildTrainingVideoPost(),
+        const SizedBox(height: 24),
+        _buildDiscoverMoreSection(),
+        const SizedBox(height: 24),
+        _buildElenaRodriguezPost(),
+      ],
+    );
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+      child: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: isDesktop
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildExecutiveOverviewCard(),
+                          const SizedBox(height: 16),
+                          _buildPinnedReportsCard(),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      flex: 9,
+                      child: mainFeed,
+                    ),
+                  ],
+                )
+              : mainFeed,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExecutiveOverviewCard() {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Color(0xFFBDC9C8)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            left: BorderSide(color: Color(0xFF008080), width: 4),
+          ),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Executive Overview",
+              style: TextStyle(
+                fontFamily: "Manrope",
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF006565),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text.rich(
+              TextSpan(
+                style: const TextStyle(fontSize: 13, color: Color(0xFF3E4949)),
+                children: [
+                  const TextSpan(text: "Strategic community health is currently "),
+                  TextSpan(
+                    text: "Optimal",
+                    style: TextStyle(
+                      color: const Color(0xFF008080),
+                      fontWeight: FontWeight.bold,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  const TextSpan(text: "."),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildOverviewRow("Engagement", "+12.4%", const Color(0xFF15803D)),
+            const SizedBox(height: 8),
+            _buildOverviewRow("New Members", "+450", const Color(0xFF15803D)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverviewRow(String label, String value, Color valueColor) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+            color: Color(0xFF3E4949),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: valueColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPinnedReportsCard() {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Color(0xFFBDC9C8)),
+      ),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Pinned Reports",
+              style: TextStyle(
+                fontFamily: "Manrope",
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF006565),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildPinnedReportItem("Q3 Market Sentiment"),
+            const SizedBox(height: 8),
+            _buildPinnedReportItem("Governance Updates"),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPinnedReportItem(String title) {
+    return InkWell(
+      onTap: () {},
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            const Icon(Icons.description_outlined, size: 16, color: Color(0xFF006565)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF3E4949),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCreatePostCard() {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Color(0xFFBDC9C8)),
+      ),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFBDC9C8)),
+                image: const DecorationImage(
+                  image: NetworkImage(
+                    "https://lh3.googleusercontent.com/aida-public/AB6AXuCjROtURqL93PgulLZeoQISnVMbeVSXeJZJjeLS91RV6bmgMKQymFpZ_utBLCs055N5AX4xs0IugklqoBczkEaX0hbcQn_RZBpAJk72jtsnuCW7s4z4j1B1Q12ggbPunW50AZGyoyA8pEUadRV_dLcs0qgNtJaeCt6jVRcs2Q0Dzc25ouX2QwdKAgnSo-A5TgZyuUkeehKO0TeVM-u5ER9Y3fILJHS5AXZriszyEVfacfEVyqX-7qdz",
+                  ),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: "Draft a community update...",
+                  hintStyle: const TextStyle(color: Color(0xFF757575), fontSize: 14),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  filled: true,
+                  fillColor: const Color(0xFFF4F3F3),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFFBDC9C8)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFFBDC9C8)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFF006565), width: 1.5),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF006565),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 0,
+              ),
+              onPressed: () {},
+              child: const Text(
+                "Post",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSarahMitchellPost() {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Color(0xFFBDC9C8)),
+      ),
+      color: Colors.white,
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFBDC9C8)),
+                        image: const DecorationImage(
+                          image: NetworkImage(
+                            "https://lh3.googleusercontent.com/aida-public/AB6AXuAm1Y-cM-txAeQqpeUrttSjZpGFbUAOJvsif64_ecYneK5YroKzXv1DS1ddYVyQWZp1Z3wQgqNdm8AvlqZowiUj0XRrEdT8Fc65ji5AYLFC1wqhiq7xTHHIl68-RwiTYfbnt9NfA3pG7ho--7BIOWutFlpVVf4GDXP0CpVsudogYo2jnf5vGT6faUYh3PQaai8aXvS1xINLwslSx8r0pHtuH_CTyoinVmehyRpP8Myy2mKDsk8HZZJI",
+                          ),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Sarah Mitchell",
+                          style: TextStyle(
+                            fontFamily: "Manrope",
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Color(0xFF1C1B1B),
+                          ),
+                        ),
+                        Text(
+                          "Director of Community Operations • 2h ago".toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF3E4949),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF008080).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    "Strategic Update",
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF008080),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              "Following our quarterly review, we are seeing a significant shift in community sentiment towards sustainable governance. I've uploaded the primary findings to the internal dashboard for further review by the committee. Let's maintain this momentum into Q4.",
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF1C1B1B),
+                height: 1.4,
+              ),
+            ),
+          ),
+          // Action Bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF4F3F3),
+              border: Border(
+                top: BorderSide(color: Color(0xFFBDC9C8)),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          _sarahMitchellLiked = !_sarahMitchellLiked;
+                          if (_sarahMitchellLiked) {
+                            _sarahMitchellLikes++;
+                          } else {
+                            _sarahMitchellLikes--;
+                          }
+                        });
+                      },
+                      child: Row(
+                        children: [
+                          Icon(
+                            _sarahMitchellLiked ? Icons.thumb_up_rounded : Icons.thumb_up_outlined,
+                            size: 18,
+                            color: _sarahMitchellLiked ? const Color(0xFF006565) : const Color(0xFF3E4949),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            "$_sarahMitchellLikes",
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: _sarahMitchellLiked ? const Color(0xFF006565) : const Color(0xFF3E4949),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          _commentsExpanded = !_commentsExpanded;
+                        });
+                      },
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.chat_bubble_outline_rounded,
+                            size: 18,
+                            color: Color(0xFF3E4949),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            "${_sarahComments.length}",
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF3E4949),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text(
+                      "1.2k Views",
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF3E4949),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.share_outlined, size: 18, color: Color(0xFF3E4949)),
+                      onPressed: () {},
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (_commentsExpanded) ...[
+            Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFFF9F9F9),
+                border: Border(
+                  top: BorderSide(color: Color(0xFFBDC9C8)),
+                ),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _sarahComments.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE8E8E8),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.person, size: 16, color: Color(0xFF6E7979)),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF4F3F3),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          index == 0 ? "Marcus Thorne" : "Feedback Contributor",
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                        ),
+                                        const Text(
+                                          "1h ago",
+                                          style: TextStyle(color: Color(0xFF757575), fontSize: 10),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _sarahComments[index],
+                                      style: const TextStyle(fontSize: 13, color: Color(0xFF1C1B1B)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _commentController,
+                          decoration: InputDecoration(
+                            hintText: "Add a professional comment...",
+                            hintStyle: const TextStyle(color: Color(0xFF757575), fontSize: 13),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            filled: true,
+                            fillColor: Colors.white,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Color(0xFFBDC9C8)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Color(0xFFBDC9C8)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Color(0xFF006565), width: 1.5),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF006565),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed: () {
+                          if (_commentController.text.trim().isNotEmpty) {
+                            setState(() {
+                              _sarahComments.add(_commentController.text.trim());
+                              _commentController.clear();
+                            });
+                          }
+                        },
+                        child: const Text("Post", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSponsoredProductsSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F3F3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFBDC9C8)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    "Sponsored Products",
+                    style: TextStyle(
+                      fontFamily: "Manrope",
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF006565),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFBDC9C8).withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      "Sponsored",
+                      style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)),
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  _buildRoundIconButton(Icons.chevron_left, () {}),
+                  const SizedBox(width: 4),
+                  _buildRoundIconButton(Icons.chevron_right, () {}),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 220,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _buildProductItemCard(
+                  name: "Focus Pro ANC",
+                  price: r"₹299.00",
+                  image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCdukG5Bs5MYrKezSVgml7mh082CzrDdiWUG-blbFr_Gen8Cv8vJoLMA3Y6nukYWyRcyYXb9NzEjwXtN1CzRM7TLk2tO4DkAhJNmAQPqNnzCN9CNLVEjbo_fmEAMR37_LtF0aTndX9xRuIA5PTI6XjAV5u36NzPAGo4wWHHoZPE_RrFxMeysFqgZmucUAVmuBxzymBpxMxtRRUpIB3yjYhSUfgrz7PY3Jp8166tWsIFuWuqQPKAm37i",
+                ),
+                const SizedBox(width: 12),
+                _buildProductItemCard(
+                  name: "Precision MX Mouse",
+                  price: r"₹89.00",
+                  image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBOgKANhjHiOPlvSv4sED6CvcyV5KI3tc3FBKGGFrBUWqgq-PQIIjY5cmd8RPSlS2F1QpETUFl_3UqMU8_jrxNC2GmKLUqpSqakpX12wWDvdMVma40HxkGE5fx77c2QPFBEiQ3Fz0BOhPp9UguJUftrIcE-eUgWwRHlEmJ4d6d-BvHy9qNpwA9SFRfZ_OVDb7AInfLCZdel-VsE00_SuKdGeZ1KFkxFya-LE9suk23SIsUN6FLg8qDq",
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoundIconButton(IconData icon, VoidCallback onTap) {
+    return Container(
+      width: 28,
+      height: 28,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+      ),
+      child: IconButton(
+        icon: Icon(icon, size: 14, color: const Color(0xFF006565)),
+        onPressed: onTap,
+        padding: EdgeInsets.zero,
+      ),
+    );
+  }
+
+  Widget _buildProductItemCard({required String name, required String price, required String image}) {
+    return Container(
+      width: 180,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFBDC9C8)),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 90,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4F3F3),
+              borderRadius: BorderRadius.circular(6),
+              image: DecorationImage(
+                image: NetworkImage(image),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            name,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1C1B1B)),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            price,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF006565)),
+          ),
+          const Spacer(),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF006565),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+              onPressed: () {},
+              child: const Text("View Product", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDavidChenPost() {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Color(0xFFBDC9C8)),
+      ),
+      color: Colors.white,
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFBDC9C8)),
+                        image: const DecorationImage(
+                          image: NetworkImage(
+                            "https://lh3.googleusercontent.com/aida-public/AB6AXuCnSNN9Ev9bSWwWJ0jVDJa7v95KZHw03OdmS74O_DUX6cKOqIeGzjd0y6JVJ24p97C2c1tDmdH26A5LA5VyV4nHvrFOVtPImUujWTdavfhUcq412ieukjKH5xlby9dVhcjoEp2gs208yU1gxl2fA1-ogBOj40rw0hgsU74eX829kySW-tRQJKNxPmOZ_TM4UeVfioSyfE-Is-o44UiXGUaUcNiz2q84vAVVfRbgUOMpET5APCsbQ1JO",
+                          ),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "David Chen",
+                          style: TextStyle(
+                            fontFamily: "Manrope",
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Color(0xFF1C1B1B),
+                          ),
+                        ),
+                        Text(
+                          "Lead Market Strategist • 5h ago".toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF3E4949),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6750A4).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    "Insights",
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF6750A4),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              "Visualizing the impact of our latest regional campaign. Data integrity across all touchpoints remains our priority.",
+              style: TextStyle(fontSize: 14, color: Color(0xFF1C1B1B)),
+            ),
+          ),
+          Container(
+            height: 220,
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF4F3F3),
+              image: DecorationImage(
+                image: NetworkImage(
+                  "https://lh3.googleusercontent.com/aida-public/AB6AXuDNJaxx--dEpn58nLrLsuVU22zy_1B9kd7zR85UVOG6yITw4rFQALVSUXIQ4phjB2Bl2FqW2oHnbxZlKOdpLHQ3-gm2y7zHSSYLjMa6fjTI1bY1H05cwAmcY31C5jwMzodJ5IpQ2E2Mgvx_P7rkSCS5cl50pEdBt9ZRA0XM41zfGW2_9j9_gv0vNqgKKr6DMMPg67-mMAtvgAenuc6d1yFNI3DypCfz7refJD8z1PyhqRzA_Spfpymo",
+                ),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF4F3F3),
+              border: Border(
+                top: BorderSide(color: Color(0xFFBDC9C8)),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          _davidChenLiked = !_davidChenLiked;
+                          if (_davidChenLiked) {
+                            _davidChenLikes++;
+                          } else {
+                            _davidChenLikes--;
+                          }
+                        });
+                      },
+                      child: Row(
+                        children: [
+                          Icon(
+                            _davidChenLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                            size: 18,
+                            color: _davidChenLiked ? Colors.red : const Color(0xFF3E4949),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            "$_davidChenLikes",
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: _davidChenLiked ? Colors.red : const Color(0xFF3E4949),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Row(
+                      children: const [
+                        Icon(Icons.comment_outlined, size: 18, color: Color(0xFF3E4949)),
+                        SizedBox(width: 4),
+                        Text(
+                          "32",
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF3E4949)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text(
+                      "3.5k Views",
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF3E4949),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.share_outlined, size: 18, color: Color(0xFF3E4949)),
+                      onPressed: () {},
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrainingVideoPost() {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Color(0xFFBDC9C8)),
+      ),
+      color: Colors.white,
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF008080).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    "TM",
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF008080), fontSize: 16),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Training Media",
+                      style: TextStyle(
+                        fontFamily: "Manrope",
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Color(0xFF1C1B1B),
+                      ),
+                    ),
+                    Text(
+                      "Educational Branch • 12h ago".toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF3E4949),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              "New Onboarding Module: \"Strategic Calm in Crisis Management\". Essential for all regional directors.",
+              style: TextStyle(fontSize: 14, color: Color(0xFF1C1B1B)),
+            ),
+          ),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                height: 220,
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: Colors.black87,
+                  image: DecorationImage(
+                    image: NetworkImage(
+                      "https://lh3.googleusercontent.com/aida-public/AB6AXuCure-d83KWmFNlPbJv_xTvE8lu_ElFDWVZh-B6sn3WvUDIE9rR9fyfvscdQuVnOfSumWtQmTwT4Vaze4cXOdgS8U98FNGQsXqjzqDUTI2TYTlzLAPGyZqKMwuZHiSm6tKJRzu-S6i-VxdgWKOWL4D9q5bnXdS7g4Fdkof5fU16OF4VNQe-ZOf4l5Ree9c6w91Pz7P6Mg4nu2JXCOdo1rTiCtiEGtjOQGb6WJ1pFIdDQ4OK-D0KeM0A",
+                    ),
+                    fit: BoxFit.cover,
+                    opacity: 0.7,
+                  ),
+                ),
+              ),
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF006565).withOpacity(0.9),
+                  shape: BoxShape.circle,
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4)),
+                  ],
+                ),
+                child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 40),
+              ),
+              Positioned(
+                bottom: 12,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    "12:45",
+                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF4F3F3),
+              border: Border(
+                top: BorderSide(color: Color(0xFFBDC9C8)),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.analytics_outlined, size: 18, color: Color(0xFF3E4949)),
+                    SizedBox(width: 4),
+                    Text(
+                      "98",
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF3E4949)),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text(
+                      "5.1k Completions",
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF3E4949),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.share_outlined, size: 18, color: Color(0xFF3E4949)),
+                      onPressed: () {},
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDiscoverMoreSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F3F3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFBDC9C8)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Discover More",
+                style: TextStyle(
+                  fontFamily: "Manrope",
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF006565),
+                ),
+              ),
+              TextButton(
+                onPressed: () {},
+                child: Row(
+                  children: const [
+                    Text("View All", style: TextStyle(color: Color(0xFF006565), fontSize: 11, fontWeight: FontWeight.bold)),
+                    Icon(Icons.chevron_right, size: 14, color: Color(0xFF006565)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 220,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _buildDiscoverCard(
+                  type: "Product Shop",
+                  title: "Executive Kit 2.0",
+                  action: "View",
+                  image: "https://lh3.googleusercontent.com/aida-public/AB6AXuB2B-fAjGeeGWH0mRI0k7nmwVdw40r-jVPY7yT5xpX6OmJXpZpsPcCweSgoFKozzYa3OM94_6KmiZh2_Z6gJcIqk3EBThKf5XAzf7y9BCgCfF3aM9m9u0Bg6eH0CuFzXK-iFkGdBf3ze7a6cbwaigpgSY0ilFn-5Xra_2tHt_8A3w39GYV1S5USV2UWiW3j7uR-IArW0H1K-y2PJm3QVQY0ds1c5gwMXvsJ0FvMtP8RBAsD9HfRu21G",
+                ),
+                const SizedBox(width: 12),
+                _buildDiscoverJobCard(),
+                const SizedBox(width: 12),
+                _buildDiscoverEventCard(),
+                const SizedBox(width: 12),
+                _buildDiscoverCard(
+                  type: "Training",
+                  title: "Data Ethics 101",
+                  action: "Start",
+                  image: "https://lh3.googleusercontent.com/aida-public/AB6AXuABEQMxUVpkCYVMhdOe0VnC8R47eoH8ZAR8jTF41HjkqfDtBtspsQLld-ZP95760gSUL4sQG7iliF3I3MRaqY6EBCKUSG7p8kcf4Av8Geec26VzMijTr7vXSuHX3p9DTGTi7JmxsjegUw1s9doRV2eRjbmg0dPPUTq0YTRwbk9fDLRFAQu20H9R3HBsoPwFR_huxdT0g59AO0VelF7wG7jpbsH42GdcHA_pgafJd7TOwck9j-UMdQqI",
+                ),
+                const SizedBox(width: 12),
+                _buildDiscoverCharityCard(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDiscoverCard({required String type, required String title, required String action, required String image}) {
+    return Container(
+      width: 160,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFBDC9C8)),
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 70,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4F3F3),
+              borderRadius: BorderRadius.circular(6),
+              image: DecorationImage(
+                image: NetworkImage(image),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            type.toUpperCase(),
+            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFF006565)),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF1C1B1B)),
+          ),
+          const Spacer(),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF006565),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              onPressed: () {},
+              child: Text(action, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDiscoverJobCard() {
+    return Container(
+      width: 160,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: const Border(
+          top: BorderSide(color: Color(0xFF6750A4), width: 3),
+          left: BorderSide(color: Color(0xFFBDC9C8)),
+          right: BorderSide(color: Color(0xFFBDC9C8)),
+          bottom: BorderSide(color: Color(0xFFBDC9C8)),
+        ),
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6750A4).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Icon(Icons.work_outline, size: 14, color: Color(0xFF6750A4)),
+              ),
+              const SizedBox(width: 6),
+              const Expanded(
+                child: Text(
+                  "Senior Analyst",
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF1C1B1B)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            "Regional HQ",
+            style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)),
+          ),
+          const SizedBox(height: 4),
+          const Expanded(
+            child: Text(
+              "Looking for a strategy lead to manage EMEA community portfolio.",
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 9, color: Color(0xFF3E4949)),
+            ),
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFF006565)),
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              onPressed: () {},
+              child: const Text("Apply", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF006565))),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDiscoverEventCard() {
+    return Container(
+      width: 160,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: const Border(
+          top: BorderSide(color: Color(0xFFB45309), width: 3),
+          left: BorderSide(color: Color(0xFFBDC9C8)),
+          right: BorderSide(color: Color(0xFFBDC9C8)),
+          bottom: BorderSide(color: Color(0xFFBDC9C8)),
+        ),
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFB45309).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: const [
+                Text("14", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFFB45309))),
+                Text("NOV", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Color(0xFFB45309))),
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            "Annual Summit",
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF1C1B1B)),
+          ),
+          const SizedBox(height: 2),
+          const Expanded(
+            child: Text(
+              "Global Digital Transformation",
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 9, color: Color(0xFF3E4949)),
+            ),
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF008080),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              onPressed: () {},
+              child: const Text("Register", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDiscoverCharityCard() {
+    return Container(
+      width: 160,
+      decoration: BoxDecoration(
+        color: const Color(0xFF008080).withAlpha(12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFBDC9C8)),
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Align(
+            alignment: Alignment.center,
+            child: Icon(Icons.handshake_outlined, size: 24, color: Color(0xFF008080)),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            "Tech for All",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF1C1B1B)),
+          ),
+          const SizedBox(height: 2),
+          const Text(
+            "Donation Goal: 85%",
+            style: TextStyle(fontSize: 9, color: Color(0xFF3E4949)),
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: const LinearProgressIndicator(
+              value: 0.85,
+              backgroundColor: Color(0xFFBDC9C8),
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF008080)),
+              minHeight: 4,
+            ),
+          ),
+          const Spacer(),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF006565),
+                elevation: 0,
+                side: const BorderSide(color: Color(0xFF006565)),
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              onPressed: () {},
+              child: const Text("Donate", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildElenaRodriguezPost() {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Color(0xFFBDC9C8)),
+      ),
+      color: Colors.white,
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFBDC9C8)),
+                    image: const DecorationImage(
+                      image: NetworkImage(
+                        "https://lh3.googleusercontent.com/aida-public/AB6AXuCNIS1tQpvP0kkwlBlC26UVrtnoxGPplSnzenXLpyynw_Ch36k33qhSJeT5iyqdpPELxHvZCNktXs-iR9_nfh_SyDwbqtAkK9-WWAvS72EtAwjtskTbJG-fWsPsHV7mq7PTr6PzpfPlsVR9fiWDI6J0cXqtTKQ6MnW7sDVoA017j6Q9urSFpEURSbVtUhrLEVf2T3k08Vhbs8ItNViek4n_-QdnHR_nK9SU5xSae_p0vdD_tioWMSu1",
+                      ),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Elena Rodriguez",
+                      style: TextStyle(
+                        fontFamily: "Manrope",
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Color(0xFF1C1B1B),
+                      ),
+                    ),
+                    Text(
+                      "Global Research Lead • 1d ago".toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF3E4949),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              "Highlights from the 'Intelligence & Community' exhibition last week. It was inspiring to see how data can truly humanize our strategy.",
+              style: TextStyle(fontSize: 14, color: Color(0xFF1C1B1B)),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    height: 200,
+                    decoration: const BoxDecoration(
+                      image: DecorationImage(
+                        image: NetworkImage(
+                          "https://lh3.googleusercontent.com/aida-public/AB6AXuA4NcJIhU4VtzQFVkmqGSqR91YX_w2s0P_8z2TcPe2CqJ6pvnq1ZVOPqw3xtxSkHgum_r4i1xvsLk8x81cHQzTV45jZvoBLg3Dmw9Lo8UytngG0niOIE3C150UFfFaoE-Vb33HoS6PS1G6vtPWsO2HX3ZNsWurjPGuv2U3TMYqOd-h69at4esCkF55NPiP2UtyLUbY-hqdet8U4_GrZ-FR_miTi0CpyaxoIc4ef238vyvmnMiSwnZQ2",
+                        ),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: SizedBox(
+                    height: 200,
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              image: DecorationImage(
+                                image: NetworkImage(
+                                  "https://lh3.googleusercontent.com/aida-public/AB6AXuCVJzOk2vRcpvYZRy_usO_rmqdhCAkwg_PzQvYaBsunsTvScU1jAoAxdh4EVUmVhPTTjCgOOE1uYNQG9Yrjh78FdeXhOe5aeVf_TBZMCmUF2KwcMweKrdYZlJRWiIIKJie8HjyHLrgSx6quSHXRlMFq10NPjbNOwXilxttCb4ysbT8R9kBs7rOdn-Vs7Ge1mnkCVB3bIzbm3xACDBCipXMDfgyIi_mctucF7dqS27C0ltHTgzLsxW9D",
+                                ),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Expanded(
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Container(
+                                decoration: const BoxDecoration(
+                                  image: DecorationImage(
+                                    image: NetworkImage(
+                                      "https://lh3.googleusercontent.com/aida-public/AB6AXuBhoDm5e3L6wfu1DqbaUGSpRpUOyKlXuvC0rOvKZyKReQkMyrDaqSDnX-7GwaKXlXwk8ELYMg00kOM92WJ8ytNjsWpaBeW-QRruq1m0J3xk8Xu97NGta_2XJ-JeXVYKtdPGlFiPqDBFzeCDKJ5AeevBjEpZJXeghsCdsuIC7Xj8LpDTVrY5p4043_5YITyZ11Vuvs8Zpkh8FzJ1oTMNnDifkooQPd-ZItCQF6CXSJD3LUu6dIffIWa8",
+                                    ),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                color: Colors.black45,
+                                alignment: Alignment.center,
+                                child: const Text(
+                                  "+5 More",
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF4F3F3),
+              border: Border(
+                top: BorderSide(color: Color(0xFFBDC9C8)),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.star_outline_rounded, size: 18, color: Color(0xFF3E4949)),
+                    SizedBox(width: 4),
+                    Text(
+                      "56",
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF3E4949)),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text(
+                      "800 Shares",
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF3E4949),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.share_outlined, size: 18, color: Color(0xFF3E4949)),
+                      onPressed: () {},
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 }
+
 
 // Local Standalone Notifications Mock Screen
 class LocalNotificationsScreen extends StatelessWidget {
@@ -2938,4 +5857,48 @@ class LocalChatListScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+// Demographics Custom Painter for Community Dashboard Demographics Card
+class _DemographicsPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    const double strokeWidth = 8.0;
+    final Rect rect = Rect.fromCircle(
+      center: Offset(size.width / 2, size.height / 2),
+      radius: (size.width - strokeWidth) / 2,
+    );
+
+    final Paint bgPaint = Paint()
+      ..color = const Color(0xFFEEEEED)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+
+    final Paint tealPaint = Paint()
+      ..color = const Color(0xFF008080)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.butt;
+
+    final Paint purplePaint = Paint()
+      ..color = const Color(0xFF6750A4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.butt;
+
+    // Draw background circle
+    canvas.drawArc(rect, 0, 2 * 3.14159265, false, bgPaint);
+
+    // Draw teal segment (70%) starting from -90 degrees (-pi/2)
+    const double startAngle = -3.14159265 / 2;
+    const double tealSweep = 2 * 3.14159265 * 0.70;
+    canvas.drawArc(rect, startAngle, tealSweep, false, tealPaint);
+
+    // Draw purple segment (30%) starting from where teal ends
+    const double purpleSweep = 2 * 3.14159265 * 0.30;
+    canvas.drawArc(rect, startAngle + tealSweep, purpleSweep, false, purplePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

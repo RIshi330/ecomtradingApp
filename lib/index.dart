@@ -7,6 +7,7 @@ import 'otp_screen.dart';
 import 'auth_screen.dart';
 import 'admin/Community_Admin_Dashboard.dart';
 import 'admin/business_user_dashboard_screen.dart';
+import 'admin/create_community_screen.dart';
 import 'admin/profile_screen.dart' as admin;
 import 'admin/admin_profile_screen.dart';
 import 'admin/manage_items_screen.dart';
@@ -91,6 +92,7 @@ class AppRoutes {
   static const String setting = '/common/setting';
   static const String shell = '/shell';
   static const String businessDashboard = '/business/dashboard';
+  static const String createCommunity = '/create_community';
 
   // New Admin Routes
   static const String walletAdmin = '/wallet';
@@ -172,6 +174,7 @@ class AppRoutes {
         setting: (context) => const SettingsScreen(),
         shell: (context) => const AppShell(),
         businessDashboard: (context) => const BusinessUserDashboard(),
+        createCommunity: (context) => const CreateCommunityScreen(),
 
         // New Admin Route Builders
         walletAdmin: (context) => const WalletAdminScreen(),

@@ -7,6 +7,7 @@ import 'package:trading_ecommerce_admin/services/auth_service.dart';
 import 'package:trading_ecommerce_admin/common/industries_screen.dart';
 import 'package:trading_ecommerce_admin/admin/Community_Admin_Dashboard.dart';
 import 'package:trading_ecommerce_admin/admin/business_user_dashboard_screen.dart';
+import 'package:trading_ecommerce_admin/admin/seller_dashboard_screen.dart';
 import 'package:trading_ecommerce_admin/common/shell.dart';
 
 void main() {
@@ -116,9 +117,15 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
               '500';
 
           if (vendorType != '500' && vendorType != '1') {
+            Widget dashboardWidget;
+            if (vendorType == '20') {
+              dashboardWidget = const SellerDashboardScreen();
+            } else {
+              dashboardWidget = const CommunityAdminDashboard();
+            }
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => const CommunityAdminDashboard()),
+              MaterialPageRoute(builder: (_) => dashboardWidget),
             );
             return;
           }
