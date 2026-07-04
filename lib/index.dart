@@ -28,6 +28,7 @@ import 'admin/module_details_screen.dart';
 import 'admin/module_manager_screen.dart';
 import 'admin/module_integration_screen.dart';
 import 'admin/opportunity_detail_screen.dart';
+import 'admin/campaign_scheduler_screen.dart';
 import 'screens/opportunity_action_hub_screen.dart';
 import 'screens/manage_opportunities_screen.dart';
 import 'screens/create_opportunity_screen.dart';
@@ -148,6 +149,7 @@ class AppRoutes {
   static const String enrolledTrainings = '/enrolled_trainings';
   static const String trainingDetails = '/training_details';
   static const String enrollPayment = '/enroll_payment';
+  static const String campaignScheduler = '/admin/campaign_scheduler';
 
   /// Named routes mapping for MaterialApp
   static Map<String, WidgetBuilder> get routes => {
@@ -250,5 +252,6 @@ class AppRoutes {
           return TrainingDetailsScreen(training: training);
         },
         enrollPayment: (context) => const EnrollPaymentScreen(),
+        campaignScheduler: (context) => const CampaignSchedulerScreen(),
       };
 }

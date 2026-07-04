@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
+import 'package:trading_ecommerce_admin/widgets/personalize_feed_dialog.dart';
 
 class SiteSettingsScreen extends StatefulWidget {
   final bool isEmbedded;
@@ -21,6 +22,7 @@ class _SiteSettingsScreenState extends State<SiteSettingsScreen> {
     'payment': GlobalKey(),
     'account': GlobalKey(),
     'seo': GlobalKey(),
+    'personalize': GlobalKey(),
   };
 
   String _activeTab = 'general';
@@ -65,6 +67,7 @@ class _SiteSettingsScreenState extends State<SiteSettingsScreen> {
     'payment': false,
     'account': false,
     'seo': false,
+    'personalize': false,
   };
 
   @override
@@ -425,6 +428,14 @@ class _SiteSettingsScreenState extends State<SiteSettingsScreen> {
                             child: _buildSeoSettingsForm(),
                           ),
 
+                          // Section 7: Personalize Feed
+                          _buildSection(
+                            sectionKey: 'personalize',
+                            title: "Personalize Feed",
+                            icon: Icons.tune_rounded,
+                            child: const PersonalizeFeedDialog(isEmbedded: true),
+                          ),
+
                           // Footer Buttons
                           const SizedBox(height: 16),
                           _buildFooterButtons(),
@@ -458,6 +469,7 @@ class _SiteSettingsScreenState extends State<SiteSettingsScreen> {
           _buildJumpTab('payment', 'Payment'),
           _buildJumpTab('account', 'Account'),
           _buildJumpTab('seo', 'SEO'),
+          _buildJumpTab('personalize', 'Personalize Feed'),
         ],
       ),
     );

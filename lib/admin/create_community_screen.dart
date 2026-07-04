@@ -426,6 +426,7 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                         icon: Icons.category_rounded,
                         child: DropdownButtonFormField<String>(
                           value: _selectedType,
+                          isExpanded: true,
                           decoration: InputDecoration(
                             fillColor: Colors.white,
                             filled: true,
@@ -437,7 +438,7 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                           ),
                           items: _communityTypes.map((t) => DropdownMenuItem(
                             value: t,
-                            child: Text(t),
+                            child: Text(t, overflow: TextOverflow.ellipsis),
                           )).toList(),
                           onChanged: (val) {
                             if (val != null) {
@@ -564,9 +565,10 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                                         const SizedBox(height: 6),
                                         DropdownButtonFormField<String>(
                                           value: _billingType,
+                                          isExpanded: true,
                                           items: const [
-                                            DropdownMenuItem(value: "Recurring", child: Text("Recurring")),
-                                            DropdownMenuItem(value: "One-time", child: Text("One-time")),
+                                            DropdownMenuItem(value: "Recurring", child: Text("Recurring", overflow: TextOverflow.ellipsis)),
+                                            DropdownMenuItem(value: "One-time", child: Text("One-time", overflow: TextOverflow.ellipsis)),
                                           ],
                                           decoration: InputDecoration(
                                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -589,11 +591,12 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                                         const SizedBox(height: 6),
                                         DropdownButtonFormField<String>(
                                           value: _duration,
+                                          isExpanded: true,
                                           items: const [
-                                            DropdownMenuItem(value: "Monthly", child: Text("Monthly")),
-                                            DropdownMenuItem(value: "Quarterly", child: Text("Quarterly")),
-                                            DropdownMenuItem(value: "Annual", child: Text("Annual")),
-                                            DropdownMenuItem(value: "Lifetime", child: Text("Lifetime")),
+                                            DropdownMenuItem(value: "Monthly", child: Text("Monthly", overflow: TextOverflow.ellipsis)),
+                                            DropdownMenuItem(value: "Quarterly", child: Text("Quarterly", overflow: TextOverflow.ellipsis)),
+                                            DropdownMenuItem(value: "Annual", child: Text("Annual", overflow: TextOverflow.ellipsis)),
+                                            DropdownMenuItem(value: "Lifetime", child: Text("Lifetime", overflow: TextOverflow.ellipsis)),
                                           ],
                                           decoration: InputDecoration(
                                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -631,12 +634,13 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                                 const SizedBox(height: 6),
                                 DropdownButtonFormField<String>(
                                   value: _ageGroup,
+                                  isExpanded: true,
                                   items: const [
-                                    DropdownMenuItem(value: "All Ages", child: Text("All Ages")),
-                                    DropdownMenuItem(value: "18-24", child: Text("18-24")),
-                                    DropdownMenuItem(value: "25-34", child: Text("25-34")),
-                                    DropdownMenuItem(value: "35-44", child: Text("35-44")),
-                                    DropdownMenuItem(value: "45+", child: Text("45+")),
+                                    DropdownMenuItem(value: "All Ages", child: Text("All Ages", overflow: TextOverflow.ellipsis)),
+                                    DropdownMenuItem(value: "18-24", child: Text("18-24", overflow: TextOverflow.ellipsis)),
+                                    DropdownMenuItem(value: "25-34", child: Text("25-34", overflow: TextOverflow.ellipsis)),
+                                    DropdownMenuItem(value: "35-44", child: Text("35-44", overflow: TextOverflow.ellipsis)),
+                                    DropdownMenuItem(value: "45+", child: Text("45+", overflow: TextOverflow.ellipsis)),
                                   ],
                                   decoration: InputDecoration(
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -656,11 +660,12 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                                 const SizedBox(height: 6),
                                 DropdownButtonFormField<String>(
                                   value: _gender,
+                                  isExpanded: true,
                                   items: const [
-                                    DropdownMenuItem(value: "All", child: Text("All")),
-                                    DropdownMenuItem(value: "Male", child: Text("Male")),
-                                    DropdownMenuItem(value: "Female", child: Text("Female")),
-                                    DropdownMenuItem(value: "Non-binary", child: Text("Non-binary")),
+                                    DropdownMenuItem(value: "All", child: Text("All", overflow: TextOverflow.ellipsis)),
+                                    DropdownMenuItem(value: "Male", child: Text("Male", overflow: TextOverflow.ellipsis)),
+                                    DropdownMenuItem(value: "Female", child: Text("Female", overflow: TextOverflow.ellipsis)),
+                                    DropdownMenuItem(value: "Non-binary", child: Text("Non-binary", overflow: TextOverflow.ellipsis)),
                                   ],
                                   decoration: InputDecoration(
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -775,12 +780,16 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
               children: [
                 Icon(icon, color: primaryColor, size: 20),
                 const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: primaryColor,
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: primaryColor,
+                    ),
                   ),
                 ),
               ],

@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
+import 'package:trading_ecommerce_admin/widgets/personalize_feed_dialog.dart';
+import 'package:trading_ecommerce_admin/widgets/create_post_dialog.dart';
+import 'package:trading_ecommerce_admin/admin/explore_communities_screen.dart';
+import 'package:trading_ecommerce_admin/admin/site_settings_screen.dart';
 import 'package:trading_ecommerce_admin/services/auth_service.dart';
+import 'package:trading_ecommerce_admin/admin/profile_screen.dart';
 import 'package:trading_ecommerce_admin/index.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:trading_ecommerce_admin/common/chat_screen.dart';
@@ -14,9 +20,12 @@ import 'package:trading_ecommerce_admin/screens/trading_marketplace_screen.dart'
 import 'package:trading_ecommerce_admin/screens/selected_items_screen.dart';
 import 'package:trading_ecommerce_admin/screens/affiliate_orders_screen.dart';
 import 'package:trading_ecommerce_admin/admin/seller_orders_screen.dart';
+import 'package:trading_ecommerce_admin/admin/api_logs_screen.dart';
 import 'package:trading_ecommerce_admin/screens/event_marketplace_screen.dart';
 import 'package:trading_ecommerce_admin/screens/my_events_screen.dart';
 import 'package:trading_ecommerce_admin/screens/event_opportunities_screen.dart';
+import 'package:trading_ecommerce_admin/admin/schedule_campaign_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:trading_ecommerce_admin/admin/taxonomy_manager_screen.dart';
 import 'package:trading_ecommerce_admin/admin/manage_items_screen.dart';
@@ -24,6 +33,11 @@ import 'package:trading_ecommerce_admin/admin/platform_settings_screen.dart';
 import 'package:trading_ecommerce_admin/admin/wallet_admin_screen.dart';
 import 'package:trading_ecommerce_admin/admin/membership_plans_screen.dart';
 import 'package:trading_ecommerce_admin/admin/membership_builder_screen.dart';
+import 'package:trading_ecommerce_admin/admin/community_monetization_screen.dart';
+import 'package:trading_ecommerce_admin/admin/manage_promotional_packages_screen.dart';
+import 'package:trading_ecommerce_admin/admin/promotional_package_orders_screen.dart';
+import 'package:trading_ecommerce_admin/common/chat_screen.dart';
+import 'package:trading_ecommerce_admin/common/notification_screen.dart';
 import 'package:trading_ecommerce_admin/admin/seller_dashboard_screen.dart';
 import 'package:trading_ecommerce_admin/admin/seller_management_screen.dart';
 import 'package:trading_ecommerce_admin/admin/marketplace_modules_screen.dart';
@@ -101,6 +115,137 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     "Excellent insights on the governance shift. Looking forward to the full report."
   ];
 
+  String? _extractYoutubeId(String text) {
+    final RegExp regExp = RegExp(
+      r'(?:https?://)?(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([a-zA-Z0-9_-]{11})',
+      caseSensitive: false,
+    );
+    final match = regExp.firstMatch(text);
+    return match?.group(1);
+  }
+
+  String? _extractTwitterVideoUrl(String text) {
+    final RegExp regExp = RegExp(
+      r'(https?://(?:twitter\.com|x\.com)/[a-zA-Z0-9_]+/status/[0-9]+)',
+      caseSensitive: false,
+    );
+    final match = regExp.firstMatch(text);
+    return match?.group(1);
+  }
+
+  Widget _buildYoutubePreview(String youtubeId) {
+    final String thumbnailUrl = "https://img.youtube.com/vi/$youtubeId/0.jpg";
+    final Uri youtubeUri = Uri.parse("https://www.youtube.com/watch?v=$youtubeId");
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFBDC9C8)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () async {
+          if (await canLaunchUrl(youtubeUri)) {
+            await launchUrl(youtubeUri, mode: LaunchMode.externalApplication);
+          }
+        },
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Image.network(
+                thumbnailUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.black12,
+                    child: const Icon(Icons.video_library_rounded, size: 48, color: Colors.grey),
+                  );
+                },
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.6),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.play_arrow_rounded,
+                color: Colors.white,
+                size: 36,
+              ),
+            ),
+            Positioned(
+              bottom: 8,
+              right: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                color: Colors.black87,
+                child: const Text(
+                  "WATCH ON YOUTUBE",
+                  style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTwitterPreview(String xUrl) {
+    final Uri xUri = Uri.parse(xUrl);
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFBDC9C8)),
+      ),
+      child: InkWell(
+        onTap: () async {
+          if (await canLaunchUrl(xUri)) {
+            await launchUrl(xUri, mode: LaunchMode.externalApplication);
+          }
+        },
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                color: Colors.white24,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 28),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "WATCH VIDEO ON X / TWITTER",
+                    style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    "Tap to watch directly on the X application.",
+                    style: TextStyle(color: Colors.white70, fontSize: 10),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.open_in_new_rounded, color: Colors.white54, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
   // Colors
   static const Color primaryPurple = Color(0xFF006565); // Changed to Teal matching AppTheme.primary
   static const Color accentPurple = Color(0xFF008080);  // Changed to Teal Container matching AppTheme.primaryContainer
@@ -136,12 +281,44 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   List<dynamic> _mySubmissions = [];
   bool _isLoadingSubmissions = false;
 
+  // Home Feed State
+  List<dynamic> _feedPosts = [];
+  bool _isLoadingFeed = false;
+  final Set<int> _expandedPostComments = {};
+  final Map<int, TextEditingController> _commentControllers = {};
+  final TextEditingController _postController = TextEditingController();
+
+  // Community Dashboard Stats & Info
+  int _totalMembers = 42800;
+  int _totalPaidMembers = 8500;
+  double _totalRevenue = 52400.0;
+  int _pendingApprovalsCount = 124;
+  bool _isLoadingStats = false;
+  int? _activeCommunityId;
+  String _activeCommunityTitle = "Select Community";
+  List<dynamic> _myCommunities = [];
+
+  Future<void> _checkAndShowPersonalizeFeedModal() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final bool hasPersonalized = prefs.getBool('has_personalized_feed') ?? false;
+    if (!hasPersonalized) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const PersonalizeFeedDialog(),
+        );
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _loadVendorType();
+    _fetchMyCommunities();
     _fetchUsersList();
-    _fetchPendingApprovals();
+    _fetchHomeFeed();
     _fetchWithdrawals();
     _fetchOpportunities();
     _fetchMyListings();
@@ -149,6 +326,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     _fetchPlatformSettings();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      _checkAndShowPersonalizeFeedModal();
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is int) {
         setState(() {
@@ -265,7 +443,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       final database = Database();
       final response = await database.getData({
         'action': 'get_users_list',
-      }, endpoint: 'new_apis/manage_user_api 3.php');
+      }, endpoint: 'new_apis/manage_user_api.php');
       
       if (response['success'] == true || response['status'] == 200 || response.containsKey('general_users')) {
         setState(() {
@@ -284,30 +462,241 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     }
   }
 
-  // API Call: Fetch Pending Community Approvals
-  Future<void> _fetchPendingApprovals() async {
+  Future<void> _fetchMyCommunities() async {
+    try {
+      final response = await Database().getData({
+        'action': 'fetch_shared_invites_admin',
+      }, endpoint: 'new_apis/community_dashboard_api.php');
+      
+      if (response['success'] == true && response['data'] != null) {
+        final List<dynamic> data = response['data'] ?? [];
+        setState(() {
+          _myCommunities = data;
+          if (data.isNotEmpty) {
+            _activeCommunityId = int.tryParse(data[0]['community_id']?.toString() ?? '');
+            _activeCommunityTitle = data[0]['community_title']?.toString() ?? 'Community';
+          }
+        });
+        if (_activeCommunityId != null) {
+          _fetchCommunityStats(_activeCommunityId!);
+          _fetchCommunityMembers(_activeCommunityId!);
+        }
+      }
+    } catch (e) {
+      print("Error fetching my communities: $e");
+    }
+  }
+
+  Future<void> _fetchCommunityStats(int communityId) async {
+    setState(() {
+      _isLoadingStats = true;
+    });
+    try {
+      final response = await Database().getData({
+        'action': 'getCommunityStats',
+        'community_id': communityId.toString(),
+      }, endpoint: 'new_apis/community_dashboard_api.php');
+      
+      if (response['success'] == true && response['data'] != null) {
+        final data = response['data'];
+        setState(() {
+          _totalMembers = int.tryParse(data['total_members']?.toString() ?? '0') ?? 0;
+          _totalPaidMembers = int.tryParse(data['total_paid_members']?.toString() ?? '0') ?? 0;
+          _totalRevenue = double.tryParse(data['total_revenue']?.toString() ?? '0.0') ?? 0.0;
+        });
+      }
+    } catch (e) {
+      print("Error fetching community stats: $e");
+    } finally {
+      setState(() {
+        _isLoadingStats = false;
+      });
+    }
+  }
+
+  Future<void> _fetchCommunityMembers(int communityId) async {
     setState(() {
       _isLoadingApprovals = true;
     });
     try {
-      final database = Database();
-      final response = await database.getData({
-        'action': 'get_pending_community_approvals',
-      }, endpoint: 'new_apis/manage_user_api 3.php');
+      final response = await Database().getData({
+        'action': 'fetch_community_members',
+        'community_id': communityId.toString(),
+      }, endpoint: 'new_apis/community_dashboard_api.php');
       
-      if (response['success'] == true || response['status'] == 200 || response.containsKey('data')) {
+      if (response['success'] == true && response['data'] != null) {
+        final data = response['data'];
+        final List<dynamic> members = data['members'] ?? [];
+        
         setState(() {
-          _pendingApprovals = response['data'] ?? [];
+          _pendingApprovals = members.where((m) => m['join_status']?.toString() == 'pending').toList();
+          _pendingApprovalsCount = _pendingApprovals.length;
+          
+          final approved = members.where((m) => m['join_status']?.toString() == 'approved').toList();
+          _activeMembers.clear();
+          for (var m in approved) {
+            final details = m['vendor_details'] ?? {};
+            final name = details['name']?.toString() ?? 'Unknown Member';
+            final role = m['member_id'].toString() == '1' ? 'Admin' : 'Member';
+            _activeMembers.add({
+              "name": name,
+              "initials": name.isNotEmpty ? name.substring(0, 1).toUpperCase() : "M",
+              "role": role,
+              "status": "ACTIVE",
+              "statusColor": const Color(0xFF008080),
+              "progress": 0.82,
+            });
+          }
         });
       }
     } catch (e) {
-      print('Error fetching approvals: $e');
+      print("Error fetching community members: $e");
     } finally {
       if (mounted) {
         setState(() {
           _isLoadingApprovals = false;
         });
       }
+    }
+  }
+
+  Future<void> _updateMemberStatus(int memberId, String status) async {
+    try {
+      final response = await Database().getData({
+        'action': 'update_member_status',
+        'member_id': memberId.toString(),
+        'status': status,
+      }, endpoint: 'new_apis/community_dashboard_api.php');
+      
+      if (response['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Member status updated to $status successfully!"),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        if (_activeCommunityId != null) {
+          _fetchCommunityMembers(_activeCommunityId!);
+          _fetchCommunityStats(_activeCommunityId!);
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response['message']?.toString() ?? "Failed to update member status"),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      print("Error updating member status: $e");
+    }
+  }
+
+  Future<void> _fetchHomeFeed() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoadingFeed = true;
+    });
+    try {
+      final response = await Database().getData({
+        'action': 'get_feed',
+      }, endpoint: 'new_apis/social_feed_api.php');
+      
+      if (response['success'] == true && response['data'] != null) {
+        setState(() {
+          _feedPosts = response['data'] ?? [];
+        });
+      }
+    } catch (e) {
+      print("Error fetching home feed: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingFeed = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleLike(int postId) async {
+    try {
+      final response = await Database().getData({
+        'action': 'post_engagement',
+        'post_id': postId.toString(),
+        'engagement_type': 'like',
+      }, endpoint: 'new_apis/social_app_api_v2_API.php');
+      if (response['success'] == true) {
+        _fetchHomeFeed();
+      }
+    } catch (e) {
+      print("Error toggling like: $e");
+    }
+  }
+
+  Future<void> _addComment(int postId, String message) async {
+    if (message.trim().isEmpty) return;
+    try {
+      final response = await Database().getData({
+        'action': 'add_comment',
+        'post_id': postId.toString(),
+        'message': message,
+      }, endpoint: 'new_apis/social_app_api_v2_API.php');
+      if (response['success'] == true) {
+        _fetchHomeFeed();
+      }
+    } catch (e) {
+      print("Error adding comment: $e");
+    }
+  }
+
+  Future<void> _sharePost(int postId) async {
+    try {
+      final response = await Database().getData({
+        'action': 'post_engagement',
+        'post_id': postId.toString(),
+        'engagement_type': 'share',
+      }, endpoint: 'new_apis/social_app_api_v2_API.php');
+      if (response['success'] == true) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Post shared successfully!"),
+              backgroundColor: Color(0xFF006565),
+            ),
+          );
+        }
+        _fetchHomeFeed();
+      }
+    } catch (e) {
+      print("Error sharing post: $e");
+    }
+  }
+
+  Future<void> _createPost(String content) async {
+    if (content.trim().isEmpty) return;
+    try {
+      final response = await Database().getData({
+        'action': 'create_post',
+        'content_type': 'text',
+        'visibility': 'public',
+        'label': content,
+      }, endpoint: 'new_apis/social_feed_api.php');
+      
+      if (response['success'] == true) {
+        _postController.clear();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Post created successfully!"),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        _fetchHomeFeed();
+      }
+    } catch (e) {
+      print("Error creating post: $e");
     }
   }
 
@@ -338,9 +727,39 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     }
   }
 
-  // Details dialog showing user's joined communities
+  Future<void> _updateUserStatus(int userId, String type) async {
+    try {
+      final response = await Database().getData({
+        'action': 'manage_user',
+        'vendor_id': userId.toString(),
+        'type': type,
+      }, endpoint: 'new_apis/manage_user_api.php');
+      if (response['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("User successfully ${type == 'suspend' ? 'suspended' : 'activated'}!"),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        _fetchUsersList();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response['message']?.toString() ?? "Action failed"),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      print("Error managing user: $e");
+    }
+  }
+
+  // Details dialog showing user's joined communities and actions
   void _showUserDetailsDialog(Map<String, dynamic> user) {
-    final joined = user["joined_communities"];
+    final joined = user["community_list"] ?? user["joined_communities"];
     List<dynamic> communities = [];
     if (joined is List) {
       communities = joined;
@@ -359,6 +778,10 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text("Email: ${user['email'] ?? 'N/A'}", style: const TextStyle(color: textDark)),
+              const SizedBox(height: 8),
+              Text("Mobile: ${user['mobile'] ?? 'N/A'}", style: const TextStyle(color: textDark)),
+              const SizedBox(height: 8),
+              Text("Status: ${user['status'] ?? 'Active'}", style: TextStyle(fontWeight: FontWeight.bold, color: user['status'] == 'Active' ? Colors.green : Colors.red)),
               const SizedBox(height: 12),
               const Text("Joined Communities:", style: TextStyle(fontWeight: FontWeight.bold, color: primaryPurple)),
               const SizedBox(height: 8),
@@ -371,7 +794,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     itemCount: communities.length,
                     itemBuilder: (context, i) {
                       final item = communities[i];
-                      final String comName = item is Map ? (item["name"] ?? "") : item.toString();
+                      final String comName = item is Map ? (item["title"] ?? item["name"] ?? "") : item.toString();
                       return ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: const Icon(Icons.group, color: primaryPurple),
@@ -384,6 +807,19 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           ),
         ),
         actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              final int userId = int.tryParse(user['id']?.toString() ?? '0') ?? 0;
+              if (userId > 0) {
+                _updateUserStatus(userId, user['status'] == 'Active' ? 'suspend' : 'activate');
+              }
+            },
+            child: Text(
+              user['status'] == 'Active' ? "Suspend User" : "Activate User",
+              style: TextStyle(color: user['status'] == 'Active' ? Colors.red : Colors.green),
+            ),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text("Close", style: TextStyle(color: primaryPurple)),
@@ -743,6 +1179,12 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     ),
                   ),
               actions: [
+                if (_currentIndex == 27 && _vendorType == '200')
+                  IconButton(
+                    icon: const Icon(Icons.calendar_month_rounded, color: Color(0xFF006565)),
+                    tooltip: "Campaign Scheduler",
+                    onPressed: () => Navigator.pushNamed(context, AppRoutes.campaignScheduler),
+                  ),
                 Stack(
                   children: [
                     IconButton(
@@ -846,12 +1288,17 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     if (_vendorType == '200') ...[
                       _buildDrawerItem(0, Icons.dashboard_rounded, "Community Dashboard"),
                       _buildDrawerItem(19, Icons.forum_rounded, "Manage Communities"),
+                      _buildDrawerItem(51, Icons.explore_rounded, "Explore Communities"),
                       _buildDrawerItem(15, Icons.people_rounded, "Manage Members"),
                       _buildDrawerItem(20, Icons.post_add_rounded, "Manage Posts"),
                       _buildDrawerItem(10, Icons.monetization_on_rounded, "Community Monetization"),
+                      _buildDrawerItem(52, Icons.card_membership_rounded, "Membership Plans"),
+                      _buildDrawerItem(7, Icons.wallet_rounded, "Wallet"),
+                      _buildDrawerItem(9, Icons.account_balance_rounded, "Bank Details"),
                       _buildDrawerItem(3, Icons.receipt_long_rounded, "Orders"),
-                      _buildDrawerItem(27, Icons.schedule_rounded, "Campaign Scheduler"),
+                      _buildDrawerItem(27, Icons.campaign_rounded, "Schedule Campaigns"),
                       _buildDrawerItem(6, Icons.settings_rounded, "Settings"),
+                      _buildDrawerItem(99, Icons.receipt_long_outlined, "API Transaction Logs"),
                     ] else ...[
                       // _buildDrawerItem(0, Icons.dashboard_rounded, "Dashboard"),
                       _buildDrawerItem(12, Icons.storefront_rounded, "Seller Dashboard"),
@@ -1381,10 +1828,13 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         ),
         onTap: () {
           Navigator.pop(context); // Close Drawer
-          if (index == 21) {
+          if (index == 99) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ApiLogsScreen()),
+            );
+          } else if (index == 21) {
             Navigator.pushNamed(context, AppRoutes.createOpportunity);
-          } else if (index == 6) {
-            Navigator.pushNamed(context, '/platform_settings');
           } else if (index == 40) {
             Navigator.pushNamed(context, AppRoutes.logistics);
           } else if (index == 41) {
@@ -1412,11 +1862,16 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         case 12: return "Community Intelligence";
         case 50: return "Community Intelligence";
         case 19: return "Manage Communities";
+        case 51: return "Explore Communities";
         case 15: return "Manage Members";
         case 20: return "Manage Posts";
         case 10: return "Community Monetization";
+        case 52: return "Membership Plans";
+        case 7: return "Wallet";
+        case 9: return "Bank Details";
+        case 11: return "Profile";
         case 3: return "Orders";
-        case 27: return "Campaign Scheduler";
+        case 27: return "Schedule Campaigns";
         case 6: return "Settings";
         default: return "Serene Commerce";
       }
@@ -1463,17 +1918,24 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       case 0: return _buildDashboardView(); // Render main Community dashboard statistics view
       case 12: return const SellerDashboardScreen(isEmbedded: true); // Render main Seller dashboard statistics view
       case 50: return _buildHomeFeedView();
+      case 51: return const ExploreCommunitiesScreen(isEmbedded: true);
+      case 52: return const MembershipPlansScreen(isEmbedded: true);
+      case 11: return const ProfileScreen();
       case 1: return _buildTextUsersView(); // renamed custom users view helper below
       case 2: return const ProductManagementScreen(isEmbedded: true);
       case 31: return const LowStockInventoryScreen(isEmbedded: true);
-      case 3: return const SellerOrderScreen(isEmbedded: true);
+      case 3: return _vendorType == '200'
+          ? const PromotionalPackageOrdersScreen(isEmbedded: true)
+          : const SellerOrderScreen(isEmbedded: true);
       case 4: return const TaxonomyManagerScreen(isEmbedded: true);
       case 5: return const ManageItemsScreen(isEmbedded: true);
-      case 6: return _buildPlatformSettingsView();
+      case 6: return const PersonalizeFeedDialog(isEmbedded: true);
       case 7: return const WalletAdminScreen(isEmbedded: true);
       case 8: return _buildWithdrawalRequestsView();
       case 9: return _buildBankDetailsView();
-      case 10: return const MembershipPlansScreen(isEmbedded: true);
+      case 10: return _vendorType == '200'
+          ? const ManagePromotionalPackagesScreen(isEmbedded: true)
+          : const MembershipPlansScreen(isEmbedded: true);
       case 11: return _buildProfileView();
       case 13: return const SellerManagementScreen(isEmbedded: true);
       case 14: return const MembershipBuilderScreen(isEmbedded: true);
@@ -1487,7 +1949,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       case 24: return const SelectedItemsScreen(isEmbedded: true);
       case 25: return const AffiliateOrdersScreen(isEmbedded: true);
       case 26: return const ManageTeamScreen(isEmbedded: true);
-      case 27: return const ManageTasksScreen(isEmbedded: true);
+      case 27: return _vendorType == '200'
+          ? const ScheduleCampaignScreen(isEmbedded: true)
+          : const ManageTasksScreen(isEmbedded: true);
       case 28: return const ExplorePartnersScreen(isEmbedded: true);
       case 29: return const ExploreTalentScreen(isEmbedded: true);
       case 30: return const RewardsRecognitionScreen(isEmbedded: true);
@@ -1581,11 +2045,38 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
             color: Colors.black.withOpacity(0.02),
             shape: BoxShape.circle,
           ),
+          child: IconButton(
+            icon: const Icon(
+              Icons.chat_bubble_outline_rounded,
+              color: Colors.black87,
+            ),
+            onPressed: () {
+              Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute(
+                  builder: (context) => const ChatListScreen(),
+                ),
+              );
+            },
+            tooltip: "Chat Messages",
+          ),
+        ),
+        Container(
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.02),
+            shape: BoxShape.circle,
+          ),
           child: Stack(
             alignment: Alignment.center,
             children: [
               IconButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.of(context, rootNavigator: true).push(
+                    MaterialPageRoute(
+                      builder: (context) => const NotificationsScreen(),
+                    ),
+                  );
+                },
                 icon: const Icon(
                   Icons.notifications_none_rounded,
                   color: Colors.black87,
@@ -1775,6 +2266,42 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (_myCommunities.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFBDC9C8)),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<int>(
+                  value: _activeCommunityId,
+                  items: _myCommunities.map((c) {
+                    return DropdownMenuItem<int>(
+                      value: int.tryParse(c['community_id']?.toString() ?? ''),
+                      child: Text(
+                        c['community_title']?.toString() ?? 'Community',
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: primaryPurple),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        _activeCommunityId = val;
+                        final selected = _myCommunities.firstWhere((c) => int.tryParse(c['community_id']?.toString() ?? '') == val);
+                        _activeCommunityTitle = selected['community_title']?.toString() ?? 'Community';
+                      });
+                      _fetchCommunityStats(val);
+                      _fetchCommunityMembers(val);
+                    }
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           // Section 1: Statistics Slider
           const Text(
             "CORE PERFORMANCE",
@@ -1791,15 +2318,13 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
-                _buildDossierStatCard("Total Members", "42.8k", trend: "+12%", hasAccent: true),
+                _buildDossierStatCard("Total Members", _totalMembers.toString(), trend: "", hasAccent: true),
                 const SizedBox(width: 12),
-                _buildDossierActiveCard("Active Today", "8.5k", progress: 0.75),
+                _buildDossierActiveCard("Paid Members", _totalPaidMembers.toString(), progress: 1.0),
                 const SizedBox(width: 12),
-                _buildDossierTextCard("Eng. Rate", "68%", "Above benchmark"),
+                _buildDossierTextCard("Pending", _pendingApprovalsCount.toString(), "Review required", valColor: const Color(0xFFB45309)),
                 const SizedBox(width: 12),
-                _buildDossierTextCard("Pending", "124", "Review required", valColor: const Color(0xFFB45309)),
-                const SizedBox(width: 12),
-                _buildDossierTextCard("Net Revenue", r"₹52.4k", "MTD Goal: 92%", valColor: const Color(0xFF1C1B1B)),
+                _buildDossierTextCard("Net Revenue", "₹${_totalRevenue.toStringAsFixed(1)}", "Lifetime Earnings", valColor: const Color(0xFF1C1B1B)),
               ],
             ),
           ),
@@ -2060,19 +2585,15 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     Color accentColor = const Color(0xFF008080),
     EdgeInsetsGeometry padding = const EdgeInsets.all(16),
   }) {
+    final EdgeInsetsGeometry childPadding = hasAccent
+        ? padding.add(const EdgeInsets.only(left: 4))
+        : padding;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(4),
-        border: Border(
-          top: const BorderSide(color: Color(0xFFBDC9C8)),
-          bottom: const BorderSide(color: Color(0xFFBDC9C8)),
-          right: const BorderSide(color: Color(0xFFBDC9C8)),
-          left: BorderSide(
-            color: hasAccent ? accentColor : const Color(0xFFBDC9C8),
-            width: hasAccent ? 4 : 1,
-          ),
-        ),
+        border: Border.all(color: const Color(0xFFBDC9C8)),
         boxShadow: const [
           BoxShadow(
             color: Colors.black12,
@@ -2081,8 +2602,25 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           ),
         ],
       ),
-      padding: padding,
-      child: child,
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Padding(
+            padding: childPadding,
+            child: child,
+          ),
+          if (hasAccent)
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 4,
+              child: Container(
+                color: accentColor,
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -2722,7 +3260,15 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     title: const Text("Create Post"),
                     onTap: () {
                       Navigator.pop(context);
-                      _showActionAlert("Created post successfully!");
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) => CreatePostDialog(
+                          onPostCreated: () {
+                            _fetchHomeFeed();
+                          },
+                        ),
+                      );
                     },
                   ),
                 ],
@@ -2751,17 +3297,21 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       return FloatingActionButton.small(
         backgroundColor: primaryPurple,
         foregroundColor: Colors.white,
-        onPressed: () => _showActionAlert("Created post successfully!"),
+        onPressed: () {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => CreatePostDialog(
+              onPostCreated: () {
+                _fetchHomeFeed();
+              },
+            ),
+          );
+        },
         child: const Icon(Icons.post_add_rounded),
       );
     } else if (_currentIndex == 10) {
-      return FloatingActionButton.extended(
-        backgroundColor: primaryPurple,
-        foregroundColor: Colors.white,
-        onPressed: () => _showActionAlert("Created monetization package successfully!"),
-        icon: const Icon(Icons.add_box_rounded),
-        label: const Text("Create Package"),
-      );
+      return null;
     }
     return null;
   }
@@ -2991,6 +3541,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryPurple,
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  minimumSize: const Size(0, 0),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: const Icon(Icons.add, color: Colors.white),
@@ -3280,7 +3831,11 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                                     req['status'] = 'Approved';
                                   });
                                 },
-                                style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(horizontal: 12)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  minimumSize: const Size(0, 0),
+                                ),
                                 child: const Text("Approve", style: TextStyle(color: Colors.white, fontSize: 12)),
                               ),
                             ],
@@ -3294,7 +3849,12 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   }
 
   // 15. Community Approvals View
-  Widget _buildPendingCard({required String name, required String role, required String avatarUrl}) {
+  Widget _buildPendingCard({
+    required String name,
+    required String role,
+    required String avatarUrl,
+    required int memberId,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -3368,7 +3928,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                           padding: const EdgeInsets.symmetric(vertical: 6),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
-                        onPressed: () => _showActionAlert("Rejected $name"),
+                        onPressed: () => _updateMemberStatus(memberId, 'rejected'),
                         child: const Text(
                           "Reject",
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
@@ -3385,7 +3945,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                           padding: const EdgeInsets.symmetric(vertical: 6),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
-                        onPressed: () => _showActionAlert("Approved $name successfully!"),
+                        onPressed: () => _updateMemberStatus(memberId, 'approved'),
                         child: const Text(
                           "Approve",
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
@@ -3425,9 +3985,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 color: const Color(0xFF006565).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: const Text(
-                "2 Pending",
-                style: TextStyle(
+              child: Text(
+                "${_pendingApprovals.length} Pending",
+                style: const TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF006565),
@@ -3437,16 +3997,25 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           ],
         ),
         const SizedBox(height: 16),
-        _buildPendingCard(
-          name: "Jordan Smith",
-          role: "Senior Architect",
-          avatarUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuDv9dwpe9W6NtlVH9LsL3sV3bKoy_ZwN09k6QRZ6OnJhXjdLalg3D4jzhcFcL_pVZn9cWsevQ1APMGLbEnARo8qga9O3sW0ujcYd6LvyOZiMb7Wh3Ju14kq8CQADlv96h22RwNeqL0HhmYQjoby3CkSXV39atQvUZA1mvcYN6UMQDY_ZWm7iy5Q_CKSb2B3miI-adWBrAKIdolEzLxsURUbGNkiocMMZGvevXRM7MfmmKwdI5gyylJK",
-        ),
-        _buildPendingCard(
-          name: "Elena Vance",
-          role: "Policy Researcher",
-          avatarUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuBEodFAtFVTEXdIRERO3JyqGxXKYwOd2J3msehyAdyh0n8valbTd9qJ7FOhwxaMcEz4ruLsXlFQ0erH_QqOmckVrpS0S7_FE-bXY4zY5BgjIVcu-9lWcBjgKpfgWaFu6Y_nwNi3NTehJkDl4mQoMKXNc_a7sAwrXIpPnZUxI2pc_Zk_nqXHEIitz-rMCPMI_m3R1n6h4eOwQZ9Q4BSjwsrMECxCoXjSpxXQfzgVucsMeF6pNjW4AxA-",
-        ),
+        if (_pendingApprovals.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Text("No pending approval requests.", style: TextStyle(color: textLight)),
+          )
+        else
+          ..._pendingApprovals.map((item) {
+            final details = item['vendor_details'] ?? {};
+            final name = details['name']?.toString() ?? 'No Name';
+            final designation = details['designation']?.toString() ?? 'Applicant';
+            final avatar = details['profile_pic']?.toString() ?? "https://i.pravatar.cc/150";
+            final memberId = int.tryParse(item['member_id']?.toString() ?? '0') ?? 0;
+            return _buildPendingCard(
+              name: name,
+              role: designation,
+              avatarUrl: avatar.startsWith('http') ? avatar : "https://i.pravatar.cc/150",
+              memberId: memberId,
+            );
+          }).toList(),
       ],
     );
 
@@ -3505,168 +4074,174 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           ],
         ),
         const SizedBox(height: 16),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFBDC9C8)),
-          ),
-          child: Column(
-            children: [
-              // Table Header
-              Container(
-                color: const Color(0xFFF4F3F3),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                child: Row(
-                  children: const [
-                    Expanded(
-                      flex: 4,
-                      child: Text("MEMBER", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949), letterSpacing: 0.5)),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text("STATUS", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949), letterSpacing: 0.5)),
-                    ),
-                    Expanded(
-                      flex: 3,
-                      child: Text("ENGAGEMENT", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949), letterSpacing: 0.5)),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: Text("ACTIONS", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949), letterSpacing: 0.5)),
-                      ),
-                    ),
-                  ],
-                ),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: isDesktop ? 900 : 550,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFBDC9C8)),
               ),
-              const Divider(height: 1, color: Color(0xFFBDC9C8)),
-              if (filteredMembers.isEmpty)
-                Container(
-                  padding: const EdgeInsets.all(32),
-                  child: const Center(
-                    child: Text("No members match filter query", style: TextStyle(color: Color(0xFF757575), fontSize: 13)),
+              child: Column(
+                children: [
+                  // Table Header
+                  Container(
+                    color: const Color(0xFFF4F3F3),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                    child: Row(
+                      children: const [
+                        Expanded(
+                          flex: 4,
+                          child: Text("MEMBER", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949), letterSpacing: 0.5)),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text("STATUS", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949), letterSpacing: 0.5)),
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: Text("ENGAGEMENT", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949), letterSpacing: 0.5)),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Text("ACTIONS", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949), letterSpacing: 0.5)),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                )
-              else
-                ...filteredMembers.map((m) {
-                  return Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        child: Row(
-                          children: [
-                            // Member Initials/Avatar
-                            Expanded(
-                              flex: 4,
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 32,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF4F3F3),
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: const Color(0xFFBDC9C8)),
-                                    ),
-                                    child: Center(
+                  const Divider(height: 1, color: Color(0xFFBDC9C8)),
+                  if (filteredMembers.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(32),
+                      child: const Center(
+                        child: Text("No members match filter query", style: TextStyle(color: Color(0xFF757575), fontSize: 13)),
+                      ),
+                    )
+                  else
+                    ...filteredMembers.map((m) {
+                      return Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                            child: Row(
+                              children: [
+                                // Member Initials/Avatar
+                                Expanded(
+                                  flex: 4,
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF4F3F3),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(color: const Color(0xFFBDC9C8)),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            m["initials"],
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 11,
+                                              color: m["statusColor"],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(m["name"], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1C1B1B)), overflow: TextOverflow.ellipsis),
+                                            Text(m["role"], style: const TextStyle(fontSize: 10, color: Color(0xFF3E4949)), overflow: TextOverflow.ellipsis),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Status tag
+                                Expanded(
+                                  flex: 2,
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: (m["statusColor"] as Color).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
                                       child: Text(
-                                        m["initials"],
+                                        m["status"],
                                         style: TextStyle(
+                                          fontSize: 8,
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 11,
                                           color: m["statusColor"],
                                         ),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(m["name"], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1C1B1B)), overflow: TextOverflow.ellipsis),
-                                        Text(m["role"], style: const TextStyle(fontSize: 10, color: Color(0xFF3E4949)), overflow: TextOverflow.ellipsis),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // Status tag
-                            Expanded(
-                              flex: 2,
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: (m["statusColor"] as Color).withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    m["status"],
-                                    style: TextStyle(
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.bold,
-                                      color: m["statusColor"],
-                                    ),
-                                  ),
                                 ),
-                              ),
-                            ),
-                            // Engagement progress
-                            Expanded(
-                              flex: 3,
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: LinearProgressIndicator(
-                                    value: m["progress"],
-                                    minHeight: 6,
-                                    backgroundColor: const Color(0xFFF4F3F3),
-                                    valueColor: AlwaysStoppedAnimation<Color>(m["statusColor"]),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // Actions
-                            Expanded(
-                              flex: 2,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.mail_outline_rounded, size: 16, color: Color(0xFF006565)),
-                                    onPressed: () => _showActionAlert("Opened mail box for ${m['name']}"),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  GestureDetector(
-                                    onTap: () => _showActionAlert("Details page for ${m['name']}"),
-                                    child: const Text(
-                                      "VIEW",
-                                      style: TextStyle(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF006565),
+                                // Engagement progress
+                                Expanded(
+                                  flex: 3,
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: LinearProgressIndicator(
+                                        value: m["progress"],
+                                        minHeight: 6,
+                                        backgroundColor: const Color(0xFFF4F3F3),
+                                        valueColor: AlwaysStoppedAnimation<Color>(m["statusColor"]),
                                       ),
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                                // Actions
+                                Expanded(
+                                  flex: 2,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.mail_outline_rounded, size: 16, color: Color(0xFF006565)),
+                                        onPressed: () => _showActionAlert("Opened mail box for ${m['name']}"),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      GestureDetector(
+                                        onTap: () => _showActionAlert("Details page for ${m['name']}"),
+                                        child: const Text(
+                                          "VIEW",
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF006565),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                      const Divider(height: 1, color: Color(0xFFBDC9C8)),
-                    ],
-                  );
-                }).toList(),
-            ],
+                          ),
+                          const Divider(height: 1, color: Color(0xFFBDC9C8)),
+                        ],
+                      );
+                    }).toList(),
+                ],
+              ),
+            ),
           ),
         ),
       ],
@@ -4213,6 +4788,12 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   // ==================== HOME FEED SCREEN VIEW (MIGRATED FROM HTML) ====================
 
   Widget _buildHomeFeedView() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _currentIndex == 50) {
+        _checkAndShowPersonalizeFeedModal();
+      }
+    });
+
     final bool isDesktop = MediaQuery.of(context).size.width >= 768;
     
     final Widget mainFeed = Column(
@@ -4223,18 +4804,34 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           const SizedBox(height: 16),
         ],
         _buildCreatePostCard(),
+        const SizedBox(height: 16),
+        _buildPersonalizeFeedBanner(),
         const SizedBox(height: 24),
-        _buildSarahMitchellPost(),
-        const SizedBox(height: 24),
-        _buildSponsoredProductsSection(),
-        const SizedBox(height: 24),
-        _buildDavidChenPost(),
-        const SizedBox(height: 24),
-        _buildTrainingVideoPost(),
-        const SizedBox(height: 24),
-        _buildDiscoverMoreSection(),
-        const SizedBox(height: 24),
-        _buildElenaRodriguezPost(),
+        if (_isLoadingFeed)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(40.0),
+              child: CircularProgressIndicator(color: primaryPurple),
+            ),
+          )
+        else if (_feedPosts.isEmpty)
+          Center(
+            child: Card(
+              margin: const EdgeInsets.symmetric(vertical: 20),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              color: Colors.white,
+              child: const Padding(
+                padding: EdgeInsets.all(32.0),
+                child: Text(
+                  "No updates on your feed yet. Start by writing a post!",
+                  style: TextStyle(color: textLight, fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          )
+        else
+          ..._feedPosts.map((post) => _buildDynamicPostCard(post)).toList(),
       ],
     );
 
@@ -4266,6 +4863,87 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   ],
                 )
               : mainFeed,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPersonalizeFeedBanner() {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Color(0xFFBDC9C8)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF006565), Color(0xFF008080)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.tune_rounded, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Personalize Your Feed",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    "Choose interests to tailor your business matches and content.",
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF006565),
+                elevation: 0,
+                minimumSize: const Size(0, 0),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const PersonalizeFeedDialog(),
+                );
+              },
+              child: const Text(
+                "Personalize",
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -4436,24 +5114,29 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: "Draft a community update...",
-                  hintStyle: const TextStyle(color: Color(0xFF757575), fontSize: 14),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  filled: true,
-                  fillColor: const Color(0xFFF4F3F3),
-                  border: OutlineInputBorder(
+              child: InkWell(
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) => CreatePostDialog(
+                      onPostCreated: () {
+                        _fetchHomeFeed();
+                      },
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F3F3),
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFFBDC9C8)),
+                    border: Border.all(color: const Color(0xFFBDC9C8)),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFFBDC9C8)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFF006565), width: 1.5),
+                  child: const Text(
+                    "Draft a community update...",
+                    style: TextStyle(color: Color(0xFF757575), fontSize: 14),
                   ),
                 ),
               ),
@@ -4464,12 +5147,23 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 backgroundColor: const Color(0xFF006565),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                minimumSize: const Size(0, 0),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
                 elevation: 0,
               ),
-              onPressed: () {},
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => CreatePostDialog(
+                    onPostCreated: () {
+                      _fetchHomeFeed();
+                    },
+                  ),
+                );
+              },
               child: const Text(
                 "Post",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
@@ -4477,6 +5171,306 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDynamicPostCard(dynamic post) {
+    final int postId = int.tryParse(post['id']?.toString() ?? '0') ?? 0;
+    final String authorName = post['author_name']?.toString() ?? 'Anonymous User';
+    final String authorAvatar = post['author_avatar']?.toString() ?? '';
+    final String postText = post['label']?.toString() ?? '';
+    final String postImage = post['image_url']?.toString() ?? '';
+    final String? youtubeId = _extractYoutubeId(postText);
+    final String? twitterUrl = youtubeId == null ? _extractTwitterVideoUrl(postText) : null;
+    final String createdDate = post['created_date']?.toString()?.split(' ')?.first ?? 'Just now';
+    final int likesCount = int.tryParse(post['likes_count']?.toString() ?? '0') ?? 0;
+    final bool isLiked = int.tryParse(post['is_liked']?.toString() ?? '0') == 1;
+    final List<dynamic> comments = post['comments_list'] ?? [];
+    final bool commentsExpanded = _expandedPostComments.contains(postId);
+    
+    if (!_commentControllers.containsKey(postId)) {
+      _commentControllers[postId] = TextEditingController();
+    }
+    
+    return Card(
+      margin: const EdgeInsets.only(bottom: 24),
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Color(0xFFBDC9C8)),
+      ),
+      color: Colors.white,
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: bgLight,
+                  backgroundImage: authorAvatar.isNotEmpty ? NetworkImage(authorAvatar) : null,
+                  radius: 24,
+                  child: authorAvatar.isEmpty
+                      ? Text(authorName.isNotEmpty ? authorName[0].toUpperCase() : "?", 
+                          style: const TextStyle(color: primaryPurple, fontWeight: FontWeight.bold))
+                      : null,
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      authorName,
+                      style: const TextStyle(
+                        fontFamily: "Manrope",
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Color(0xFF1C1B1B),
+                      ),
+                    ),
+                    Text(
+                      createdDate.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF3E4949),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (postText.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text(
+                postText,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF1C1B1B),
+                  height: 1.4,
+                ),
+              ),
+            ),
+          if (youtubeId != null)
+            _buildYoutubePreview(youtubeId),
+          if (twitterUrl != null)
+            _buildTwitterPreview(twitterUrl),
+          if (postImage.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Image.network(
+                postImage,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF4F3F3),
+              border: Border(
+                top: BorderSide(color: Color(0xFFBDC9C8)),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    InkWell(
+                      onTap: () => _toggleLike(postId),
+                      child: Row(
+                        children: [
+                          Icon(
+                            isLiked ? Icons.thumb_up_rounded : Icons.thumb_up_outlined,
+                            size: 18,
+                            color: isLiked ? const Color(0xFF006565) : const Color(0xFF3E4949),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            "$likesCount",
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: isLiked ? const Color(0xFF006565) : const Color(0xFF3E4949),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          if (commentsExpanded) {
+                            _expandedPostComments.remove(postId);
+                          } else {
+                            _expandedPostComments.add(postId);
+                          }
+                        });
+                      },
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.chat_bubble_outline_rounded,
+                            size: 18,
+                            color: Color(0xFF3E4949),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            "${comments.length}",
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF3E4949),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    InkWell(
+                      onTap: () => _sharePost(postId),
+                      child: Row(
+                        children: const [
+                          Icon(
+                            Icons.share_outlined,
+                            size: 18,
+                            color: Color(0xFF3E4949),
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            "Share",
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF3E4949),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (commentsExpanded) ...[
+            Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFFF9F9F9),
+                border: Border(
+                  top: BorderSide(color: Color(0xFFBDC9C8)),
+                ),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (comments.isNotEmpty)
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: comments.length,
+                      itemBuilder: (context, index) {
+                        final comment = comments[index];
+                        final String cUser = comment['user_name']?.toString() ?? 'Anonymous';
+                        final String cAvatar = comment['user_avatar']?.toString() ?? '';
+                        final String cText = comment['message']?.toString() ?? '';
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: bgLight,
+                                backgroundImage: cAvatar.isNotEmpty ? NetworkImage(cAvatar) : null,
+                                radius: 16,
+                                child: cAvatar.isEmpty
+                                    ? Text(cUser.isNotEmpty ? cUser[0].toUpperCase() : "?", 
+                                        style: const TextStyle(color: primaryPurple, fontSize: 10, fontWeight: FontWeight.bold))
+                                    : null,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF4F3F3),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        cUser,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        cText,
+                                        style: const TextStyle(fontSize: 13, color: Color(0xFF1C1B1B)),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _commentControllers[postId],
+                          style: const TextStyle(fontSize: 13),
+                          decoration: InputDecoration(
+                            hintText: "Write a comment...",
+                            hintStyle: const TextStyle(fontSize: 12),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            filled: true,
+                            fillColor: Colors.white,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Color(0xFFBDC9C8)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Color(0xFFBDC9C8)),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF006565),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          minimumSize: const Size(0, 0),
+                        ),
+                        onPressed: () {
+                          final msg = _commentControllers[postId]!.text;
+                          _addComment(postId, msg);
+                          _commentControllers[postId]!.clear();
+                        },
+                        child: const Text("Post", style: TextStyle(fontSize: 12)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -4763,6 +5757,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                           backgroundColor: const Color(0xFF006565),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          minimumSize: const Size(0, 0),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -5400,65 +6395,74 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: const Border(
-          top: BorderSide(color: Color(0xFF6750A4), width: 3),
-          left: BorderSide(color: Color(0xFFBDC9C8)),
-          right: BorderSide(color: Color(0xFFBDC9C8)),
-          bottom: BorderSide(color: Color(0xFFBDC9C8)),
-        ),
+        border: Border.all(color: const Color(0xFFBDC9C8)),
       ),
-      padding: const EdgeInsets.all(8),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF6750A4).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Icon(Icons.work_outline, size: 14, color: Color(0xFF6750A4)),
-              ),
-              const SizedBox(width: 6),
-              const Expanded(
-                child: Text(
-                  "Senior Analyst",
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF1C1B1B)),
-                ),
-              ),
-            ],
+          Container(
+            height: 3,
+            color: const Color(0xFF6750A4),
           ),
-          const SizedBox(height: 6),
-          const Text(
-            "Regional HQ",
-            style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)),
-          ),
-          const SizedBox(height: 4),
-          const Expanded(
-            child: Text(
-              "Looking for a strategy lead to manage EMEA community portfolio.",
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 9, color: Color(0xFF3E4949)),
-            ),
-          ),
-          const SizedBox(height: 4),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFF006565)),
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
-                ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6750A4).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Icon(Icons.work_outline, size: 14, color: Color(0xFF6750A4)),
+                      ),
+                      const SizedBox(width: 6),
+                      const Expanded(
+                        child: Text(
+                          "Senior Analyst",
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF1C1B1B)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    "Regional HQ",
+                    style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)),
+                  ),
+                  const SizedBox(height: 4),
+                  const Expanded(
+                    child: Text(
+                      "Looking for a strategy lead to manage EMEA community portfolio.",
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 9, color: Color(0xFF3E4949)),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFF006565)),
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      onPressed: () {},
+                      child: const Text("Apply", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF006565))),
+                    ),
+                  ),
+                ],
               ),
-              onPressed: () {},
-              child: const Text("Apply", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF006565))),
             ),
           ),
         ],
@@ -5472,62 +6476,71 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: const Border(
-          top: BorderSide(color: Color(0xFFB45309), width: 3),
-          left: BorderSide(color: Color(0xFFBDC9C8)),
-          right: BorderSide(color: Color(0xFFBDC9C8)),
-          bottom: BorderSide(color: Color(0xFFBDC9C8)),
-        ),
+        border: Border.all(color: const Color(0xFFBDC9C8)),
       ),
-      padding: const EdgeInsets.all(8),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: const Color(0xFFB45309).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
-                Text("14", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFFB45309))),
-                Text("NOV", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Color(0xFFB45309))),
-              ],
-            ),
+            height: 3,
+            color: const Color(0xFFB45309),
           ),
-          const SizedBox(height: 6),
-          const Text(
-            "Annual Summit",
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF1C1B1B)),
-          ),
-          const SizedBox(height: 2),
-          const Expanded(
-            child: Text(
-              "Global Digital Transformation",
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 9, color: Color(0xFF3E4949)),
-            ),
-          ),
-          const SizedBox(height: 4),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF008080),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
-                ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFB45309).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text("14", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFFB45309))),
+                        Text("NOV", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Color(0xFFB45309))),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    "Annual Summit",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF1C1B1B)),
+                  ),
+                  const SizedBox(height: 2),
+                  const Expanded(
+                    child: Text(
+                      "Global Digital Transformation",
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 9, color: Color(0xFF3E4949)),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF008080),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      onPressed: () {},
+                      child: const Text("Register", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
               ),
-              onPressed: () {},
-              child: const Text("Register", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -5777,45 +6790,407 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
 
 
 // Local Standalone Notifications Mock Screen
-class LocalNotificationsScreen extends StatelessWidget {
+class LocalNotificationsScreen extends StatefulWidget {
   const LocalNotificationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Notifications"),
-        backgroundColor: const Color(0xFF1E1E2C),
-        foregroundColor: Colors.white,
+  State<LocalNotificationsScreen> createState() => _LocalNotificationsScreenState();
+}
+
+class _NotificationItem {
+  final String id;
+  final String title;
+  final String subtitle;
+  final String category;
+  final String time;
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBgColor;
+  bool isUnread;
+  final String dateGroup;
+  final String? statusLabel;
+
+  _NotificationItem({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.category,
+    required this.time,
+    required this.icon,
+    required this.iconColor,
+    required this.iconBgColor,
+    this.isUnread = false,
+    required this.dateGroup,
+    this.statusLabel,
+  });
+}
+
+class _LocalNotificationsScreenState extends State<LocalNotificationsScreen> {
+  String _selectedFilter = 'All';
+
+  final List<String> _filters = ['All', 'Orders', 'Payments', 'System', 'Support'];
+
+  late List<_NotificationItem> _notifications;
+
+  @override
+  void initState() {
+    super.initState();
+    _notifications = [
+      _NotificationItem(
+        id: '1',
+        title: 'New Order Received',
+        subtitle: 'Global Fintech Partners has ordered the Q4 Growth Accelerator dossier package.',
+        category: 'Orders',
+        time: '2m ago',
+        icon: Icons.shopping_cart_rounded,
+        iconColor: const Color(0xFF006565),
+        iconBgColor: const Color(0xFF006565).withOpacity(0.1),
+        isUnread: true,
+        dateGroup: 'Today',
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: 3,
-        separatorBuilder: (context, index) => const Divider(),
-        itemBuilder: (context, index) {
-          final titles = ["Withdrawal Requested", "New Seller Signup", "Low Stock Alert"];
-          final subtitles = [
-            "Supreme Vintage requested a payout of ₹4,200.",
-            "Ananya Sharma registered as a new Vendor.",
-            "Rolex Submariner has only 4 items left in stock."
-          ];
-          return ListTile(
-            leading: CircleAvatar(
-              backgroundColor: const Color(0xFF008080).withAlpha(30),
-              child: Icon(
-                index == 0
-                    ? Icons.monetization_on
-                    : index == 1
-                        ? Icons.person_add
-                        : Icons.warning,
-                color: const Color(0xFF006565),
+      _NotificationItem(
+        id: '2',
+        title: 'Membership Approved',
+        subtitle: 'The strategic partnership application for Elite Venture Group has been verified.',
+        category: 'Support',
+        time: '1h ago',
+        icon: Icons.person_add_rounded,
+        iconColor: const Color(0xFF6750A4),
+        iconBgColor: const Color(0xFF6750A4).withOpacity(0.1),
+        isUnread: true,
+        dateGroup: 'Today',
+      ),
+      _NotificationItem(
+        id: '3',
+        title: 'Withdrawal Successful',
+        subtitle: 'Funds (\$12,450.00) have been successfully transferred to your verified corporate account.',
+        category: 'Payments',
+        time: 'Oct 24, 14:30',
+        icon: Icons.payments_rounded,
+        iconColor: const Color(0xFFB45309),
+        iconBgColor: const Color(0xFFB45309).withOpacity(0.1),
+        isUnread: false,
+        dateGroup: 'Yesterday',
+        statusLabel: 'Completed',
+      ),
+      _NotificationItem(
+        id: '4',
+        title: 'System Maintenance',
+        subtitle: 'Scheduled optimization complete. All community management modules are at 100% efficiency.',
+        category: 'System',
+        time: 'Oct 24, 08:15',
+        icon: Icons.settings_rounded,
+        iconColor: const Color(0xFF657675),
+        iconBgColor: const Color(0xFF657675).withOpacity(0.1),
+        isUnread: false,
+        dateGroup: 'Yesterday',
+      ),
+      _NotificationItem(
+        id: '5',
+        title: 'Support Ticket Closed',
+        subtitle: 'Ticket #8821 regarding data export latency has been resolved by our strategic tech team.',
+        category: 'Support',
+        time: 'Oct 22, 11:05',
+        icon: Icons.support_agent_rounded,
+        iconColor: const Color(0xFF006565),
+        iconBgColor: const Color(0xFF006565).withOpacity(0.1),
+        isUnread: false,
+        dateGroup: 'Earlier',
+      ),
+    ];
+  }
+
+  void _markAsRead(String id) {
+    setState(() {
+      final index = _notifications.indexWhere((n) => n.id == id);
+      if (index != -1 && _notifications[index].isUnread) {
+        _notifications[index].isUnread = false;
+        
+        // Show Toast
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text("Marked as read", style: TextStyle(fontWeight: FontWeight.w600)),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFF006565),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+            duration: const Duration(seconds: 2),
+            margin: const EdgeInsets.only(bottom: 24, left: 60, right: 60),
+          ),
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Filter the items
+    final filteredNotifications = _notifications.where((n) {
+      if (_selectedFilter == 'All') return true;
+      return n.category.toLowerCase() == _selectedFilter.toLowerCase();
+    }).toList();
+
+    // Group items by dateGroup
+    final groups = <String, List<_NotificationItem>>{};
+    for (var item in filteredNotifications) {
+      groups.putIfAbsent(item.dateGroup, () => []).add(item);
+    }
+
+    final sortedGroups = ['Today', 'Yesterday', 'Earlier'].where((g) => groups.containsKey(g));
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF9F9F9),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF9F9F9),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        titleSpacing: 16,
+        leadingWidth: 48,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: CircleAvatar(
+            backgroundColor: const Color(0xFFEEEEED),
+            child: ClipOval(
+              child: Image.network(
+                "https://lh3.googleusercontent.com/aida-public/AB6AXuCvVD94n48_rKSlmLsyFDJAz292MXPm_TKHAZ9mbL7nd0WjKqPIbj8RkE7XkXGRyBzLNTdHDAJ8uCkkC-XPQ_5Xx0ojSo0UVDn6XDz34s1hjlXuS7ePS8u-dCaPRvtSPinuj109IZORatQrDt6gaUeN4oW-9Xk_-cVL6zL8H6cgQgFUxcwREywoIoXcJVp5c75nNTqb9-l8FWVuTuistoXEcqwtF6a9gR7l6NsG3kULzKTUJFKuiHxu",
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, color: Colors.grey),
               ),
             ),
-            title: Text(titles[index], style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text(subtitles[index]),
-          );
-        },
+          ),
+        ),
+        title: const Text(
+          "Notifications",
+          style: TextStyle(
+            color: Color(0xFF006565),
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_list, color: Color(0xFF006565)),
+            onPressed: () {},
+          ),
+          const SizedBox(width: 8),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Column(
+            children: [
+              Container(
+                height: 48,
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _filters.length,
+                  itemBuilder: (context, index) {
+                    final filter = _filters[index];
+                    final isSelected = _selectedFilter == filter;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(
+                          filter,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: isSelected ? Colors.white : const Color(0xFF3E4949),
+                          ),
+                        ),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          if (selected) {
+                            setState(() {
+                              _selectedFilter = filter;
+                            });
+                          }
+                        },
+                        selectedColor: const Color(0xFF006565),
+                        backgroundColor: const Color(0xFFEEEEED),
+                        side: BorderSide.none,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        showCheckmark: false,
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const Divider(color: Color(0xFFBDC9C8), height: 1),
+            ],
+          ),
+        ),
       ),
+      body: filteredNotifications.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.notifications_off_outlined, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text("No notifications found", style: TextStyle(color: Colors.grey, fontSize: 16)),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: sortedGroups.length,
+              itemBuilder: (context, index) {
+                final groupName = sortedGroups.elementAt(index);
+                final groupItems = groups[groupName]!;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8, bottom: 12),
+                      child: Text(
+                        groupName.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF3E4949),
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                    ...groupItems.map((item) {
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        color: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: const BorderSide(color: Color(0xFFBDC9C8)),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: () => _markAsRead(item.id),
+                          child: Stack(
+                            children: [
+                              if (item.isUnread)
+                                Positioned(
+                                  left: 0,
+                                  top: 0,
+                                  bottom: 0,
+                                  width: 4,
+                                  child: Container(
+                                    color: const Color(0xFF006565),
+                                  ),
+                                ),
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: 48,
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        color: item.iconBgColor,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Icon(
+                                        item.icon,
+                                        color: item.iconColor,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  item.title,
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Color(0xFF1A1C1C),
+                                                  ),
+                                                ),
+                                              ),
+                                              if (item.isUnread)
+                                                Container(
+                                                  width: 10,
+                                                  height: 10,
+                                                  decoration: const BoxDecoration(
+                                                    color: Color(0xFF008080),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            item.subtitle,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              color: Color(0xFF3E4949),
+                                              height: 1.4,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            children: [
+                                              Text(
+                                                "${item.time} • ${item.category}",
+                                                style: const TextStyle(
+                                                  fontSize: 10,
+                                                  color: Colors.grey,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              if (item.statusLabel != null) ...[
+                                                const SizedBox(width: 8),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(0xFF008080).withOpacity(0.1),
+                                                    borderRadius: BorderRadius.circular(4),
+                                                  ),
+                                                  child: Text(
+                                                    item.statusLabel!,
+                                                    style: const TextStyle(
+                                                      fontSize: 10,
+                                                      color: Color(0xFF008080),
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                    const SizedBox(height: 8),
+                  ],
+                );
+              },
+            ),
     );
   }
 }

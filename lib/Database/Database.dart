@@ -13,6 +13,7 @@ import '../services/auth_service.dart';
 class Database {
   int retry = 0;
   static String? _cachedSessionId;
+  static final List<Map<String, dynamic>> apiLogs = [];
 
   /// Get Android options for secure storage
   AndroidOptions _getAndroidOptions() => const AndroidOptions(
@@ -40,6 +41,23 @@ class Database {
           ? Uri.parse(Uri.encodeFull('$baseUrl?endpoint=$endpoint'))
           : Uri.parse(baseUrl);
 
+      final logEntry = {
+        'timestamp': DateTime.now().toString(),
+        'url': targetUrl.toString(),
+        'body': stringBody.toString(),
+        'headers': {
+          'APP_ID': (appIdOverride ?? appId).toString(),
+          'SESSION-ID': existingSessionId?.toString() ?? '',
+        }.toString(),
+        'response': '',
+        'statusCode': 0,
+        'error': '',
+      };
+      apiLogs.insert(0, logEntry);
+      if (apiLogs.length > 100) {
+        apiLogs.removeLast();
+      }
+
       print('Database [getData]: Sending request to $targetUrl with SESSION-ID: $existingSessionId');
 
       final response = await http.post(
@@ -52,6 +70,9 @@ class Database {
             'Cookie': 'PHPSESSID=$existingSessionId',
         },
       );
+
+      logEntry['statusCode'] = response.statusCode;
+      logEntry['response'] = response.body;
 
       var copy = response.body;
       print('RAW RESPONSE BODY: "${copy}"');
@@ -214,6 +235,10 @@ class Database {
         }
       }
     } catch (e) {
+      if (apiLogs.isNotEmpty) {
+        apiLogs.first['error'] = e.toString();
+        apiLogs.first['statusCode'] = 500;
+      }
       print('Database.dart - Network Error Details:');
       print('Error: $e');
       print('Error Type: ${e.runtimeType}');
