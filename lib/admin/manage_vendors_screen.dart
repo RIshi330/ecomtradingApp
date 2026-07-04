@@ -258,9 +258,9 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 16),
+                                   const SizedBox(height: 16),
 
-                                  const Text("MEMBERSHIP PLAN", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textLight)),
+                                   const Text("MEMBERSHIP PLAN", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textLight)),
                                   const SizedBox(height: 6),
                                   DropdownButtonFormField<String>(
                                     value: selectedPlan,
@@ -278,13 +278,12 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                                       if (val != null) setModalState(() => selectedPlan = val);
                                     },
                                   ),
-                                  const SizedBox(height: 16),
-
+                                    const SizedBox(height: 16),
                                   Row(
                                     children: [
                                       Checkbox(
                                         value: createAccount,
-                                        activeColor: primaryTeal,
+                                        activeColor: Colors.grey,
                                         onChanged: (val) {
                                           if (val != null) setModalState(() => createAccount = val);
                                         },
@@ -297,7 +296,7 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 24),
+                                  // const SizedBox(height: 24),
 
                                   Row(
                                     children: [
@@ -992,11 +991,6 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      "VIRTUAL DIRECTORY",
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: primaryTeal, letterSpacing: 1.5),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
                       "Manage Vendors",
                       style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope'),
                     ),
@@ -1060,54 +1054,54 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                 ),
           const SizedBox(height: 24),
 
-          // 1. Membership Plans Section
-          const Text("Membership Plans", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
-          const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildPlanCard(
-                  tier: "Silver Tier",
-                  badge: "BASIC",
-                  badgeColor: textLight,
-                  badgeBg: borderTeal.withOpacity(0.3),
-                  price: "₹49",
-                  rate: "5% Commission Rate",
-                  isActive: _activePlan == "Silver Tier",
-                  onSelect: () => setState(() => _activePlan = "Silver Tier"),
-                ),
-                _buildPlanCard(
-                  tier: "Gold Tier",
-                  badge: "POPULAR",
-                  badgeColor: Colors.black,
-                  badgeBg: Colors.yellow,
-                  price: "₹99",
-                  rate: "15% Commission Earned",
-                  isActive: _activePlan == "Gold Tier",
-                  isPremium: true,
-                  bannerText: "Upgrade to earn more",
-                  bannerIcon: Icons.trending_up,
-                  onSelect: () => setState(() => _activePlan = "Gold Tier"),
-                ),
-                _buildPlanCard(
-                  tier: "Elite Tier",
-                  badge: "PREMIUM",
-                  badgeColor: Colors.white,
-                  badgeBg: textDark,
-                  price: "₹249",
-                  rate: "25% Commission Earned",
-                  isActive: _activePlan == "Elite Tier",
-                  bannerText: "VIP Support Access",
-                  bannerIcon: Icons.star,
-                  onSelect: () => setState(() => _activePlan = "Elite Tier"),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
+          // // 1. s Section
+          // const Text("Membership Plans", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
+          // const SizedBox(height: 12),
+          // SingleChildScrollView(
+          //   scrollDirection: Axis.horizontal,
+          //   physics: const BouncingScrollPhysics(),
+          //   child: Row(
+          //     crossAxisAlignment: CrossAxisAlignment.start,
+          //     children: [
+          //       _buildPlanCard(
+          //         tier: "Silver Tier",
+          //         badge: "BASIC",
+          //         badgeColor: textLight,
+          //         badgeBg: borderTeal.withOpacity(0.3),
+          //         price: "₹49",
+          //         rate: "5% Commission Rate",
+          //         isActive: _activePlan == "Silver Tier",
+          //         onSelect: () => setState(() => _activePlan = "Silver Tier"),
+          //       ),
+          //       _buildPlanCard(
+          //         tier: "Gold Tier",
+          //         badge: "POPULAR",
+          //         badgeColor: Colors.black,
+          //         badgeBg: Colors.yellow,
+          //         price: "₹99",
+          //         rate: "15% Commission Earned",
+          //         isActive: _activePlan == "Gold Tier",
+          //         isPremium: true,
+          //         bannerText: "Upgrade to earn more",
+          //         bannerIcon: Icons.trending_up,
+          //         onSelect: () => setState(() => _activePlan = "Gold Tier"),
+          //       ),
+          //       _buildPlanCard(
+          //         tier: "Elite Tier",
+          //         badge: "PREMIUM",
+          //         badgeColor: Colors.white,
+          //         badgeBg: textDark,
+          //         price: "₹249",
+          //         rate: "25% Commission Earned",
+          //         isActive: _activePlan == "Elite Tier",
+          //         bannerText: "VIP Support Access",
+          //         bannerIcon: Icons.star,
+          //         onSelect: () => setState(() => _activePlan = "Elite Tier"),
+          //       ),
+          //     ],
+          //   ),
+          // ),
+          // const SizedBox(height: 24),
 
           // 2. Pending Reviews Slider
           Row(
@@ -1183,7 +1177,7 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: const [
-              Text("Active Directory", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
+              Text("Active Vendors", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
             ],
           ),
           const SizedBox(height: 12),

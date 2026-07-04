@@ -175,72 +175,36 @@ class _ManageTeamScreenState extends State<ManageTeamScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           FloatingActionButton.small(
-            heroTag: "task",
-            onPressed: () {
-              showAssignTaskDialog(context, null);
-            },
-            child: const Icon(Icons.task),
-          ),
-          const SizedBox(height: 10),
-          FloatingActionButton.small(
             heroTag: "member",
             onPressed: () {
-              showAddMemberDialog(context);
+              // showAddMemberDialog(context);
             },
             child: const Icon(Icons.person_add),
           ),
-          const SizedBox(height: 10),
+          SizedBox(width: 5,),
           FloatingActionButton.small(
-            heroTag: "main",
-            backgroundColor: const Color(0xFF006565),
-            foregroundColor: Colors.white,
+            heroTag: "Explore Talent",
             onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(20),
-                  ),
-                ),
-                builder: (context) {
-                  return SizedBox(
-                    height: 250,
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 20),
-                        ListTile(
-                          leading: const Icon(Icons.person_add),
-                          title: const Text("Add Member"),
-                          onTap: () {
-                            Navigator.pop(context);
-                            showAddMemberDialog(context);
-                          },
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.task),
-                          title: const Text("New Task"),
-                          onTap: () {
-                            Navigator.pop(context);
-                            showAssignTaskDialog(context, null);
-                          },
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.work),
-                          title: const Text("Explore Talent"),
-                          onTap: () {},
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.handshake),
-                          title: const Text("Explore Partners"),
-                          onTap: () {},
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              );
+               // showAssignTaskDialog(context, null);
             },
-            child: const Icon(Icons.add),
+            child: const Icon(Icons.search_rounded),
+          ),
+
+          const SizedBox(height: 5),
+          FloatingActionButton.small(
+            heroTag: "Explore Partner",
+            onPressed: () {
+              // showAssignTaskDialog(context, null);
+            },
+            child: const Icon(Icons.handshake),
+          ),
+          const SizedBox(height: 5),
+          FloatingActionButton.small(
+            heroTag: "New Job",
+            onPressed: () {
+              // showAssignTaskDialog(context, null);
+            },
+            child: const Icon(Icons.work),
           ),
         ],
       ),

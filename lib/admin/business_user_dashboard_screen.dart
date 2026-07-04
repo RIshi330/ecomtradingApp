@@ -660,11 +660,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _getBottomNavBarIndex(),
           onTap: (index) {
-            if (index == 4) {
-              _scaffoldKey.currentState?.openDrawer();
-            } else {
-              _setTabFromBottomNav(index);
-            }
+            _setTabFromBottomNav(index);
           },
           backgroundColor: Colors.white,
           type: BottomNavigationBarType.fixed,
@@ -678,8 +674,8 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
             BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: "Home"),
             BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: "Orders"),
             BottomNavigationBarItem(icon: Icon(Icons.business_center_rounded), label: "Opportunities"),
-            BottomNavigationBarItem(icon: Icon(Icons.settings_rounded), label: "Settings"),
-            BottomNavigationBarItem(icon: Icon(Icons.menu_rounded), label: "More"),
+            BottomNavigationBarItem(icon: Icon(Icons.monetization_on), label: "Comm"),
+            BottomNavigationBarItem(icon: Icon(Icons.person),label: "Profile"),
           ],
         ),
       ),
@@ -894,8 +890,10 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
     if (_currentIndex == 0) return 0; // Home -> Dashboard
     if (_currentIndex == 11) return 1; // Orders
     if (_currentIndex == 18 || _currentIndex == 15) return 2; // Opportunities
-    if (_currentIndex == 22) return 3; // Settings
-    return 4; // fallback for others opens drawer/more
+    if (_currentIndex == 36) return 3; // Settings
+    if (_currentIndex == 25) return 4; //profile
+
+    return 0;
   }
 
   void _setTabFromBottomNav(int index) {
@@ -904,7 +902,8 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
         case 0: _currentIndex = 0; break;
         case 1: _currentIndex = 11; break;
         case 2: _currentIndex = 18; break; // Explore Trading Opportunities
-        case 3: _currentIndex = 22; break; // Site settings
+        case 3: _currentIndex = 36; break; // Site settings
+        case 4: _currentIndex= 25;break;
       }
     });
   }
@@ -948,6 +947,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       case 33: titleText = "Marketplace Trainings"; break;
       case 34: titleText = "Enrolled Trainings"; break;
       case 35: titleText = "MOM Trainings"; break;
+
     }
 
     return AppBar(
@@ -969,11 +969,11 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
         ),
         const SizedBox(width: 8),
         GestureDetector(
-          onTap: () => setState(() => _currentIndex = 25),
+          // onTap: () => setState(() => _currentIndex = 25),
           child: const CircleAvatar(
-            radius: 16,
+             radius: 16,
             backgroundColor: Color(0xFF004D4D),
-            child: Icon(Icons.business_rounded, color: Colors.white, size: 18),
+            child: Icon(Icons.message_outlined, color: Colors.white, size: 18),
           ),
         ),
         const SizedBox(width: 16),
@@ -2800,7 +2800,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
               trailing: IconButton(
                 icon: const Icon(Icons.edit, color: primaryTeal, size: 20),
                 onPressed: () {
-                  _showEditAddressDialog(addr);
+                  // _showEditAddressDialog(addr);
                 },
               ),
             ),
@@ -2812,104 +2812,104 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
         foregroundColor: Colors.white,
         child: const Icon(Icons.add),
         onPressed: () {
-          _showAddAddressDialog();
+
         },
       ),
     );
   }
 
-  void _showEditAddressDialog(Map<String, dynamic> addr) {
-    final labelCtrl = TextEditingController(text: addr["label"]);
-    final addrCtrl = TextEditingController(text: addr["address"]);
-    final phoneCtrl = TextEditingController(text: addr["phone"]);
-    
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Edit Address", style: TextStyle(fontWeight: FontWeight.bold, color: darkTeal)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: labelCtrl, decoration: const InputDecoration(labelText: "Label")),
-            const SizedBox(height: 12),
-            TextField(controller: addrCtrl, decoration: const InputDecoration(labelText: "Address")),
-            const SizedBox(height: 12),
-            TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: "Phone")),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
-          ),
-          SizedBox(
-            height: 36,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: primaryTeal, elevation: 0),
-              onPressed: () {
-                setState(() {
-                  addr["label"] = labelCtrl.text;
-                  addr["address"] = addrCtrl.text;
-                  addr["phone"] = phoneCtrl.text;
-                });
-                Navigator.pop(context);
-                _showSuccess("Address updated successfully!");
-              },
-              child: const Text("Save", style: TextStyle(color: Colors.white)),
-            ),
-          )
-        ],
-      ),
-    );
-  }
+  // void _showEditAddressDialog(Map<String, dynamic> addr) {
+  //   final labelCtrl = TextEditingController(text: addr["label"]);
+  //   final addrCtrl = TextEditingController(text: addr["address"]);
+  //   final phoneCtrl = TextEditingController(text: addr["phone"]);
+  //
+  //   showDialog(
+  //     context: context,
+  //     builder: (_) => AlertDialog(
+  //       title: const Text("Edit Address", style: TextStyle(fontWeight: FontWeight.bold, color: darkTeal)),
+  //       content: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         children: [
+  //           TextField(controller: labelCtrl, decoration: const InputDecoration(labelText: "Label")),
+  //           const SizedBox(height: 12),
+  //           TextField(controller: addrCtrl, decoration: const InputDecoration(labelText: "Address")),
+  //           const SizedBox(height: 12),
+  //           TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: "Phone")),
+  //         ],
+  //       ),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context),
+  //           child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+  //         ),
+  //         SizedBox(
+  //           height: 36,
+  //           child: ElevatedButton(
+  //             style: ElevatedButton.styleFrom(backgroundColor: primaryTeal, elevation: 0),
+  //             onPressed: () {
+  //               setState(() {
+  //                 addr["label"] = labelCtrl.text;
+  //                 addr["address"] = addrCtrl.text;
+  //                 addr["phone"] = phoneCtrl.text;
+  //               });
+  //               Navigator.pop(context);
+  //               _showSuccess("Address updated successfully!");
+  //             },
+  //             child: const Text("Save", style: TextStyle(color: Colors.white)),
+  //           ),
+  //         )
+  //       ],
+  //     ),
+  //   );
+  // }
 
-  void _showAddAddressDialog() {
-    final labelCtrl = TextEditingController();
-    final addrCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController();
-    
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Add New Address", style: TextStyle(fontWeight: FontWeight.bold, color: darkTeal)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: labelCtrl, decoration: const InputDecoration(labelText: "Label")),
-            const SizedBox(height: 12),
-            TextField(controller: addrCtrl, decoration: const InputDecoration(labelText: "Address")),
-            const SizedBox(height: 12),
-            TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: "Phone")),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
-          ),
-          SizedBox(
-            height: 36,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: primaryTeal, elevation: 0),
-              onPressed: () {
-                setState(() {
-                  _mockAddresses.add({
-                    "id": (DateTime.now().millisecondsSinceEpoch).toString(),
-                    "label": labelCtrl.text,
-                    "address": addrCtrl.text,
-                    "phone": phoneCtrl.text,
-                  });
-                });
-                Navigator.pop(context);
-                _showSuccess("New address added successfully!");
-              },
-              child: const Text("Add", style: TextStyle(color: Colors.white)),
-            ),
-          )
-        ],
-      ),
-    );
-  }
+  // void _showAddAddressDialog() {
+  //   final labelCtrl = TextEditingController();
+  //   final addrCtrl = TextEditingController();
+  //   final phoneCtrl = TextEditingController();
+  //
+  //   showDialog(
+  //     context: context,
+  //     builder: (_) => AlertDialog(
+  //       title: const Text("Add New Address", style: TextStyle(fontWeight: FontWeight.bold, color: darkTeal)),
+  //       content: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         children: [
+  //           TextField(controller: labelCtrl, decoration: const InputDecoration(labelText: "Label")),
+  //           const SizedBox(height: 12),
+  //           TextField(controller: addrCtrl, decoration: const InputDecoration(labelText: "Address")),
+  //           const SizedBox(height: 12),
+  //           TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: "Phone")),
+  //         ],
+  //       ),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context),
+  //           child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+  //         ),
+  //         SizedBox(
+  //           height: 36,
+  //           child: ElevatedButton(
+  //             style: ElevatedButton.styleFrom(backgroundColor: primaryTeal, elevation: 0),
+  //             onPressed: () {
+  //               setState(() {
+  //                 _mockAddresses.add({
+  //                   "id": (DateTime.now().millisecondsSinceEpoch).toString(),
+  //                   "label": labelCtrl.text,
+  //                   "address": addrCtrl.text,
+  //                   "phone": phoneCtrl.text,
+  //                 });
+  //               });
+  //               Navigator.pop(context);
+  //               _showSuccess("New address added successfully!");
+  //             },
+  //             child: const Text("Add", style: TextStyle(color: Colors.white)),
+  //           ),
+  //         )
+  //       ],
+  //     ),
+  //   );
+  // }
 }
 
 // ══════════════════════════════════════════════════════════

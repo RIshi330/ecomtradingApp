@@ -138,7 +138,7 @@ class _ManageTasksScreenState extends State<ManageTasksScreen> {
       children: [
         const Text(
           "Tasks Overview",
-          style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         Text(
