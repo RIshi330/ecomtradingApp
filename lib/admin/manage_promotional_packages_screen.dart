@@ -219,7 +219,7 @@ class _ManagePromotionalPackagesScreenState extends State<ManagePromotionalPacka
                     _buildStatCard("Total Packages", totalPackages.toString(), Icons.layers_outlined, "12%"),
                     _buildStatCard("Active Orders", activeOrders.toString(), Icons.shopping_bag_outlined, "8%"),
                     _buildStatCard("Total Views", "${(totalImpressions / 1000).toStringAsFixed(1)}k", Icons.visibility_outlined, "24%"),
-                    _buildStatCard("Revenue", "\$${(totalRevenue / 1000).toStringAsFixed(1)}k", Icons.payments_outlined, "3%"),
+                    _buildStatCard("Revenue", "₹${(totalRevenue / 1000).toStringAsFixed(1)}k", Icons.payments_outlined, "3%"),
                   ],
                 ),
               ),

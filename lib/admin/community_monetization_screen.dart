@@ -674,7 +674,7 @@ class _CommunityMonetizationScreenState extends State<CommunityMonetizationScree
         Row(
           children: [
             Expanded(
-              child: _buildTextField("Base Price (\$)", _basePriceController, "499", isNumeric: true),
+              child: _buildTextField("Base Price (₹)", _basePriceController, "499", isNumeric: true),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -689,7 +689,7 @@ class _CommunityMonetizationScreenState extends State<CommunityMonetizationScree
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildTextField("Price Per Action (\$)", _pricePerActionController, "e.g. 5.00", isNumeric: true),
+              child: _buildTextField("Price Per Action (₹)", _pricePerActionController, "e.g. 5.00", isNumeric: true),
             ),
           ],
         ),
