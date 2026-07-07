@@ -257,18 +257,16 @@ class _ManagePromotionalPackagesScreenState extends State<ManagePromotionalPacka
                   ),
                 )
               else
-                GridView.builder(
+                ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 1,
-                    mainAxisSpacing: 16,
-                    mainAxisExtent: 170,
-                  ),
                   itemCount: _packages.length,
                   itemBuilder: (context, index) {
                     final package = _packages[index];
-                    return _buildPackageCard(package);
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _buildPackageCard(package),
+                    );
                   },
                 ),
             ],
@@ -395,7 +393,7 @@ class _ManagePromotionalPackagesScreenState extends State<ManagePromotionalPacka
                 _buildCardMetric(Icons.percent, "15% Comm."),
               ],
             ),
-            const Spacer(),
+            const SizedBox(height: 16),
             const Divider(color: Color(0xFFBDC9C8), height: 1),
             const SizedBox(height: 8),
             Row(

@@ -327,6 +327,7 @@ class _ExploreCommunitiesScreenState extends State<ExploreCommunitiesScreen> wit
                     backgroundColor: const Color(0xFF006565),
                     foregroundColor: Colors.white,
                     elevation: 0,
+                    minimumSize: const Size(0, 36),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),

@@ -90,7 +90,48 @@ class _ScheduleCampaignScreenState extends State<ScheduleCampaignScreen> {
     _campaignTitleController = TextEditingController(text: widget.initialPackageName ?? "Q4 Growth Accelerator");
     _clientNameController = TextEditingController(text: widget.initialBuyerName ?? "Global Fintech Partners");
     _selectedOrderId = widget.initialOrderId;
+    if (widget.initialOrderId != null) {
+      _loadCampaignContent(widget.initialOrderId!);
+    }
     _loadOrders();
+  }
+
+  Future<void> _loadCampaignContent(int orderId) async {
+    try {
+      final db = Database();
+      final response = await db.getData({
+        'action': 'get_campaign_content',
+        'order_id': orderId.toString(),
+      }, endpoint: 'new_apis/submit_content_api.php');
+
+      if (response['success'] == true && response['data'] != null) {
+        final data = response['data'];
+        
+        final List<String> attachments = [];
+        for (int i = 1; i <= 5; i++) {
+          final att = data['attachment$i']?.toString() ?? '';
+          if (att.isNotEmpty) {
+            attachments.add(att);
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            _campaignTitleController.text = data['description']?.toString() ?? _campaignTitleController.text;
+            _manualOrderController.text = orderId.toString();
+            
+            _uploadedFiles.clear();
+            if (attachments.isNotEmpty) {
+              _uploadedFiles.addAll(attachments);
+            } else {
+              _uploadedFiles.add("No assets uploaded");
+            }
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error loading campaign content: $e");
+    }
   }
 
   @override
@@ -117,6 +158,14 @@ class _ScheduleCampaignScreenState extends State<ScheduleCampaignScreen> {
         if (mounted) {
           setState(() {
             _orders = listData.map((item) => Map<String, dynamic>.from(item)).toList();
+            if (widget.initialOrderId != null && !_orders.any((o) => o['id'] == widget.initialOrderId)) {
+              _orders.insert(0, {
+                'id': widget.initialOrderId,
+                'name': widget.initialBuyerName ?? 'Client',
+                'amount': 0.0,
+                'item_type': widget.initialPackageName ?? 'PROMOTION',
+              });
+            }
             if (_orders.isNotEmpty) {
               _selectedOrderId = widget.initialOrderId ?? _orders.first['id'];
             }
@@ -523,7 +572,9 @@ class _ScheduleCampaignScreenState extends State<ScheduleCampaignScreen> {
                   labelText: "Select Client Order",
                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
-                value: _selectedOrderId,
+                value: (_selectedOrderId != null && _orders.any((o) => o['id'] == _selectedOrderId))
+                    ? _selectedOrderId
+                    : null,
                 items: _orders.map((order) {
                   return DropdownMenuItem<int>(
                     value: order['id'] as int,
@@ -541,6 +592,9 @@ class _ScheduleCampaignScreenState extends State<ScheduleCampaignScreen> {
                     _clientNameController.text = selected['name'] ?? 'B2B Client';
                     _packageTierController.text = "B2B Standard Package";
                   });
+                  if (val != null) {
+                    _loadCampaignContent(val);
+                  }
                 },
               ),
             const SizedBox(height: 16),

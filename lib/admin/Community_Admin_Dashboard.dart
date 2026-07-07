@@ -39,6 +39,7 @@ import 'package:trading_ecommerce_admin/admin/promotional_package_orders_screen.
 import 'package:trading_ecommerce_admin/common/chat_screen.dart';
 import 'package:trading_ecommerce_admin/common/notification_screen.dart';
 import 'package:trading_ecommerce_admin/admin/seller_dashboard_screen.dart';
+import 'package:trading_ecommerce_admin/screens/promotional_packages_screen.dart';
 import 'package:trading_ecommerce_admin/admin/seller_management_screen.dart';
 import 'package:trading_ecommerce_admin/admin/marketplace_modules_screen.dart';
 import 'package:trading_ecommerce_admin/admin/module_integration_screen.dart';
@@ -1303,6 +1304,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       // _buildDrawerItem(0, Icons.dashboard_rounded, "Dashboard"),
                       _buildDrawerItem(12, Icons.storefront_rounded, "Seller Dashboard"),
                     _buildDrawerItem(33, Icons.chat_bubble_outline_rounded, "Inbox"),
+                    _buildDrawerItem(60, Icons.campaign_rounded, "Marketplace Promotions"),
                     // _buildDrawerItem(13, Icons.supervised_user_circle_rounded, "Seller Management"),
                     // _buildDrawerItem(1, Icons.people_rounded, "Users"),
                     // _buildDrawerItem(15, Icons.group_add_rounded, "Community Approvals"),
@@ -1908,6 +1910,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       case 47: return "Event Marketplace";
       case 48: return "My Events";
       case 49: return "Event Opportunities";
+      case 60: return "Marketplace Promotions";
       default: return "Serene Commerce";
     }
   }
@@ -1917,6 +1920,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     switch (_currentIndex) {
       case 0: return _buildDashboardView(); // Render main Community dashboard statistics view
       case 12: return const SellerDashboardScreen(isEmbedded: true); // Render main Seller dashboard statistics view
+      case 60: return const PromotionalPackagesScreen(isEmbedded: true);
       case 50: return _buildHomeFeedView();
       case 51: return const ExploreCommunitiesScreen(isEmbedded: true);
       case 52: return const MembershipPlansScreen(isEmbedded: true);

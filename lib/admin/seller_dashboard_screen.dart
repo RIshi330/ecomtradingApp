@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:trading_ecommerce_admin/screens/seller_profile_screen.dart';
+import 'package:trading_ecommerce_admin/screens/promotional_packages_screen.dart';
+import 'package:trading_ecommerce_admin/admin/digital_marketplace_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -543,6 +545,28 @@ class DashboardDrawer extends StatelessWidget {
                   drawerItem(
                       Icons.local_shipping_rounded, "Fulfillment", false),
                   drawerItem(Icons.trending_up_rounded, "Performance", false),
+                  drawerItem(
+                      Icons.shop_outlined, "Digital Marketplace", false,
+                      onTap: () {
+                        Navigator.pop(context); // Close drawer
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const DigitalMarketplaceScreen(isEmbedded: false),
+                          ),
+                        );
+                      }),
+                  drawerItem(
+                      Icons.campaign_rounded, "Marketplace Promotions", false,
+                      onTap: () {
+                        Navigator.pop(context); // Close drawer
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const PromotionalPackagesScreen(),
+                          ),
+                        );
+                      }),
                   drawerItem(
                       Icons.manage_accounts_rounded, "Account Settings", false,
                       onTap: () {
@@ -2354,7 +2378,14 @@ class PromotionCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const PromotionalPackagesScreen(),
+                      ),
+                    );
+                  },
                   icon: const Icon(Icons.bolt_rounded, size: 18),
                   label: const Text(
                     "Promote Now",

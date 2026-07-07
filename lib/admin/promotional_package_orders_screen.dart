@@ -123,168 +123,224 @@ class _PromotionalPackageOrdersScreenState extends State<PromotionalPackageOrder
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.85,
-          maxChildSize: 0.95,
-          minChildSize: 0.5,
-          expand: false,
-          builder: (context, scrollController) {
-            return SingleChildScrollView(
-              controller: scrollController,
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return FutureBuilder<Map<String, dynamic>>(
+          future: Database().getData({
+            'action': 'get_campaign_content',
+            'order_id': order.id.toString(),
+          }, endpoint: 'new_apis/submit_content_api.php'),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(
+                height: 300,
+                child: Center(
+                  child: CircularProgressIndicator(color: Color(0xFF006565)),
+                ),
+              );
+            }
+
+            final data = snapshot.data;
+            final bool hasContent = data != null && data['success'] == true && data['data'] != null;
+            final campaign = hasContent ? data['data'] : {};
+
+            final description = campaign['description']?.toString() ?? "No description provided.";
+            final comment = campaign['comment']?.toString() ?? "No comments.";
+            
+            // Attachments
+            final List<String> attachments = [];
+            for (int i = 1; i <= 5; i++) {
+              final att = campaign['attachment$i']?.toString() ?? '';
+              if (att.isNotEmpty) {
+                attachments.add(att);
+              }
+            }
+
+            final availability = campaign['availability']?.toString() ?? "N/A";
+            final budget = campaign['budget']?.toString() ?? "0";
+
+            return DraggableScrollableSheet(
+              initialChildSize: 0.85,
+              maxChildSize: 0.95,
+              minChildSize: 0.5,
+              expand: false,
+              builder: (context, scrollController) {
+                return SingleChildScrollView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        children: const [
-                          Icon(Icons.draw, color: Color(0xFF006565)),
-                          SizedBox(width: 8),
-                          Text(
-                            "Campaign Asset Review",
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: const [
+                              Icon(Icons.draw, color: Color(0xFF006565)),
+                              SizedBox(width: 8),
+                              Text(
+                                "Campaign Asset Review",
+                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.pop(context),
                           ),
                         ],
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
+                      const SizedBox(height: 16),
+                      Text(
+                        order.packageName,
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF006565)),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    order.packageName,
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF006565)),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "Complete content amplification strategy including newsletter placements, social banners, and priority listing in the Finance segment for Q4.",
-                    style: TextStyle(color: Color(0xFF3E4949), height: 1.4),
-                  ),
-                  const SizedBox(height: 24),
+                      const SizedBox(height: 8),
+                      Text(
+                        description,
+                        style: const TextStyle(color: Color(0xFF3E4949), height: 1.4),
+                      ),
+                      const SizedBox(height: 24),
 
-                  const Text(
-                    "CAMPAIGN ASSETS (3)",
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 0.5),
-                  ),
-                  const SizedBox(height: 12),
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                    children: [
-                      _buildAssetThumbnail("https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=200"),
-                      _buildAssetThumbnail("https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=200"),
+                      Text(
+                        "CAMPAIGN ASSETS (${attachments.length})",
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 0.5),
+                      ),
+                      const SizedBox(height: 12),
+                      attachments.isEmpty
+                          ? const Text("No assets attached", style: TextStyle(color: Colors.grey, fontSize: 13))
+                          : GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 8,
+                              mainAxisSpacing: 8,
+                              itemCount: attachments.length,
+                              itemBuilder: (context, index) {
+                                final url = attachments[index];
+                                final isVideo = url.toLowerCase().endsWith(".mp4") || url.toLowerCase().endsWith(".mov");
+                                if (isVideo) {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFEEEEED),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: const Color(0xFFBDC9C8)),
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(Icons.play_circle, color: Color(0xFF006565), size: 32),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          url.split('/').last,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.grey),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+                                return _buildAssetThumbnail(url);
+                              },
+                            ),
+                      const SizedBox(height: 24),
+
+                      // CTA / Campaign Details
                       Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEEEEED),
-                          borderRadius: BorderRadius.circular(8),
+                          color: const Color(0xFFF4F3F3),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: const Color(0xFFBDC9C8)),
                         ),
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(Icons.play_circle, color: Color(0xFF006565), size: 32),
-                            SizedBox(height: 4),
-                            Text(
-                              "PROMO.MP4",
-                              style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.grey),
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "CAMPAIGN DETAILS",
+                              style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey),
                             ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              "Budget",
+                              style: TextStyle(fontSize: 12, color: Color(0xFF3E4949)),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "₹$budget",
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              "Preferred Availability",
+                              style: TextStyle(fontSize: 12, color: Color(0xFF3E4949)),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              availability,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            ),
+                            if (comment.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              const Text(
+                                "Additional Comments",
+                                style: TextStyle(fontSize: 12, color: Color(0xFF3E4949)),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                comment,
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                            ],
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
+                      const SizedBox(height: 32),
 
-                  // CTA details
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF4F3F3),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFBDC9C8)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          "CALL TO ACTION CONFIGURATION",
-                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey),
-                        ),
-                        SizedBox(height: 12),
-                        Text(
-                          "Button Label",
-                          style: TextStyle(fontSize: 12, color: Color(0xFF3E4949)),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          "Explore Growth Plans",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                        ),
-                        SizedBox(height: 12),
-                        Text(
-                          "Destination URL",
-                          style: TextStyle(fontSize: 12, color: Color(0xFF3E4949)),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          "https://globalfintech.com/q4-accelerator",
-                          style: TextStyle(color: Color(0xFF006565), decoration: TextDecoration.underline, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            side: const BorderSide(color: Color(0xFFBDC9C8)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: const Text("Disapprove", style: TextStyle(color: Color(0xFF3E4949), fontWeight: FontWeight.bold)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context); // Close sheet
-                            // Navigate to schedule campaign screen
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ScheduleCampaignScreen(
-                                  isEmbedded: false,
-                                  initialOrderId: order.id,
-                                  initialPackageName: order.packageName,
-                                  initialBuyerName: order.buyerName,
-                                ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                side: const BorderSide(color: Color(0xFFBDC9C8)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF006565),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              child: const Text("Disapprove", style: TextStyle(color: Color(0xFF3E4949), fontWeight: FontWeight.bold)),
+                            ),
                           ),
-                          child: const Text("Approve & Schedule", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context); // Close sheet
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ScheduleCampaignScreen(
+                                      isEmbedded: false,
+                                      initialOrderId: order.id,
+                                      initialPackageName: order.packageName,
+                                      initialBuyerName: order.buyerName,
+                                    ),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF006565),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: const Text("Approve & Schedule", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                );
+              },
             );
           },
         );

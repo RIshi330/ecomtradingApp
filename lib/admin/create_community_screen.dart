@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
+import 'package:flutter_quill/flutter_quill.dart';
+import 'package:vsc_quill_delta_to_html/vsc_quill_delta_to_html.dart';
 
 class CreateCommunityScreen extends StatefulWidget {
   const CreateCommunityScreen({super.key});
@@ -23,6 +26,7 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
   String _selectedType = "Professional";
   String _visibility = "public"; // "public" or "private"
   String _joiningRule = "free"; // "free", "approval", "invite", "paid"
+  String _communityStructure = "Centralized"; // "Centralized", "Decentralized", "Hybrid"
   
   // Paid Membership Fields
   final _feeController = TextEditingController(text: "0.00");
@@ -39,10 +43,24 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
   // Branding Uploads (file name/mock paths)
   String? _logoName;
   String? _coverName;
+  String? _logoPath;
+  String? _coverPath;
+
+  final _descriptionQuillController = QuillController.basic();
 
   final List<String> _communityTypes = [
     "Professional", "Business", "NGO", "Educational", "Sports", "Religious", 
     "Local", "Startup", "Women", "Kids", "Alumni", "Hobby", "Club", "Other"
+  ];
+
+  final List<String> _industriesList = [
+    "Technology", "Finance", "Education", "Healthcare", "Marketing", "Real Estate", 
+    "Retail & E-commerce", "NGO & Non-Profit", "Entertainment", "Logistics"
+  ];
+
+  final List<String> _categoriesList = [
+    "Networking", "Mentorship", "Job Opportunities", "B2B Collaboration", 
+    "Events & Meetups", "Skill Development", "Support & Wellness", "General Discussion"
   ];
 
   @override
@@ -55,6 +73,7 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
     _professionController.dispose();
     _interestsController.dispose();
     _locationController.dispose();
+    _descriptionQuillController.dispose();
     super.dispose();
   }
 
@@ -63,6 +82,7 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
     if (result != null && result.files.single.name.isNotEmpty) {
       setState(() {
         _logoName = result.files.single.name;
+        _logoPath = result.files.single.path;
       });
     }
   }
@@ -72,6 +92,7 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
     if (result != null && result.files.single.name.isNotEmpty) {
       setState(() {
         _coverName = result.files.single.name;
+        _coverPath = result.files.single.path;
       });
     }
   }
@@ -96,7 +117,7 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
       final response = await Database().getData({
         'action': 'create_community',
         'community_title': _nameController.text.trim(),
-        'description': _descriptionController.text.trim(),
+        'description': _getHtmlFromQuill(_descriptionQuillController),
         'community_type': _selectedType,
         'visibility': _visibility,
         'joining_rule': _joiningRule,
@@ -112,6 +133,7 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
         'location_coverage': _locationController.text.trim(),
         'billing_type': _billingType,
         'duration': _duration,
+        'community_structure': _communityStructure,
       }, endpoint: 'new_apis/create_community_API.php');
 
       if (!mounted) return;
@@ -251,23 +273,33 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Center(
-                                      child: _logoName != null
-                                          ? Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Text(
-                                                _logoName!,
-                                                textAlign: TextAlign.center,
-                                                style: const TextStyle(fontSize: 10, color: primaryColor, fontWeight: FontWeight.bold),
+                                      child: _logoPath != null
+                                          ? ClipRRect(
+                                              borderRadius: BorderRadius.circular(12),
+                                              child: Image.file(
+                                                File(_logoPath!),
+                                                width: double.infinity,
+                                                height: double.infinity,
+                                                fit: BoxFit.cover,
                                               ),
                                             )
-                                          : Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: const [
-                                                Icon(Icons.add_photo_alternate_outlined, color: Colors.grey),
-                                                SizedBox(height: 4),
-                                                Text("Upload Logo", style: TextStyle(fontSize: 9, color: Colors.grey)),
-                                              ],
-                                            ),
+                                          : _logoName != null
+                                              ? Padding(
+                                                  padding: const EdgeInsets.all(8.0),
+                                                  child: Text(
+                                                    _logoName!,
+                                                    textAlign: TextAlign.center,
+                                                    style: const TextStyle(fontSize: 10, color: primaryColor, fontWeight: FontWeight.bold),
+                                                  ),
+                                                )
+                                              : Column(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: const [
+                                                    Icon(Icons.add_photo_alternate_outlined, color: Colors.grey),
+                                                    SizedBox(height: 4),
+                                                    Text("Upload Logo", style: TextStyle(fontSize: 9, color: Colors.grey)),
+                                                  ],
+                                                ),
                                     ),
                                   ),
                                 ),
@@ -298,7 +330,7 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                                       color: const Color(0xFFF4F3F3),
                                       border: Border.all(color: const Color(0xFFBDC9C8)),
                                       borderRadius: BorderRadius.circular(12),
-                                      image: _coverName != null
+                                      image: _coverName != null || _coverPath != null
                                           ? null
                                           : const DecorationImage(
                                               image: NetworkImage("https://lh3.googleusercontent.com/aida-public/AB6AXuCeZ8lweaK-XBVEvbJU6Igx-guIJrTT17cYHZ0FirV5uij6XqYsGN5Z8GiRpf21SFtyHu3mXxemren3yXQ3joQmu021Nu_g90zotvdidTguBezYMeTlxI45j7tN3iNRjQA4VQZYSZ8_uXlTqXPAb_PWkKxw3pAC7Q7O5wLF2AW2bTDCxUKAcqNVzahbb6jOsTdvt26lXGvDAZxYcX6l49nHhhbDRWjHgdNCaGW8C4eHcgUedwJFWZ49"),
@@ -307,19 +339,29 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                                             ),
                                     ),
                                     child: Center(
-                                      child: _coverName != null
-                                          ? Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Text(
-                                                _coverName!,
-                                                textAlign: TextAlign.center,
-                                                style: const TextStyle(fontSize: 12, color: primaryColor, fontWeight: FontWeight.bold),
+                                      child: _coverPath != null
+                                          ? ClipRRect(
+                                              borderRadius: BorderRadius.circular(12),
+                                              child: Image.file(
+                                                File(_coverPath!),
+                                                width: double.infinity,
+                                                height: double.infinity,
+                                                fit: BoxFit.cover,
                                               ),
                                             )
-                                          : const Text(
-                                              "Tap to replace Cover",
-                                              style: TextStyle(fontSize: 11, color: primaryColor, fontWeight: FontWeight.bold),
-                                            ),
+                                          : _coverName != null
+                                              ? Padding(
+                                                  padding: const EdgeInsets.all(8.0),
+                                                  child: Text(
+                                                    _coverName!,
+                                                    textAlign: TextAlign.center,
+                                                    style: const TextStyle(fontSize: 12, color: primaryColor, fontWeight: FontWeight.bold),
+                                                  ),
+                                                )
+                                              : const Text(
+                                                  "Tap to replace Cover",
+                                                  style: TextStyle(fontSize: 11, color: primaryColor, fontWeight: FontWeight.bold),
+                                                ),
                                     ),
                                   ),
                                 ),
@@ -329,6 +371,79 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                         ],
                       ),
                       const SizedBox(height: 20),
+
+                      // Industry & Category Dropdowns
+                      const Text(
+                        "SELECT INDUSTRY",
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          fillColor: const Color(0xFFF4F3F3),
+                          filled: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          hintText: "Choose Industry...",
+                          hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                        ),
+                        items: _industriesList.map((t) => DropdownMenuItem(
+                          value: t,
+                          child: Text(t, style: const TextStyle(color: Colors.black, fontSize: 14)),
+                        )).toList(),
+                        onChanged: (val) {
+                          if (val != null && !_tags.contains(val)) {
+                            setState(() {
+                              _tags.add(val);
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      const Text(
+                        "SELECT CATEGORY",
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          fillColor: const Color(0xFFF4F3F3),
+                          filled: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          hintText: "Choose Category...",
+                          hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                        ),
+                        items: _categoriesList.map((t) => DropdownMenuItem(
+                          value: t,
+                          child: Text(t, style: const TextStyle(color: Colors.black, fontSize: 14)),
+                        )).toList(),
+                        onChanged: (val) {
+                          if (val != null && !_tags.contains(val)) {
+                            setState(() {
+                              _tags.add(val);
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
 
                       // Identity Inputs
                       _buildTextField(
@@ -344,11 +459,18 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                         hint: "e.g. The future starts here",
                       ),
                       const SizedBox(height: 16),
-                      _buildTextField(
-                        controller: _descriptionController,
-                        label: "DESCRIPTION",
+                      const Text(
+                        "DESCRIPTION",
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildQuillField(
+                        controller: _descriptionQuillController,
                         hint: "Briefly describe the purpose and goals of this community...",
-                        maxLines: 4,
                       ),
                       const SizedBox(height: 16),
 
@@ -417,69 +539,99 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                 const SizedBox(height: 20),
 
                 // 2. Type & Visibility Section
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: _buildCardSection(
-                        title: "Community Type",
-                        icon: Icons.category_rounded,
-                        child: DropdownButtonFormField<String>(
-                          value: _selectedType,
-                          isExpanded: true,
-                          decoration: InputDecoration(
-                            fillColor: Colors.white,
-                            filled: true,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFFBDC9C8)),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          ),
-                          items: _communityTypes.map((t) => DropdownMenuItem(
-                            value: t,
-                            child: Text(t, overflow: TextOverflow.ellipsis),
-                          )).toList(),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() {
-                                _selectedType = val;
-                              });
-                            }
-                          },
-                        ),
+                _buildCardSection(
+                  title: "Community Type",
+                  icon: Icons.category_rounded,
+                  child: DropdownButtonFormField<String>(
+                    value: _selectedType,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      fillColor: Colors.white,
+                      filled: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFBDC9C8)),
                       ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildCardSection(
-                        title: "Visibility",
-                        icon: Icons.visibility_rounded,
-                        child: Column(
-                          children: [
-                            RadioListTile<String>(
-                              value: "public",
-                              groupValue: _visibility,
-                              title: const Text("Public", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                              subtitle: const Text("Anyone can see/join", style: TextStyle(fontSize: 10)),
-                              onChanged: (val) => setState(() => _visibility = val!),
-                              activeColor: primaryColor,
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                            RadioListTile<String>(
-                              value: "private",
-                              groupValue: _visibility,
-                              title: const Text("Private", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                              subtitle: const Text("Hidden from search", style: TextStyle(fontSize: 10)),
-                              onChanged: (val) => setState(() => _visibility = val!),
-                              activeColor: primaryColor,
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                          ],
-                        ),
+                    items: _communityTypes.map((t) => DropdownMenuItem(
+                      value: t,
+                      child: Text(t, overflow: TextOverflow.ellipsis),
+                    )).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _selectedType = val;
+                        });
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                _buildCardSection(
+                  title: "Visibility",
+                  icon: Icons.visibility_rounded,
+                  child: Column(
+                    children: [
+                      RadioListTile<String>(
+                        value: "public",
+                        groupValue: _visibility,
+                        title: const Text("Public", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                        subtitle: const Text("Anyone can see/join", style: TextStyle(fontSize: 10)),
+                        onChanged: (val) => setState(() => _visibility = val!),
+                        activeColor: primaryColor,
+                        contentPadding: EdgeInsets.zero,
                       ),
-                    ),
-                  ],
+                      RadioListTile<String>(
+                        value: "private",
+                        groupValue: _visibility,
+                        title: const Text("Private", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                        subtitle: const Text("Hidden from search", style: TextStyle(fontSize: 10)),
+                        onChanged: (val) => setState(() => _visibility = val!),
+                        activeColor: primaryColor,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Community Structure Section
+                _buildCardSection(
+                  title: "Community Structure",
+                  icon: Icons.hub_rounded,
+                  child: Column(
+                    children: [
+                      RadioListTile<String>(
+                        value: "Centralized",
+                        groupValue: _communityStructure,
+                        title: const Text("Centralized", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                        subtitle: const Text("Decisions made by a central authority/admin group", style: TextStyle(fontSize: 10)),
+                        onChanged: (val) => setState(() => _communityStructure = val!),
+                        activeColor: primaryColor,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      RadioListTile<String>(
+                        value: "Decentralized",
+                        groupValue: _communityStructure,
+                        title: const Text("Decentralized", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                        subtitle: const Text("Distributed power and peer-to-peer operations", style: TextStyle(fontSize: 10)),
+                        onChanged: (val) => setState(() => _communityStructure = val!),
+                        activeColor: primaryColor,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      RadioListTile<String>(
+                        value: "Hybrid",
+                        groupValue: _communityStructure,
+                        title: const Text("Hybrid", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                        subtitle: const Text("Combination of centralized coordination and decentralized operations", style: TextStyle(fontSize: 10)),
+                        onChanged: (val) => setState(() => _communityStructure = val!),
+                        activeColor: primaryColor,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 20),
 
@@ -899,6 +1051,96 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  String _getHtmlFromQuill(QuillController controller) {
+    try {
+      final delta = controller.document.toDelta().toJson();
+      final converter = QuillDeltaToHtmlConverter(
+        List.castFrom(delta),
+        ConverterOptions.forEmail(),
+      );
+      return converter.convert();
+    } catch (e) {
+      debugPrint("Error converting Quill to HTML: $e");
+      return "";
+    }
+  }
+
+  Widget _buildQuillField({
+    required QuillController controller,
+    required String hint,
+    double height = 150,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFFBDC9C8)),
+        borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFFF4F3F3),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          QuillSimpleToolbar(
+            controller: controller,
+            config: const QuillSimpleToolbarConfig(
+              showFontFamily: false,
+              showFontSize: false,
+              showBoldButton: true,
+              showItalicButton: true,
+              showSmallButton: false,
+              showUnderLineButton: true,
+              showStrikeThrough: false,
+              showInlineCode: false,
+              showColorButton: false,
+              showBackgroundColorButton: false,
+              showClearFormat: true,
+              showAlignmentButtons: true,
+              showLeftAlignment: true,
+              showCenterAlignment: true,
+              showRightAlignment: true,
+              showJustifyAlignment: true,
+              showHeaderStyle: false,
+              showListNumbers: true,
+              showListBullets: true,
+              showListCheck: false,
+              showCodeBlock: false,
+              showQuote: false,
+              showIndent: false,
+              showLink: true,
+              showUndo: true,
+              showRedo: true,
+              showDirection: false,
+              showSearchButton: false,
+              showSubscript: false,
+              showSuperscript: false,
+              multiRowsDisplay: false,
+            ),
+          ),
+          const Divider(height: 1, thickness: 1, color: Color(0xFFBDC9C8)),
+          Container(
+            height: height,
+            padding: const EdgeInsets.all(8.0),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
+            ),
+            child: QuillEditor.basic(
+              controller: controller,
+              config: QuillEditorConfig(
+                placeholder: hint,
+                autoFocus: false,
+                expands: true,
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

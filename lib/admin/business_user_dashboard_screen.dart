@@ -40,6 +40,7 @@ import 'package:trading_ecommerce_admin/user/seller_bank_accounts_screen.dart';
 import 'package:trading_ecommerce_admin/screens/marketplace_trainings_screen.dart';
 import 'package:trading_ecommerce_admin/screens/enrolled_trainings_screen.dart';
 import 'package:trading_ecommerce_admin/screens/mom_trainings_screen.dart';
+import 'package:trading_ecommerce_admin/admin/digital_marketplace_screen.dart';
 
 class BusinessUserDashboard extends StatefulWidget {
   const BusinessUserDashboard({super.key});
@@ -1123,6 +1124,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                   ),
                 ),
                 _buildDrawerItem(6, Icons.layers_outlined, "Packages Builder", isSubItem: true),
+                _buildDrawerItem(53, Icons.shop_outlined, "Digital Marketplace", isSubItem: true),
 
                 const Divider(height: 16),
                 _buildDrawerHeaderLabel("FINANCIALS"),
@@ -1349,6 +1351,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       case 33: return const MarketplaceTrainingsScreen(isEmbedded: true);
       case 34: return const EnrolledTrainingsScreen(isEmbedded: true);
       case 35: return const MomTrainingsScreen(isEmbedded: true);
+      case 53: return const DigitalMarketplaceScreen(isEmbedded: true);
       default: return _buildDashboardView();
     }
   }
