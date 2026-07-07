@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:trading_ecommerce_admin/core/theme/app_theme.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:trading_ecommerce_admin/admin/schedule_campaign_screen.dart';
 
@@ -123,7 +122,7 @@ class _PromotionalPackageOrdersScreenState extends State<PromotionalPackageOrder
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        return FutureBuilder<Map<String, dynamic>>(
+        return FutureBuilder<Map>(
           future: Database().getData({
             'action': 'get_campaign_content',
             'order_id': order.id.toString(),
@@ -172,8 +171,8 @@ class _PromotionalPackageOrdersScreenState extends State<PromotionalPackageOrder
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: const [
+                          const Row(
+                            children: [
                               Icon(Icons.draw, color: Color(0xFF006565)),
                               SizedBox(width: 8),
                               Text(
@@ -210,9 +209,11 @@ class _PromotionalPackageOrdersScreenState extends State<PromotionalPackageOrder
                           : GridView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              crossAxisCount: 3,
-                              crossAxisSpacing: 8,
-                              mainAxisSpacing: 8,
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                crossAxisSpacing: 8,
+                                mainAxisSpacing: 8,
+                              ),
                               itemCount: attachments.length,
                               itemBuilder: (context, index) {
                                 final url = attachments[index];
@@ -704,7 +705,7 @@ class _PromotionalPackageOrdersScreenState extends State<PromotionalPackageOrder
                             decoration: BoxDecoration(
                               color: badgeColor,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: indicatorColor.withOpacity(0.2)),
+                              border: Border.all(color: indicatorColor.withValues(alpha: 0.2)),
                             ),
                             child: Text(
                               order.orderStatus.toUpperCase(),
