@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'loginscreen.dart';
 import 'signupscreen.dart';
 import 'otp_screen.dart';
-import 'auth_screen.dart';
+import 'auth_screen_not_use.dart';
 import 'admin/Community_Admin_Dashboard.dart';
 import 'admin/admin_loginscreen.dart';
 import 'admin/business_user_dashboard_screen.dart';

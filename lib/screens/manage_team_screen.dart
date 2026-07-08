@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../Database/Database.dart';
+import '../admin/job_form.dart';
 
 class ManageTeamScreen extends StatefulWidget {
   final bool isEmbedded;
@@ -202,7 +203,13 @@ class _ManageTeamScreenState extends State<ManageTeamScreen> {
           FloatingActionButton.small(
             heroTag: "New Job",
             onPressed: () {
-              // showAssignTaskDialog(context, null);
+              //comment
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>PostOpportunityScreen(),
+                ),
+              );              // showAssignTaskDialog(context, null);
             },
             child: const Icon(Icons.work),
           ),

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:trading_ecommerce_admin/services/auth_service.dart';
 import 'package:trading_ecommerce_admin/services/location_service.dart';
 import 'package:trading_ecommerce_admin/common/shell.dart';
@@ -10,8 +9,9 @@ import 'package:trading_ecommerce_admin/app_constants.dart';
 import 'package:trading_ecommerce_admin/otp_screen.dart';
 import 'package:trading_ecommerce_admin/admin/Community_Admin_Dashboard.dart';
 import 'package:trading_ecommerce_admin/admin/business_user_dashboard_screen.dart';
-import 'package:trading_ecommerce_admin/admin/seller_dashboard_screen.dart';
-import 'package:trading_ecommerce_admin/admin/admin_loginscreen.dart';
+
+import 'Database/Database.dart';
+import 'admin/admin_login.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -84,12 +84,6 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (response['success'] == true || response['status'] == 200) {
-        if (response['multiple_accounts'] == true) {
-          final accounts = response['accounts'] as List<dynamic>;
-          await _showAccountSelectionDialog(accounts, email, password, false, null);
-          return;
-        }
-
         final vendorId = int.tryParse(
               response['vendor_id']?.toString() ??
                   response['data']?['vendor_id']?.toString() ??
@@ -183,15 +177,9 @@ class _LoginScreenState extends State<LoginScreen> {
         }
 
         if (vendorType != '500' && vendorType != '1') {
-          Widget dashboardWidget;
-          if (vendorType == '20') {
-            dashboardWidget = const SellerDashboardScreen();
-          } else {
-            dashboardWidget = const CommunityAdminDashboard();
-          }
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => dashboardWidget),
+            MaterialPageRoute(builder: (_) => const CommunityAdminDashboard()),
             (route) => false,
           );
           return;
@@ -289,12 +277,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
       if (response['success'] == true || response['status'] == 200) {
-        if (response['multiple_accounts'] == true) {
-          final accounts = response['accounts'] as List<dynamic>;
-          await _showAccountSelectionDialog(accounts, null, null, true, otp);
-          return;
-        }
-
         if (selectedRole == 'Admin') {
           final adminId =
               int.tryParse(response['admin_id']?.toString() ?? '1') ?? 1;
@@ -383,15 +365,9 @@ class _LoginScreenState extends State<LoginScreen> {
         }
 
         if (vendorType != '500' && vendorType != '1') {
-          Widget dashboardWidget;
-          if (vendorType == '20') {
-            dashboardWidget = const SellerDashboardScreen();
-          } else {
-            dashboardWidget = const CommunityAdminDashboard();
-          }
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => dashboardWidget),
+            MaterialPageRoute(builder: (_) => const CommunityAdminDashboard()),
             (route) => false,
           );
           return;
@@ -640,296 +616,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Future<void> _showAccountSelectionDialog(
-    List<dynamic> accounts,
-    String? email,
-    String? password,
-    bool isOtp,
-    String? otp,
-  ) async {
-    if (!mounted) return;
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Icon
-                Center(
-                  child: Container(
-                    width: 72,
-                    height: 72,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFE5F5F5),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.supervised_user_circle_rounded,
-                        color: Color(0xFF006565),
-                        size: 42,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // Title
-                const Center(
-                  child: Text(
-                    "Multiple Accounts Found",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // Subtitle
-                const Center(
-                  child: Text(
-                    "Please choose which dashboard you would like to navigate to:",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey,
-                      height: 1.5,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // List of accounts
-                Flexible(
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: accounts.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final acc = accounts[index] as Map<String, dynamic>;
-                      final vendorId = acc['vendor_id']?.toString() ?? '';
-                      final role = acc['role']?.toString() ?? '';
-                      
-                      final isSeller = role == 'seller';
-                      final title = isSeller ? 'Seller Dashboard' : 'Community Dashboard';
-                      final subtitle = 'Vendor ID: $vendorId';
-                      final icon = isSeller ? Icons.storefront_rounded : Icons.admin_panel_settings_rounded;
-
-                      return InkWell(
-                        onTap: () {
-                          Navigator.pop(context);
-                          _completeAccountSelection(acc, email, password, isOtp, otp);
-                        },
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: const Color(0xFFE0E0E0)),
-                            borderRadius: BorderRadius.circular(16),
-                            color: const Color(0xFFF9FBFB),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFE5F5F5),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(icon, color: const Color(0xFF006565)),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      title,
-                                      style: const TextStyle(
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      subtitle,
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Icon(Icons.chevron_right_rounded, color: Color(0xFF006565)),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Cancel Button
-                SizedBox(
-                  height: 48,
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF006565)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: const Text(
-                      "Cancel",
-                      style: TextStyle(
-                        color: Color(0xFF006565),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _completeAccountSelection(
-    Map<String, dynamic> account,
-    String? email,
-    String? password,
-    bool isOtp,
-    String? otp,
-  ) async {
-    setState(() => _isLoading = true);
-
-    try {
-      final database = Database();
-      Map<dynamic, dynamic> response;
-
-      if (isOtp) {
-        response = await database.getData({
-          'action': 'verify_login_otp',
-          'otp': otp ?? '',
-          'rememberMe': _rememberMe ? 'true' : 'false',
-          'selected_vendor_id': account['vendor_id'].toString(),
-          'selected_role': account['role'].toString(),
-        }, endpoint: 'new_apis/sign_up_API.php');
-      } else {
-        response = await database.getData({
-          'action': 'login_with_password',
-          'email': email ?? '',
-          'password': password ?? '',
-          'rememberMe': _rememberMe ? 'true' : 'false',
-          'selected_vendor_id': account['vendor_id'].toString(),
-          'selected_role': account['role'].toString(),
-        }, endpoint: 'new_apis/sign_up_API.php');
-      }
-
-      if (!mounted) return;
-
-      if (response['success'] == true || response['status'] == 200) {
-        final vendorId = int.tryParse(
-              response['vendor_id']?.toString() ??
-                  response['data']?['vendor_id']?.toString() ??
-                  account['vendor_id']?.toString() ??
-                  '0',
-            ) ??
-            0;
-
-        Map<String, dynamic> fullUserData =
-            response is Map ? Map<String, dynamic>.from(response) : {};
-        String? vendorType = response['vendor_type']?.toString() ??
-            response['data']?['vendor_type']?.toString() ??
-            response['full_data']?['vendor_type']?.toString() ??
-            response['LOGIN_RESPONSE']?['vendor_type']?.toString() ??
-            response['LOGIN_RESPONSE']?['full_data']?['vendor_type']
-                ?.toString() ??
-            account['vendor_type']?.toString();
-
-        if (vendorType == null && vendorId != 0) {
-          try {
-            print(
-                'loginscreen: vendor_type missing from login response. Fetching profile for vendor $vendorId...');
-            final profileRes = await database.getData({
-              'action': 'profile',
-              'vendor_id': vendorId.toString(),
-            });
-            if (profileRes['success'] == true || profileRes['status'] == 200) {
-              final profile = profileRes['data']?['profile'];
-              if (profile != null && profile is Map) {
-                vendorType = profile['vendor_type']?.toString();
-                fullUserData.addAll(Map<String, dynamic>.from(profile));
-              }
-            }
-          } catch (e) {
-            print('Error fetching profile for login check: $e');
-          }
-        }
-
-        vendorType ??= '20'; // Default fallback
-
-        // If they chose the Seller role, ensure they have it in fullUserData
-        fullUserData['vendor_type'] = vendorType;
-
-        await AuthService.saveLoginSession(
-          vendorId: vendorId,
-          userData: fullUserData,
-        );
-
-        _showSuccessBanner('Login successful! Redirecting...');
-        await Future.delayed(const Duration(milliseconds: 1500));
-        if (!mounted) return;
-
-        await _showLocationPermissionDialog();
-        if (!mounted) return;
-
-        Widget dashboardWidget;
-        if (vendorType == '20') {
-          dashboardWidget = const SellerDashboardScreen();
-        } else {
-          dashboardWidget = const CommunityAdminDashboard();
-        }
-
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => dashboardWidget),
-          (route) => false,
-        );
-      } else {
-        _showError(
-          response['message'] ??
-              response['error'] ??
-              'Authentication failed',
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      _showError('Network error: ${e.toString()}');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
   Future<bool> _checkUserHasInterests(int vendorId) async {
     try {
       final local = await AuthService.hasSelectedInterests();
@@ -1143,6 +829,7 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           _buildRoleItem('Normal', Icons.person_outline_rounded, 'Normal User'),
           _buildRoleItem('Business', Icons.business_outlined, 'Business User'),
+          // _buildRoleItem('Admin', Icons.shield_outlined, 'Admin'),
         ],
       ),
     );
@@ -1573,32 +1260,13 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        Center(
-          child: TextButton(
-            onPressed: _isLoading
-                ? null
-                : () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const AdminLoginScreen(),
-                      ),
-                    );
-                  },
-            child: const Text(
-              "Admin Login",
-              style: TextStyle(
-                color: accentColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-
+        const SizedBox(height: 10),
+        TextButton(onPressed: (){
+        Navigator.push(context, MaterialPageRoute(builder: (context) => AdminLoginScreen(),));
+        }, child: Text("Admin Login")),
         // Main Sign In Button
+        const SizedBox(height: 10),
+
         SizedBox(
           width: double.infinity,
           height: 52,

@@ -1,4 +1,206 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:trading_ecommerce_admin/admin/vendor_from.dart';
+
+import '../app_constants.dart';
+void _log(String tag, String message) {
+  if (kDebugMode) {
+    debugPrint('[$tag] $message');
+  }
+}
+
+class VendorApiException implements Exception {
+  final String message;
+  final int? statusCode;
+  VendorApiException(this.message, {this.statusCode});
+
+  @override
+  String toString() => message;
+}
+
+class VendorApiService {
+  VendorApiService._internal();
+  static final VendorApiService instance = VendorApiService._internal();
+
+  static String get _baseEndpoint => '${baseUrl}new_apis/manage_vendor_api.php';
+
+  String? _sessionCookie;
+
+  void setSessionCookie(String cookie) {
+    _sessionCookie = cookie;
+    _log('VendorApi', 'Session cookie manually set: $cookie');
+  }
+
+  bool get hasSession => _sessionCookie != null;
+
+  Map<String, String> get _headers {
+    final headers = {'Content-Type': 'application/json'};
+    if (_sessionCookie != null) headers['Cookie'] = _sessionCookie!;
+    return headers;
+  }
+
+  void _captureCookie(http.Response res) {
+    final raw = res.headers['set-cookie'];
+    if (raw == null) {
+      _log('VendorApi', 'No Set-Cookie header in response — '
+          'if this is the very first call and you have not logged in '
+          'elsewhere, every subsequent call will 401.');
+      return;
+    }
+    final match = RegExp(r'PHPSESSID=[^;]+').firstMatch(raw);
+    if (match != null) {
+      _sessionCookie = match.group(0);
+      _log('VendorApi', 'Captured session cookie: $_sessionCookie');
+    }
+  }
+
+  Future<Map<String, dynamic>> _post(Map<String, dynamic> body) async {
+    final url = Uri.parse(_baseEndpoint);
+    _log('VendorApi', 'POST $url');
+    _log('VendorApi', 'Request headers: $_headers');
+    _log('VendorApi', 'Request body: ${jsonEncode(body)}');
+
+    http.Response res;
+    try {
+      res = await http.post(url, headers: _headers, body: jsonEncode(body));
+    } catch (e) {
+      _log('VendorApi', 'NETWORK ERROR: $e');
+      throw VendorApiException('Network error: $e');
+    }
+
+    _log('VendorApi', 'Response status: ${res.statusCode}');
+    _log('VendorApi', 'Response headers: ${res.headers}');
+    _log('VendorApi', 'Response body: ${res.body}');
+
+    _captureCookie(res);
+
+    Map<String, dynamic> decoded;
+    try {
+      decoded = jsonDecode(res.body) as Map<String, dynamic>;
+    } catch (e) {
+      _log('VendorApi', 'JSON PARSE FAILED: $e — the server probably '
+          'returned HTML (a PHP warning/fatal error, or a 404 page) '
+          'instead of JSON. Check the raw body printed above.');
+      throw VendorApiException(
+        'Unexpected server response (HTTP ${res.statusCode})',
+        statusCode: res.statusCode,
+      );
+    }
+
+    if (res.statusCode == 401) {
+      _log('VendorApi', '401 UNAUTHORIZED — $_baseEndpoint requires '
+      r'$_SESSION[admin_id] to already be set server-side. This '
+      'means either: (1) you never logged in through an endpoint '
+          'that shares this PHP session, (2) the session cookie is not '
+          'being sent back (see CORS note below), or (3) the session '
+          'expired.');
+      throw VendorApiException(
+        decoded['message']?.toString() ?? 'Session expired, please log in again.',
+        statusCode: 401,
+      );
+    }
+
+    if (decoded['success'] != true) {
+      _log('VendorApi', 'API returned success=false: ${decoded['message']}');
+      throw VendorApiException(
+        decoded['message']?.toString() ?? 'Request failed',
+        statusCode: res.statusCode,
+      );
+    }
+
+    _log('VendorApi', 'Success. data keys: '
+        '${decoded['data'] is Map ? (decoded['data'] as Map).keys.toList() : decoded['data'].runtimeType}');
+    return decoded;
+  }
+
+  Future<Map<String, dynamic>> getDashboardStats() =>
+      _post({'action': 'get_dashboard_stats'}).then((r) => r['data']);
+
+  Future<Map<String, dynamic>> getVendors({
+    String search = '',
+    String type = 'all',
+    String status = 'all',
+    int page = 1,
+    int perPage = 8,
+  }) =>
+      _post({
+        'action': 'get_vendors',
+        'search': search,
+        'type': type,
+        'status': status,
+        'page': page,
+        'per_page': perPage,
+      }).then((r) => r['data']);
+
+  Future<Map<String, dynamic>> getVendorDetails(int vendorId) =>
+      _post({'action': 'get_vendor_details', 'vendor_id': vendorId})
+          .then((r) => r['data']);
+
+  Future<void> approveVendor(int vendorId) =>
+      _post({'action': 'approve_vendor', 'vendor_id': vendorId});
+
+  Future<void> rejectVendor(int vendorId) =>
+      _post({'action': 'reject_vendor', 'vendor_id': vendorId});
+
+  Future<void> suspendVendor(int vendorId) =>
+      _post({'action': 'suspend_vendor', 'vendor_id': vendorId});
+
+  Future<void> contactVendor(int vendorId, String message) => _post({
+    'action': 'contact_vendor',
+    'vendor_id': vendorId,
+    'message': message,
+  });
+
+  Future<int> addVendor({
+    required String name,
+    required String email,
+    String mobile = '',
+    int status = 0,
+  }) async {
+    final res = await _post({
+      'action': 'add_vendor',
+      'name': name,
+      'email': email,
+      'mobile': mobile,
+      'status': status,
+    });
+    return res['data']['vendor_id'] as int;
+  }
+
+  Future<void> updateTransactionCharge(int vendorId, double amount) =>
+      _post({
+        'action': 'update_transaction_charge',
+        'vendor_id': vendorId,
+        'amount': amount,
+      });
+
+  Future<int> bulkUpdateCharges(List<int> vendorIds, double amount) async {
+    final res = await _post({
+      'action': 'bulk_update_charges',
+      'vendor_ids': vendorIds,
+      'amount': amount,
+    });
+    return res['data']['count'] as int;
+  }
+
+  Future<void> grantWebsitePermission(int vendorId) =>
+      _post({'action': 'grant_website_permission', 'vendor_id': vendorId});
+
+  Future<void> revokeWebsitePermission(int vendorId) =>
+      _post({'action': 'revoke_website_permission', 'vendor_id': vendorId});
+
+  Future<int> notifyMembership(List<int> vendorIds, String message) async {
+    final res = await _post({
+      'action': 'notify_membership',
+      'vendor_ids': vendorIds,
+      'message': message,
+    });
+    return res['data']['sent'] as int;
+  }
+}
 
 class ManageVendorsScreen extends StatefulWidget {
   final bool isEmbedded;
@@ -9,7 +211,6 @@ class ManageVendorsScreen extends StatefulWidget {
 }
 
 class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
-  // Styling Theme Constants
   static const Color primaryTeal = Color(0xFF008080);
   static const Color secondaryTeal = Color(0xFF296767);
   static const Color containerTeal = Color(0xFFE3FFFE);
@@ -18,69 +219,139 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
   static const Color borderTeal = Color(0xFFBDC9C8);
   static const Color textDark = Color(0xFF1C1B1B);
   static const Color textLight = Color(0xFF3E4949);
-  static const Color statusNegotiation = Color(0xFFB45309);
   static const Color errorColor = Color(0xFFBA1A1A);
 
-  String _searchQuery = "";
-  String _activePlan = "Silver Tier"; // Silver Tier, Gold Tier, Elite Tier
+  final VendorApiService _api = VendorApiService.instance;
 
-  // Mock list of pending reviews
-  final List<Map<String, String>> _pendingReviews = [
-    {
-      "id": "pending-1",
-      "name": "Lumina Creatives",
-      "category": "Branding & Digital Strategy",
-      "date": "24 Oct 2023"
-    },
-    {
-      "id": "pending-2",
-      "name": "Swift Transit Co.",
-      "category": "Logistics & Courier",
-      "date": "22 Oct 2023"
-    },
-    {
-      "id": "pending-3",
-      "name": "Zenith Events",
-      "category": "Hospitality Management",
-      "date": "20 Oct 2023"
+  final TextEditingController _searchCtrl = TextEditingController();
+  Timer? _debounce;
+  String _search = '';
+  String _typeFilter = 'all';
+  String _statusFilter = 'all';
+
+  int _page = 1;
+  int _totalPages = 1;
+  final int _perPage = 8;
+
+  List<Map<String, dynamic>> _vendors = [];
+  List<Map<String, dynamic>> _pendingReviews = [];
+  List<Map<String, dynamic>> _vendorTypes = [];
+
+  bool _loadingDashboard = true;
+  bool _loadingVendors = true;
+  String? _dashboardError;
+  String? _vendorsError;
+
+  @override
+  void initState() {
+    super.initState();
+    _log('ManageVendorsScreen', 'initState — hasSession=${_api.hasSession}');
+    _loadDashboard();
+    _loadVendors();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadDashboard() async {
+    _log('ManageVendorsScreen', '_loadDashboard start');
+    setState(() {
+      _loadingDashboard = true;
+      _dashboardError = null;
+    });
+    try {
+      final data = await _api.getDashboardStats();
+      final pending = List<Map<String, dynamic>>.from(data['pending_vendors'] ?? []);
+      final types = List<Map<String, dynamic>>.from(data['vendor_types'] ?? []);
+      _log('ManageVendorsScreen',
+          '_loadDashboard OK — pending=${pending.length} types=${types.length}');
+      setState(() {
+        _pendingReviews = pending;
+        _vendorTypes = types;
+      });
+    } on VendorApiException catch (e) {
+      _log('ManageVendorsScreen', '_loadDashboard FAILED: ${e.message}');
+      setState(() => _dashboardError = e.message);
+    } catch (e, st) {
+      _log('ManageVendorsScreen', '_loadDashboard UNEXPECTED ERROR: $e\n$st');
+      setState(() => _dashboardError = 'Unexpected error: $e');
+    } finally {
+      setState(() => _loadingDashboard = false);
     }
-  ];
+  }
 
-  // Mock list of active directory vendors
-  final List<Map<String, dynamic>> _activeVendors = [
-    {
-      "name": "Global Meridian",
-      "tier": "Tier 1 Strategic",
-      "email": "meridian@global.com",
-      "phone": "+1 888 234 567",
-      "joined": "12 Aug 2023",
-      "status": "Active",
-      "verified": true,
-      "imageUrl": "https://lh3.googleusercontent.com/aida-public/AB6AXuDalpMFTivchBVCaM_9uR8XORb1hl-T7FL8ZXyRRkxysV6mp8QAP1SLA8PzL2c0C4Hm8fcgTmqoD6u0CUFo6bWeL5-gWwAeUEmhHeq0qo1fvYpfZFcqGpMXsA1zaQiP9gVy_DybevrhXchNNVfGKsbC-_uIIivV-ZzEh2LO73OyIsDkxRhGJf9ehvc9TcBKMfVMcvho9nXdz_hEbhz3BK-zJoTcqWINS3hlwtNfSRjuWWDhrXzd8w0C"
-    },
-    {
-      "name": "EcoScale Dynamics",
-      "tier": "Sustainability Advisory",
-      "email": "hello@ecoscale.io",
-      "phone": "+44 20 7946 0123",
-      "joined": "05 Sep 2023",
-      "status": "Active",
-      "verified": true,
-      "imageUrl": "https://lh3.googleusercontent.com/aida-public/AB6AXuCg7hZKQDnwQsba8Xj1LyP_uQm3y26Zhh-R4W4XV27aSwzI_AQ0CLmzcTk98FCbIWBrQKBgk24ckqQNP6_kDuWOO8z9fsC7mZJ05r9BfMjQPoBBy_s6FUiASb4Z-ssnPDLMG-LNoK1n262f1FmtZlacW8UryNJbWsy73Q8Jup0XlDjwNfDpEh7hLfcFCrUR2yH3QJQtwL_c6PniS0SvmbRt5Kubms0NfAuSOBnKKgYwKYJkT0enmX7R"
+  Future<void> _loadVendors() async {
+    _log('ManageVendorsScreen',
+        '_loadVendors start — search="$_search" type=$_typeFilter status=$_statusFilter page=$_page');
+    setState(() {
+      _loadingVendors = true;
+      _vendorsError = null;
+    });
+    try {
+      final data = await _api.getVendors(
+        search: _search,
+        type: _typeFilter,
+        status: _statusFilter,
+        page: _page,
+        perPage: _perPage,
+      );
+      final vendors = List<Map<String, dynamic>>.from(data['vendors'] ?? []);
+      _log('ManageVendorsScreen',
+          '_loadVendors OK — count=${vendors.length} total_pages=${data['total_pages']}');
+      setState(() {
+        _vendors = vendors;
+        _totalPages = (data['total_pages'] ?? 1) is int
+            ? data['total_pages']
+            : int.tryParse(data['total_pages'].toString()) ?? 1;
+      });
+    } on VendorApiException catch (e) {
+      _log('ManageVendorsScreen', '_loadVendors FAILED: ${e.message} (status ${e.statusCode})');
+      setState(() => _vendorsError = e.message);
+    } catch (e, st) {
+      _log('ManageVendorsScreen', '_loadVendors UNEXPECTED ERROR: $e\n$st');
+      setState(() => _vendorsError = 'Unexpected error: $e');
+    } finally {
+      setState(() => _loadingVendors = false);
     }
-  ];
+  }
 
-  void _triggerAction(String msg) {
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), () {
+      setState(() {
+        _search = value;
+        _page = 1;
+      });
+      _loadVendors();
+    });
+  }
+
+  void _refreshAll() {
+    _log('ManageVendorsScreen', 'manual refresh triggered');
+    _loadDashboard();
+    _loadVendors();
+  }
+
+  void _triggerAction(String msg, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.info_outline, color: Colors.white, size: 20),
+            Icon(isError ? Icons.error_outline : Icons.info_outline,
+                color: Colors.white, size: 20),
             const SizedBox(width: 12),
-            Expanded(child: Text(msg, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+            Expanded(
+              child: Text(msg,
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
           ],
         ),
-        backgroundColor: primaryTeal,
+        backgroundColor: isError ? errorColor : primaryTeal,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 2),
@@ -88,14 +359,37 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
     );
   }
 
+  Future<void> _runAction(Future<void> Function() call, String successMsg) async {
+    try {
+      await call();
+      if (!mounted) return;
+      _triggerAction(successMsg);
+      _refreshAll();
+    } on VendorApiException catch (e) {
+      if (!mounted) return;
+      _triggerAction(e.message, isError: true);
+    }
+  }
+
+  void _approvePending(Map<String, dynamic> review) {
+    final id = review['id'] as int;
+    _runAction(() => _api.approveVendor(id),
+        'Approved: ${review['name']} added to directory');
+  }
+
+  void _rejectPending(Map<String, dynamic> review) {
+    _runAction(() => _api.rejectVendor(review['id'] as int),
+        'Application for ${review['name']} rejected');
+  }
+
   void _onboardNewVendor() {
     final nameCtrl = TextEditingController();
     final emailCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
-    String vendorType = "Strategic Partner";
-    String selectedPlan = "Tier 1 - Global Executive";
     bool createAccount = false;
     bool onboardingSuccess = false;
+    bool submitting = false;
+    String? formError;
 
     showDialog(
       context: context,
@@ -109,252 +403,253 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                 constraints: const BoxConstraints(maxWidth: 420),
                 child: onboardingSuccess
                     ? Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 64,
-                              height: 64,
-                              decoration: const BoxDecoration(
-                                color: containerTeal,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.check_circle_rounded, color: primaryTeal, size: 40),
-                            ),
-                            const SizedBox(height: 20),
-                            const Text(
-                              "Vendor Onboarded!",
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope'),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              "The invitation and dossier setup instructions have been sent successfully.",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 12, color: textLight),
-                            ),
-                            const SizedBox(height: 24),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: primaryTeal,
-                                foregroundColor: Colors.white,
-                                minimumSize: const Size(double.infinity, 44),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text("DONE", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            ),
-                          ],
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: const BoxDecoration(
+                            color: containerTeal, shape: BoxShape.circle),
+                        child: const Icon(Icons.check_circle_rounded,
+                            color: primaryTeal, size: 40),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text('Vendor Onboarded!',
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: textDark,
+                              fontFamily: 'Manrope')),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'The vendor record was created successfully.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, color: textLight),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryTeal,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(double.infinity, 44),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
                         ),
-                      )
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('DONE',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                )
                     : Column(
-                        mainAxisSize: MainAxisSize.min,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      decoration: const BoxDecoration(
+                        color: primaryTeal,
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // Header
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                            decoration: const BoxDecoration(
-                              color: primaryTeal,
-                              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  "Onboard New Vendor",
-                                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Manrope'),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                  onPressed: () => Navigator.pop(context),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Form Content
-                          Flexible(
-                            child: SingleChildScrollView(
-                              padding: const EdgeInsets.all(24),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text("VENDOR TYPE", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textLight)),
-                                  const SizedBox(height: 6),
-                                  DropdownButtonFormField<String>(
-                                    value: vendorType,
-                                    style: const TextStyle(fontSize: 13, color: textDark),
-                                    decoration: const InputDecoration(
-                                      border: OutlineInputBorder(),
-                                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                    ),
-                                    items: const [
-                                      DropdownMenuItem(value: "Strategic Partner", child: Text("Strategic Partner")),
-                                      DropdownMenuItem(value: "Logistics Provider", child: Text("Logistics Provider")),
-                                      DropdownMenuItem(value: "Curated Agency", child: Text("Curated Agency")),
-                                      DropdownMenuItem(value: "Legal Advisory", child: Text("Legal Advisory")),
-                                    ],
-                                    onChanged: (val) {
-                                      if (val != null) setModalState(() => vendorType = val);
-                                    },
-                                  ),
-                                  const SizedBox(height: 16),
-
-                                  const Text("FULL NAME / COMPANY NAME", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textLight)),
-                                  const SizedBox(height: 6),
-                                  TextField(
-                                    controller: nameCtrl,
-                                    style: const TextStyle(fontSize: 13),
-                                    decoration: const InputDecoration(
-                                      hintText: "Enter name...",
-                                      border: OutlineInputBorder(),
-                                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            const Text("EMAIL", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textLight)),
-                                            const SizedBox(height: 6),
-                                            TextField(
-                                              controller: emailCtrl,
-                                              style: const TextStyle(fontSize: 13),
-                                              keyboardType: TextInputType.emailAddress,
-                                              decoration: const InputDecoration(
-                                                hintText: "email@serene.com",
-                                                border: OutlineInputBorder(),
-                                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            const Text("MOBILE NO", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textLight)),
-                                            const SizedBox(height: 6),
-                                            TextField(
-                                              controller: phoneCtrl,
-                                              style: const TextStyle(fontSize: 13),
-                                              keyboardType: TextInputType.phone,
-                                              decoration: const InputDecoration(
-                                                hintText: "+1...",
-                                                border: OutlineInputBorder(),
-                                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                   const SizedBox(height: 16),
-
-                                   const Text("MEMBERSHIP PLAN", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textLight)),
-                                  const SizedBox(height: 6),
-                                  DropdownButtonFormField<String>(
-                                    value: selectedPlan,
-                                    style: const TextStyle(fontSize: 13, color: textDark),
-                                    decoration: const InputDecoration(
-                                      border: OutlineInputBorder(),
-                                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                    ),
-                                    items: const [
-                                      DropdownMenuItem(value: "Tier 1 - Global Executive", child: Text("Tier 1 - Global Executive")),
-                                      DropdownMenuItem(value: "Tier 2 - Regional Professional", child: Text("Tier 2 - Regional Professional")),
-                                      DropdownMenuItem(value: "Tier 3 - Essential Member", child: Text("Tier 3 - Essential Member")),
-                                    ],
-                                    onChanged: (val) {
-                                      if (val != null) setModalState(() => selectedPlan = val);
-                                    },
-                                  ),
-                                    const SizedBox(height: 16),
-                                  Row(
-                                    children: [
-                                      Checkbox(
-                                        value: createAccount,
-                                        activeColor: Colors.grey,
-                                        onChanged: (val) {
-                                          if (val != null) setModalState(() => createAccount = val);
-                                        },
-                                      ),
-                                      const Expanded(
-                                        child: Text(
-                                          "Create professional account and send invite",
-                                          style: TextStyle(fontSize: 11, color: textLight),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  // const SizedBox(height: 24),
-
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: OutlinedButton(
-                                          style: OutlinedButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(vertical: 12),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                          ),
-                                          onPressed: () => Navigator.pop(context),
-                                          child: const Text("CANCEL", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: primaryTeal,
-                                            foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.symmetric(vertical: 12),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                          ),
-                                          onPressed: () {
-                                            if (nameCtrl.text.trim().isEmpty || emailCtrl.text.trim().isEmpty) {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                const SnackBar(content: Text("Name and Email are required.")),
-                                              );
-                                              return;
-                                            }
-                                            // Perform dynamic onboarding update
-                                            setState(() {
-                                              _activeVendors.insert(0, {
-                                                "name": nameCtrl.text.trim(),
-                                                "tier": vendorType,
-                                                "email": emailCtrl.text.trim(),
-                                                "phone": phoneCtrl.text.trim().isEmpty ? "+1 555-0199" : phoneCtrl.text.trim(),
-                                                "joined": "Just Now",
-                                                "status": "Active",
-                                                "verified": false,
-                                                "imageUrl": ""
-                                              });
-                                            });
-
-                                            setModalState(() {
-                                              onboardingSuccess = true;
-                                            });
-                                          },
-                                          child: const Text("CREATE ACCOUNT", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
+                          const Text('Onboard New Vendor',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Manrope')),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () => Navigator.pop(context),
                           ),
                         ],
                       ),
+                    ),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('FULL NAME / COMPANY NAME',
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: textLight)),
+                            const SizedBox(height: 6),
+                            TextField(
+                              controller: nameCtrl,
+                              style: const TextStyle(fontSize: 13),
+                              decoration: const InputDecoration(
+                                hintText: 'Enter name...',
+                                border: OutlineInputBorder(),
+                                contentPadding:
+                                EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('EMAIL',
+                                          style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: textLight)),
+                                      const SizedBox(height: 6),
+                                      TextField(
+                                        controller: emailCtrl,
+                                        style: const TextStyle(fontSize: 13),
+                                        keyboardType: TextInputType.emailAddress,
+                                        decoration: const InputDecoration(
+                                          hintText: 'email@example.com',
+                                          border: OutlineInputBorder(),
+                                          contentPadding: EdgeInsets.symmetric(
+                                              horizontal: 12, vertical: 10),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('MOBILE NO',
+                                          style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: textLight)),
+                                      const SizedBox(height: 6),
+                                      TextField(
+                                        controller: phoneCtrl,
+                                        style: const TextStyle(fontSize: 13),
+                                        keyboardType: TextInputType.phone,
+                                        decoration: const InputDecoration(
+                                          hintText: '+1...',
+                                          border: OutlineInputBorder(),
+                                          contentPadding: EdgeInsets.symmetric(
+                                              horizontal: 12, vertical: 10),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Checkbox(
+                                  value: createAccount,
+                                  activeColor: Colors.grey,
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      setModalState(() => createAccount = val);
+                                    }
+                                  },
+                                ),
+                                const Expanded(
+                                  child: Text(
+                                    'Activate account immediately (else stays pending)',
+                                    style: TextStyle(fontSize: 11, color: textLight),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (formError != null) ...[
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Text(formError!,
+                                    style: const TextStyle(fontSize: 11, color: errorColor)),
+                              ),
+                            ],
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                    onPressed: submitting ? null : () => Navigator.pop(context),
+                                    child: const Text('CANCEL',
+                                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: primaryTeal,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                    onPressed: submitting
+                                        ? null
+                                        : () async {
+                                      if (nameCtrl.text.trim().isEmpty ||
+                                          emailCtrl.text.trim().isEmpty) {
+                                        setModalState(() =>
+                                        formError = 'Name and Email are required.');
+                                        return;
+                                      }
+                                      setModalState(() {
+                                        submitting = true;
+                                        formError = null;
+                                      });
+                                      try {
+                                        await _api.addVendor(
+                                          name: nameCtrl.text.trim(),
+                                          email: emailCtrl.text.trim(),
+                                          mobile: phoneCtrl.text.trim(),
+                                          status: createAccount ? 1 : 0,
+                                        );
+                                        setModalState(() {
+                                          submitting = false;
+                                          onboardingSuccess = true;
+                                        });
+                                        _refreshAll();
+                                      } on VendorApiException catch (e) {
+                                        setModalState(() {
+                                          submitting = false;
+                                          formError = e.message;
+                                        });
+                                      }
+                                    },
+                                    child: submitting
+                                        ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2, color: Colors.white),
+                                    )
+                                        : const Text('CREATE ACCOUNT',
+                                        style: TextStyle(
+                                            fontSize: 11, fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -372,145 +667,136 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 400),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  decoration: const BoxDecoration(
-                    color: primaryTeal,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Vendor Profile",
-                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Manrope'),
+            child: FutureBuilder<Map<String, dynamic>>(
+              future: _api.getVendorDetails(vendor['id'] as int),
+              builder: (context, snapshot) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      decoration: const BoxDecoration(
+                        color: primaryTeal,
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                ),
-
-                Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: bgLight,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: borderTeal.withOpacity(0.5)),
-                            ),
-                            child: vendor["imageUrl"] != null && (vendor["imageUrl"] as String).isNotEmpty
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(9),
-                                    child: Image.network(vendor["imageUrl"], fit: BoxFit.cover),
-                                  )
-                                : const Icon(Icons.storefront_rounded, color: primaryTeal, size: 30),
+                          const Text('Vendor Profile',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Manrope')),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () => Navigator.pop(context),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Builder(builder: (context) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 24),
+                            child: CircularProgressIndicator(color: primaryTeal),
+                          );
+                        }
+                        if (snapshot.hasError) {
+                          final msg = snapshot.error is VendorApiException
+                              ? (snapshot.error as VendorApiException).message
+                              : 'Failed to load vendor details';
+                          return Text(msg, style: const TextStyle(color: errorColor, fontSize: 13));
+                        }
+                        final v = snapshot.data ?? {};
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
                               children: [
-                                Text(
-                                  vendor["name"] ?? '',
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark),
+                                Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    color: bgLight,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: borderTeal.withOpacity(0.5)),
+                                  ),
+                                  child: const Icon(Icons.storefront_rounded,
+                                      color: primaryTeal, size: 30),
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  vendor["tier"] ?? '',
-                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: primaryTeal),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(v['name']?.toString() ?? '',
+                                          style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: textDark)),
+                                      const SizedBox(height: 2),
+                                      Text(v['company_name']?.toString() ?? '—',
+                                          style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: primaryTeal)),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: bgLight,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: const [
-                                  Text("TOTAL PROJECTS", style: TextStyle(fontSize: 9, color: textLight, fontWeight: FontWeight.bold)),
-                                  SizedBox(height: 4),
-                                  Text("128", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
-                                ],
-                              ),
+                            const SizedBox(height: 20),
+                            Row(
+                              children: [
+                                Expanded(child: _statTile('EMAIL', v['email']?.toString() ?? '—')),
+                                const SizedBox(width: 12),
+                                Expanded(child: _statTile('MOBILE', v['mobile']?.toString() ?? '—')),
+                              ],
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: bgLight,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text("RATING", style: TextStyle(fontSize: 9, color: textLight, fontWeight: FontWeight.bold)),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: const [
-                                      Text("4.9", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
-                                      SizedBox(width: 4),
-                                      Icon(Icons.star_rounded, color: Colors.amber, size: 16),
-                                    ],
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _statTile(
+                                    'LOCATION',
+                                    [v['city'], v['state']]
+                                        .where((e) => e != null && e.toString().isNotEmpty)
+                                        .join(', ')
+                                        .isEmpty
+                                        ? '—'
+                                        : [v['city'], v['state']].where((e) => e != null).join(', '),
                                   ),
-                                ],
-                              ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _statTile('TXN CHARGE', '${v['transaction_charge'] ?? '0'}%'),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      const Text("BIO & DOSSIER", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textLight)),
-                      const SizedBox(height: 6),
-                      const Text(
-                        "Leading international logistics and strategic supply chain management firm specializing in high-value asset transportation and global meridian navigation systems. Established 2018.",
-                        style: TextStyle(fontSize: 12, color: textLight, height: 1.4),
-                      ),
-                      const SizedBox(height: 24),
-
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryTeal,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(double.infinity, 44),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text("CLOSE PROFILE", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                            const SizedBox(height: 24),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primaryTeal,
+                                foregroundColor: Colors.white,
+                                minimumSize: const Size(double.infinity, 44),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('CLOSE PROFILE',
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        );
+                      }),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         );
@@ -518,110 +804,20 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
     );
   }
 
-  void _openTeamModal(Map<String, dynamic> vendor) {
-    String selectedTeam = "Strategy";
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return AlertDialog(
-              backgroundColor: surfaceWhite,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              titlePadding: const EdgeInsets.all(20),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-              actionsPadding: const EdgeInsets.all(20),
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Assign to Team", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
-                  const SizedBox(height: 4),
-                  Text("Assign ${vendor['name']} to a project team", style: const TextStyle(fontSize: 12, color: textLight)),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  RadioListTile<String>(
-                    value: "Strategy",
-                    groupValue: selectedTeam,
-                    activeColor: primaryTeal,
-                    title: Row(
-                      children: const [
-                        Icon(Icons.insights, color: primaryTeal, size: 20),
-                        SizedBox(width: 12),
-                        Text("Strategy & Growth", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textDark)),
-                      ],
-                    ),
-                    onChanged: (val) {
-                      if (val != null) setModalState(() => selectedTeam = val);
-                    },
-                  ),
-                  RadioListTile<String>(
-                    value: "Operations",
-                    groupValue: selectedTeam,
-                    activeColor: primaryTeal,
-                    title: Row(
-                      children: const [
-                        Icon(Icons.precision_manufacturing_rounded, color: primaryTeal, size: 20),
-                        SizedBox(width: 12),
-                        Text("Operations", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textDark)),
-                      ],
-                    ),
-                    onChanged: (val) {
-                      if (val != null) setModalState(() => selectedTeam = val);
-                    },
-                  ),
-                  RadioListTile<String>(
-                    value: "Marketing",
-                    groupValue: selectedTeam,
-                    activeColor: primaryTeal,
-                    title: Row(
-                      children: const [
-                        Icon(Icons.campaign_rounded, color: primaryTeal, size: 20),
-                        SizedBox(width: 12),
-                        Text("Marketing", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textDark)),
-                      ],
-                    ),
-                    onChanged: (val) {
-                      if (val != null) setModalState(() => selectedTeam = val);
-                    },
-                  ),
-                ],
-              ),
-              actions: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text("CANCEL", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryTeal,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _triggerAction("Assigned to team successfully");
-                        },
-                        child: const Text("CONFIRM", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
-        );
-      },
+  Widget _statTile(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: bgLight, borderRadius: BorderRadius.circular(8)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 9, color: textLight, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(value,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textDark),
+              overflow: TextOverflow.ellipsis),
+        ],
+      ),
     );
   }
 
@@ -638,17 +834,15 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
               Container(
                 width: 56,
                 height: 56,
-                decoration: BoxDecoration(
-                  color: errorColor.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: errorColor.withOpacity(0.1), shape: BoxShape.circle),
                 child: const Icon(Icons.warning_amber_rounded, color: errorColor, size: 32),
               ),
               const SizedBox(height: 16),
-              const Text("Suspend Vendor?", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDark)),
+              const Text('Suspend Vendor?',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDark)),
               const SizedBox(height: 8),
               Text(
-                "Are you sure you want to suspend ${vendor['name']}? They will lose access to the portal immediately.",
+                'Are you sure you want to suspend ${vendor['name']}? They will lose access immediately.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 12, color: textLight),
               ),
@@ -657,9 +851,11 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                      style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                       onPressed: () => Navigator.pop(context),
-                      child: const Text("KEEP ACTIVE", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                      child: const Text('KEEP ACTIVE',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -671,13 +867,11 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                       onPressed: () {
-                        setState(() {
-                          vendor['status'] = "Suspended";
-                        });
                         Navigator.pop(context);
-                        _triggerAction("Vendor suspended");
+                        _runAction(() => _api.suspendVendor(vendor['id'] as int), 'Vendor suspended');
                       },
-                      child: const Text("SUSPEND NOW", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                      child: const Text('SUSPEND NOW',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -689,282 +883,146 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
     );
   }
 
-  void _openDocsModal(Map<String, dynamic> vendor) {
+  void _openContactModal(Map<String, dynamic> vendor) {
+    final msgCtrl = TextEditingController();
+    bool sending = false;
+    String? error;
+
     showDialog(
       context: context,
       builder: (context) {
-        return Dialog(
-          backgroundColor: surfaceWhite,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  decoration: const BoxDecoration(
-                    color: primaryTeal,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        return StatefulBuilder(builder: (context, setModalState) {
+          return Dialog(
+            backgroundColor: surfaceWhite,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    decoration: const BoxDecoration(
+                      color: containerTeal,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Contact Vendor',
+                            style: TextStyle(
+                                color: primaryTeal,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Manrope')),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: primaryTeal, size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Verification Dossier",
-                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Manrope'),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                ),
-
-                Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text("OPERATING LICENSE - 2024", style: TextStyle(fontSize: 9, color: textLight, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
-                      Container(
-                        width: double.infinity,
-                        height: 180,
-                        decoration: BoxDecoration(
-                          color: bgLight,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: borderTeal, width: 2, style: BorderStyle.solid),
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('RECIPIENT',
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textLight)),
+                        const SizedBox(height: 6),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(color: bgLight, borderRadius: BorderRadius.circular(8)),
+                          child: Text(vendor['name']?.toString() ?? '',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textDark)),
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(Icons.description_rounded, color: borderTeal, size: 48),
-                            SizedBox(height: 8),
-                            Text("CERT_CORP_00912.pdf", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: textDark)),
-                            SizedBox(height: 2),
-                            Text("UPLOADED 12 OCT 2023", style: TextStyle(fontSize: 9, color: textLight)),
-                          ],
+                        const SizedBox(height: 16),
+                        const Text('MESSAGE',
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textLight)),
+                        const SizedBox(height: 6),
+                        TextField(
+                          controller: msgCtrl,
+                          maxLines: 5,
+                          style: const TextStyle(fontSize: 13),
+                          decoration: const InputDecoration(
+                            hintText: 'Write your message here...',
+                            border: OutlineInputBorder(),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: containerTeal.withOpacity(0.4),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        if (error != null) ...[
+                          const SizedBox(height: 8),
+                          Text(error!, style: const TextStyle(fontSize: 11, color: errorColor)),
+                        ],
+                        const SizedBox(height: 24),
+                        Row(
                           children: [
-                            const Icon(Icons.info_outline, color: primaryTeal, size: 18),
-                            const SizedBox(width: 8),
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: const [
-                                  Text("Review Required", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: primaryTeal)),
-                                  SizedBox(height: 2),
-                                  Text(
-                                    "Verify that the digital watermark and expiration dates match the current regional registry standards.",
-                                    style: TextStyle(fontSize: 11, color: textLight, height: 1.3),
-                                  ),
-                                ],
+                              child: OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                                onPressed: sending ? null : () => Navigator.pop(context),
+                                child: const Text('CLOSE',
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: primaryTeal,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                onPressed: sending
+                                    ? null
+                                    : () async {
+                                  if (msgCtrl.text.trim().isEmpty) {
+                                    setModalState(() => error = 'Message cannot be empty.');
+                                    return;
+                                  }
+                                  setModalState(() {
+                                    sending = true;
+                                    error = null;
+                                  });
+                                  try {
+                                    await _api.contactVendor(
+                                        vendor['id'] as int, msgCtrl.text.trim());
+                                    if (context.mounted) Navigator.pop(context);
+                                    _triggerAction('Message sent successfully!');
+                                  } on VendorApiException catch (e) {
+                                    setModalState(() {
+                                      sending = false;
+                                      error = e.message;
+                                    });
+                                  }
+                                },
+                                icon: sending
+                                    ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                                    : const Icon(Icons.send_rounded, size: 14),
+                                label: const Text('SEND MESSAGE',
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: errorColor,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                              onPressed: () {
-                                Navigator.pop(context);
-                                _triggerAction("Document Rejected");
-                              },
-                              icon: const Icon(Icons.cancel_outlined, size: 16),
-                              label: const Text("REJECT", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: primaryTeal,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                              onPressed: () {
-                                Navigator.pop(context);
-                                _triggerAction("Document Approved");
-                              },
-                              icon: const Icon(Icons.verified_outlined, size: 16),
-                              label: const Text("APPROVE", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
+          );
+        });
       },
     );
-  }
-
-  void _openContactModal(String name) {
-    final msgCtrl = TextEditingController(
-      text: "Hello $name, we are reviewing your application for Serene Commerce. We require some additional documentation regarding your regional compliance certifications. Please provide them at your earliest convenience.",
-    );
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          backgroundColor: surfaceWhite,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  decoration: const BoxDecoration(
-                    color: containerTeal,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Contact Vendor",
-                        style: TextStyle(color: primaryTeal, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Manrope'),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: primaryTeal, size: 20),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                ),
-
-                Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text("RECIPIENT", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textLight)),
-                      const SizedBox(height: 6),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: bgLight,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          name,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textDark),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      const Text("MESSAGE", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textLight)),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: msgCtrl,
-                        maxLines: 5,
-                        style: const TextStyle(fontSize: 13),
-                        decoration: const InputDecoration(
-                          hintText: "Write your message here...",
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text("CLOSE", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: primaryTeal,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                              onPressed: () {
-                                Navigator.pop(context);
-                                _triggerAction("Message Sent Successfully!");
-                              },
-                              icon: const Icon(Icons.send_rounded, size: 14),
-                              label: const Text("SEND MESSAGE", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _approvePending(Map<String, String> review) {
-    setState(() {
-      _pendingReviews.removeWhere((item) => item['id'] == review['id']);
-      _activeVendors.insert(0, {
-        "name": review["name"] ?? '',
-        "tier": "Tier 1 Strategic",
-        "email": "${review['name']?.replaceAll(' ', '').toLowerCase()}@serene.com",
-        "phone": "+1 888 234 567",
-        "joined": "Just Now",
-        "status": "Active",
-        "verified": false,
-        "imageUrl": ""
-      });
-    });
-    _triggerAction("Approved: ${review['name']} added to directory");
-  }
-
-  void _rejectPending(Map<String, String> review) {
-    setState(() {
-      _pendingReviews.removeWhere((item) => item['id'] == review['id']);
-    });
-    _triggerAction("Application for ${review['name']} rejected");
   }
 
   @override
@@ -972,541 +1030,420 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 700;
 
-    final filteredVendors = _activeVendors.where((v) {
-      final name = (v["name"] as String).toLowerCase();
-      final tier = (v["tier"] as String).toLowerCase();
-      final email = (v["email"] as String).toLowerCase();
-      final query = _searchQuery.toLowerCase();
-      return name.contains(query) || tier.contains(query) || email.contains(query);
-    }).toList();
+    Widget mainContent = RefreshIndicator(
+      color: primaryTeal,
+      onRefresh: () async => _refreshAll(),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            isMobile
+                ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Manage Vendors',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
+                const SizedBox(height: 6),
+                const Text('Oversee strategic partnerships and manage your professional network dossier.',
+                    style: TextStyle(fontSize: 12, color: textLight)),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryTeal,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 44),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => vendorForm(),));
+                  },
+                  icon: const Icon(Icons.add_rounded, size: 20),
+                  label: const Text('Onboard New Vendor', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            )
+                : Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text('VIRTUAL DIRECTORY',
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: primaryTeal, letterSpacing: 1.5)),
+                      SizedBox(height: 4),
+                      Text('Manage Vendors',
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
+                      SizedBox(height: 6),
+                      Text('Oversee strategic partnerships and manage your professional network dossier.',
+                          style: TextStyle(fontSize: 12, color: textLight)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryTeal,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: _onboardNewVendor,
+                  icon: const Icon(Icons.add_rounded, size: 20),
+                  label: const Text('Onboard New Vendor', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
 
-    Widget mainContent = SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          isMobile
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Manage Vendors",
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope'),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      "Oversee strategic partnerships and manage your professional network dossier.",
-                      style: TextStyle(fontSize: 12, color: textLight),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryTeal,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 44),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      onPressed: _onboardNewVendor,
-                      icon: const Icon(Icons.add_rounded, size: 20),
-                      label: const Text("Onboard New Vendor", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Pending Reviews',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(color: primaryTeal.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                  child: Text('${_pendingReviews.length} New',
+                      style: const TextStyle(fontSize: 9, color: primaryTeal, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (_loadingDashboard)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Center(child: CircularProgressIndicator(color: primaryTeal)),
+              )
+            else if (_dashboardError != null)
+              _errorBox(_dashboardError!, _loadDashboard)
+            else if (_pendingReviews.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: surfaceWhite,
+                    border: Border.all(color: borderTeal.withOpacity(0.5)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: Text('No pending reviews remaining for this period.',
+                        style: TextStyle(fontSize: 13, color: textLight, fontStyle: FontStyle.italic)),
+                  ),
                 )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            "VIRTUAL DIRECTORY",
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: primaryTeal, letterSpacing: 1.5),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            "Manage Vendors",
-                            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope'),
-                          ),
-                          SizedBox(height: 6),
-                          Text(
-                            "Oversee strategic partnerships and manage your professional network dossier.",
-                            style: TextStyle(fontSize: 12, color: textLight),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryTeal,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      onPressed: _onboardNewVendor,
-                      icon: const Icon(Icons.add_rounded, size: 20),
-                      label: const Text("Onboard New Vendor", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
+              else
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(children: _pendingReviews.map((rev) => _buildPendingCard(rev)).toList()),
                 ),
-          const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-          // // 1. s Section
-          // const Text("Membership Plans", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
-          // const SizedBox(height: 12),
-          // SingleChildScrollView(
-          //   scrollDirection: Axis.horizontal,
-          //   physics: const BouncingScrollPhysics(),
-          //   child: Row(
-          //     crossAxisAlignment: CrossAxisAlignment.start,
-          //     children: [
-          //       _buildPlanCard(
-          //         tier: "Silver Tier",
-          //         badge: "BASIC",
-          //         badgeColor: textLight,
-          //         badgeBg: borderTeal.withOpacity(0.3),
-          //         price: "₹49",
-          //         rate: "5% Commission Rate",
-          //         isActive: _activePlan == "Silver Tier",
-          //         onSelect: () => setState(() => _activePlan = "Silver Tier"),
-          //       ),
-          //       _buildPlanCard(
-          //         tier: "Gold Tier",
-          //         badge: "POPULAR",
-          //         badgeColor: Colors.black,
-          //         badgeBg: Colors.yellow,
-          //         price: "₹99",
-          //         rate: "15% Commission Earned",
-          //         isActive: _activePlan == "Gold Tier",
-          //         isPremium: true,
-          //         bannerText: "Upgrade to earn more",
-          //         bannerIcon: Icons.trending_up,
-          //         onSelect: () => setState(() => _activePlan = "Gold Tier"),
-          //       ),
-          //       _buildPlanCard(
-          //         tier: "Elite Tier",
-          //         badge: "PREMIUM",
-          //         badgeColor: Colors.white,
-          //         badgeBg: textDark,
-          //         price: "₹249",
-          //         rate: "25% Commission Earned",
-          //         isActive: _activePlan == "Elite Tier",
-          //         bannerText: "VIP Support Access",
-          //         bannerIcon: Icons.star,
-          //         onSelect: () => setState(() => _activePlan = "Elite Tier"),
-          //       ),
-          //     ],
-          //   ),
-          // ),
-          // const SizedBox(height: 24),
-
-          // 2. Pending Reviews Slider
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text("Pending Reviews", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: primaryTeal.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  "${_pendingReviews.length} New",
-                  style: const TextStyle(fontSize: 9, color: primaryTeal, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          if (_pendingReviews.isEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: surfaceWhite,
-                border: Border.all(color: borderTeal.withOpacity(0.5)),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Center(
-                child: Text(
-                  "No pending reviews remaining for this period.",
-                  style: TextStyle(fontSize: 13, color: textLight, fontStyle: FontStyle.italic),
-                ),
-              ),
-            )
-          else
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              child: Row(
-                children: _pendingReviews.map((rev) => _buildPendingCard(rev)).toList(),
-              ),
-            ),
-          const SizedBox(height: 24),
-
-          // 3. Search & Filter
-          Container(
-            decoration: BoxDecoration(
-              color: surfaceWhite,
-              border: Border.all(color: borderTeal),
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.01), blurRadius: 4, offset: const Offset(0, 2))],
-            ),
-            child: TextField(
-              style: const TextStyle(fontSize: 14),
-              decoration: const InputDecoration(
-                hintText: "Search vendor dossier...",
-                prefixIcon: Icon(Icons.search_rounded, color: textLight),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              ),
-              onChanged: (val) {
-                setState(() {
-                  _searchQuery = val;
-                });
-              },
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // 4. Active Directory
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text("Active Vendors", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
-            ],
-          ),
-          const SizedBox(height: 12),
-          if (filteredVendors.isEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: surfaceWhite,
-                border: Border.all(color: borderTeal.withOpacity(0.5)),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Center(
-                child: Text(
-                  "No vendors found matching your query.",
-                  style: TextStyle(fontSize: 13, color: textLight, fontStyle: FontStyle.italic),
-                ),
-              ),
-            )
-          else
             Container(
               decoration: BoxDecoration(
                 color: surfaceWhite,
                 border: Border.all(color: borderTeal),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
                 boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.01), blurRadius: 4, offset: const Offset(0, 2))],
               ),
-              child: ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: filteredVendors.length,
-                itemBuilder: (context, idx) {
-                  final vendor = filteredVendors[idx];
-                  final isSuspended = vendor['status'] == "Suspended";
-
-                  return Container(
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: borderTeal.withOpacity(0.5),
-                          width: idx == filteredVendors.length - 1 ? 0 : 1,
-                        ),
-                      ),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    child: Row(
-                      children: [
-                        // Avatar
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: bgLight,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: borderTeal.withOpacity(0.5)),
-                          ),
-                          child: vendor["imageUrl"] != null && (vendor["imageUrl"] as String).isNotEmpty
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(7),
-                                  child: Image.network(vendor["imageUrl"], fit: BoxFit.cover),
-                                )
-                              : const Icon(Icons.storefront_rounded, color: primaryTeal, size: 24),
-                        ),
-                        const SizedBox(width: 14),
-
-                        // Name & details
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      vendor["name"] ?? '',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                        color: isSuspended ? textLight : textDark,
-                                        decoration: isSuspended ? TextDecoration.lineThrough : null,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  if (vendor["verified"] == true) ...[
-                                    const SizedBox(width: 4),
-                                    const Icon(Icons.verified, color: primaryTeal, size: 14),
-                                  ],
-                                ],
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                "Tier: ${vendor['tier']} • Email: ${vendor['email']}",
-                                style: const TextStyle(fontSize: 10, color: textLight),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-
-                        // Action icons or dropdown menu
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (!isSuspended) ...[
-                              IconButton(
-                                icon: const Icon(Icons.check_circle, color: primaryTeal, size: 20),
-                                tooltip: "View Documents",
-                                onPressed: () => _openDocsModal(vendor),
-                              ),
-                            ],
-                            PopupMenuButton<String>(
-                              icon: const Icon(Icons.more_vert_rounded, color: textLight),
-                              itemBuilder: (context) => [
-                                const PopupMenuItem(value: "profile", child: Text("View Profile", style: TextStyle(fontSize: 13))),
-                                const PopupMenuItem(value: "team", child: Text("Add to Team", style: TextStyle(fontSize: 13))),
-                                const PopupMenuItem(value: "contact", child: Text("Contact", style: TextStyle(fontSize: 13))),
-                                const PopupMenuItem(value: "docs", child: Text("View Documents", style: TextStyle(fontSize: 13))),
-                                const PopupMenuDivider(),
-                                PopupMenuItem(
-                                  value: "suspend",
-                                  child: Text(
-                                    isSuspended ? "Re-activate" : "Suspend",
-                                    style: TextStyle(fontSize: 13, color: isSuspended ? primaryTeal : errorColor),
-                                  ),
-                                ),
-                              ],
-                              onSelected: (action) {
-                                if (action == "profile") {
-                                  _openProfileModal(vendor);
-                                } else if (action == "team") {
-                                  _openTeamModal(vendor);
-                                } else if (action == "contact") {
-                                  _openContactModal(vendor['name']);
-                                } else if (action == "docs") {
-                                  _openDocsModal(vendor);
-                                } else if (action == "suspend") {
-                                  if (isSuspended) {
-                                    setState(() {
-                                      vendor['status'] = "Active";
-                                    });
-                                    _triggerAction("Vendor re-activated successfully");
-                                  } else {
-                                    _openSuspendModal(vendor);
-                                  }
-                                }
-                              },
-                            ),
-                          ],
-                        )
-                      ],
-                    ),
-                  );
-                },
+              child: TextField(
+                controller: _searchCtrl,
+                style: const TextStyle(fontSize: 14),
+                decoration: const InputDecoration(
+                  hintText: 'Search vendor dossier...',
+                  prefixIcon: Icon(Icons.search_rounded, color: textLight),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+                onChanged: _onSearchChanged,
               ),
             ),
-        ],
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: _buildTypeDropdown()),
+                const SizedBox(width: 12),
+                Expanded(child: _buildStatusDropdown()),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            const Text('Active Vendors',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
+            const SizedBox(height: 12),
+            if (_loadingVendors)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: CircularProgressIndicator(color: primaryTeal)),
+              )
+            else if (_vendorsError != null)
+              _errorBox(_vendorsError!, _loadVendors)
+            else if (_vendors.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: surfaceWhite,
+                    border: Border.all(color: borderTeal.withOpacity(0.5)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: Text('No vendors found matching your query.',
+                        style: TextStyle(fontSize: 13, color: textLight, fontStyle: FontStyle.italic)),
+                  ),
+                )
+              else ...[
+                  Container(
+                    decoration: BoxDecoration(
+                      color: surfaceWhite,
+                      border: Border.all(color: borderTeal),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.01), blurRadius: 4, offset: const Offset(0, 2))],
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _vendors.length,
+                      itemBuilder: (context, idx) => _buildVendorRow(_vendors[idx], idx == _vendors.length - 1),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildPaginationBar(),
+                ],
+          ],
+        ),
       ),
     );
 
-    if (widget.isEmbedded) {
-      return mainContent;
-    }
+    if (widget.isEmbedded) return mainContent;
 
     return Scaffold(
       backgroundColor: bgLight,
       appBar: AppBar(
-        title: const Text("Manage Vendors", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text('Manage Vendors', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: secondaryTeal,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _refreshAll),
+        ],
       ),
       body: SafeArea(child: mainContent),
     );
   }
 
-  Widget _buildPlanCard({
-    required String tier,
-    required String badge,
-    required Color badgeColor,
-    required Color badgeBg,
-    required String price,
-    required String rate,
-    required bool isActive,
-    bool isPremium = false,
-    String? bannerText,
-    IconData? bannerIcon,
-    required VoidCallback onSelect,
-  }) {
+  Widget _errorBox(String message, VoidCallback onRetry) {
     return Container(
-      width: 270,
-      margin: const EdgeInsets.only(right: 16, bottom: 4),
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isPremium ? primaryTeal : surfaceWhite,
+        color: errorColor.withOpacity(0.06),
+        border: Border.all(color: errorColor.withOpacity(0.3)),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderTeal.withOpacity(0.6)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      tier,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: isPremium ? Colors.white : textDark,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: badgeBg,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        badge,
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          color: badgeColor,
-                        ),
-                      ),
-                    )
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      price,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: isPremium ? Colors.white : primaryTeal,
-                      ),
-                    ),
-                    Text(
-                      "/mo",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isPremium ? Colors.white.withOpacity(0.7) : textLight,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  rate,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isPremium ? Colors.white.withOpacity(0.8) : textLight,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                if (bannerText != null && bannerIcon != null) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isPremium ? Colors.white.withOpacity(0.15) : containerTeal,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          bannerIcon,
-                          color: isPremium ? Colors.white : primaryTeal,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          bannerText,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: isPremium ? Colors.white : primaryTeal,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 36,
-                  child: isActive
-                      ? OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: isPremium ? Colors.white : primaryTeal),
-                            foregroundColor: isPremium ? Colors.white : primaryTeal,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          onPressed: null,
-                          child: const Text("Active Plan", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                        )
-                      : ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: isPremium ? Colors.white : primaryTeal,
-                            foregroundColor: isPremium ? primaryTeal : Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          onPressed: onSelect,
-                          child: const Text("Select Plan", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                        ),
-                )
-              ],
-            ),
-          )
+          const Icon(Icons.error_outline, color: errorColor, size: 18),
+          const SizedBox(width: 8),
+          Expanded(child: Text(message, style: const TextStyle(fontSize: 12, color: errorColor))),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
         ],
       ),
     );
   }
 
-  Widget _buildPendingCard(Map<String, String> review) {
+  Widget _buildTypeDropdown() {
+    final items = <DropdownMenuItem<String>>[
+      const DropdownMenuItem(value: 'all', child: Text('All Types', style: TextStyle(fontSize: 12))),
+      ..._vendorTypes.map((t) => DropdownMenuItem(
+        value: t['title']?.toString() ?? '',
+        child: Text(t['title']?.toString() ?? '', style: const TextStyle(fontSize: 12)),
+      )),
+    ];
+    return Container(
+      decoration: BoxDecoration(
+        color: surfaceWhite,
+        border: Border.all(color: borderTeal),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _typeFilter,
+          isExpanded: true,
+          items: items,
+          onChanged: (val) {
+            if (val == null) return;
+            setState(() {
+              _typeFilter = val;
+              _page = 1;
+            });
+            _loadVendors();
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusDropdown() {
+    const options = {
+      'all': 'All Status',
+      'active': 'Active',
+      'pending': 'Pending',
+      'suspended': 'Suspended',
+      'verified': 'Verified',
+    };
+    return Container(
+      decoration: BoxDecoration(
+        color: surfaceWhite,
+        border: Border.all(color: borderTeal),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _statusFilter,
+          isExpanded: true,
+          items: options.entries
+              .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(fontSize: 12))))
+              .toList(),
+          onChanged: (val) {
+            if (val == null) return;
+            setState(() {
+              _statusFilter = val;
+              _page = 1;
+            });
+            _loadVendors();
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaginationBar() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.chevron_left),
+          color: primaryTeal,
+          onPressed: _page > 1
+              ? () {
+            setState(() => _page--);
+            _loadVendors();
+          }
+              : null,
+        ),
+        Text('Page $_page of $_totalPages', style: const TextStyle(fontSize: 12, color: textLight)),
+        IconButton(
+          icon: const Icon(Icons.chevron_right),
+          color: primaryTeal,
+          onPressed: _page < _totalPages
+              ? () {
+            setState(() => _page++);
+            _loadVendors();
+          }
+              : null,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVendorRow(Map<String, dynamic> vendor, bool isLast) {
+    final int status = int.tryParse(vendor['status'].toString()) ?? 0;
+    final bool isSuspended = status == 2;
+    final bool isVerified = (int.tryParse(vendor['verified'].toString()) ?? 0) == 1;
+    final String tier = (vendor['type_names'] as List?)?.join(', ') ?? '';
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: borderTeal.withOpacity(0.5), width: isLast ? 0 : 1)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: bgLight,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: borderTeal.withOpacity(0.5)),
+            ),
+            child: const Icon(Icons.storefront_rounded, color: primaryTeal, size: 24),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        vendor['name']?.toString() ?? '',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: isSuspended ? textLight : textDark,
+                          decoration: isSuspended ? TextDecoration.lineThrough : null,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isVerified) ...[
+                      const SizedBox(width: 4),
+                      const Icon(Icons.verified, color: primaryTeal, size: 14),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Type: ${tier.isEmpty ? '—' : tier} • Email: ${vendor['email']}',
+                  style: const TextStyle(fontSize: 10, color: textLight),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded, color: textLight),
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'profile', child: Text('View Profile', style: TextStyle(fontSize: 13))),
+              const PopupMenuItem(value: 'contact', child: Text('Contact', style: TextStyle(fontSize: 13))),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'suspend',
+                child: Text(
+                  isSuspended ? 'Re-activate' : 'Suspend',
+                  style: TextStyle(fontSize: 13, color: isSuspended ? primaryTeal : errorColor),
+                ),
+              ),
+            ],
+            onSelected: (action) {
+              if (action == 'profile') {
+                _openProfileModal(vendor);
+              } else if (action == 'contact') {
+                _openContactModal(vendor);
+              } else if (action == 'suspend') {
+                if (isSuspended) {
+                  _runAction(() => _api.approveVendor(vendor['id'] as int), 'Vendor re-activated successfully');
+                } else {
+                  _openSuspendModal(vendor);
+                }
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPendingCard(Map<String, dynamic> review) {
     return Container(
       width: 280,
       margin: const EdgeInsets.only(right: 16, bottom: 4),
@@ -1525,23 +1462,20 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
             children: [
               Expanded(
                 child: Text(
-                  review["name"] ?? '',
+                  review['name']?.toString() ?? '',
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textDark),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 8),
               Text(
-                review["date"] ?? '',
+                (review['created_date']?.toString() ?? '').split(' ').first,
                 style: const TextStyle(fontSize: 9, color: textLight, fontWeight: FontWeight.bold),
               ),
             ],
           ),
           const SizedBox(height: 4),
-          Text(
-            review["category"] ?? '',
-            style: const TextStyle(fontSize: 11, color: textLight),
-          ),
+          Text(review['company_name']?.toString() ?? '—', style: const TextStyle(fontSize: 11, color: textLight)),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -1557,7 +1491,7 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                       padding: EdgeInsets.zero,
                     ),
                     onPressed: () => _approvePending(review),
-                    child: const Text("Approve", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    child: const Text('Approve', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ),
@@ -1566,11 +1500,8 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                 width: 36,
                 height: 32,
                 child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: () => _openContactModal(review["name"] ?? ''),
+                  style: OutlinedButton.styleFrom(padding: EdgeInsets.zero, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                  onPressed: () => _openContactModal(review),
                   child: const Icon(Icons.mail_outline_rounded, color: textLight, size: 16),
                 ),
               ),
@@ -1590,7 +1521,7 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                 ),
               ),
             ],
-          )
+          ),
         ],
       ),
     );

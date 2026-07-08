@@ -10,6 +10,11 @@ import 'package:trading_ecommerce_admin/admin/business_user_dashboard_screen.dar
 import 'package:trading_ecommerce_admin/admin/seller_dashboard_screen.dart';
 import 'package:trading_ecommerce_admin/common/shell.dart';
 
+import '../admin/candidate_manage_hub.dart';
+import '../admin/job_applications_screen.dart';
+import '../admin/joblisting.dart';
+import '../admin/recruiter_dashboard_screen.dart';
+
 void main() {
   runApp(const LuxeWelcomeApp());
 }
@@ -153,12 +158,14 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
     } catch (e) {
       debugPrint("Auto-login session check error: $e");
     }
-
+    //comment
     // Default fallback to login screen
     Navigator.pushReplacementNamed(
       context,
       AppRoutes.login,
+     // AppRoutes.businessDashboard
     );
+    //  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => JobApplicationsScreen(),));
   }
 
   @override
