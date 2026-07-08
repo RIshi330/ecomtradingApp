@@ -21,7 +21,6 @@ import 'package:trading_ecommerce_admin/screens/trading_marketplace_screen.dart'
 import 'package:trading_ecommerce_admin/screens/selected_items_screen.dart';
 import 'package:trading_ecommerce_admin/screens/affiliate_orders_screen.dart';
 import 'package:trading_ecommerce_admin/admin/seller_orders_screen.dart';
-import 'package:trading_ecommerce_admin/admin/api_logs_screen.dart';
 import 'package:trading_ecommerce_admin/screens/event_marketplace_screen.dart';
 import 'package:trading_ecommerce_admin/screens/my_events_screen.dart';
 import 'package:trading_ecommerce_admin/screens/event_opportunities_screen.dart';
@@ -1665,7 +1664,6 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       _buildDrawerItem(3, Icons.receipt_long_rounded, "Orders"),
                       _buildDrawerItem(27, Icons.campaign_rounded, "Schedule Campaigns"),
                       _buildDrawerItem(6, Icons.settings_rounded, "Settings"),
-                      _buildDrawerItem(99, Icons.receipt_long_outlined, "API Transaction Logs"),
                     ] else ...[
                       // _buildDrawerItem(0, Icons.dashboard_rounded, "Dashboard"),
                       _buildDrawerItem(12, Icons.storefront_rounded, "Seller Dashboard"),
@@ -2196,12 +2194,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         ),
         onTap: () {
           Navigator.pop(context); // Close Drawer
-          if (index == 99) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ApiLogsScreen()),
-            );
-          } else if (index == 21) {
+          if (index == 21) {
             Navigator.pushNamed(context, AppRoutes.createOpportunity);
           } else if (index == 40) {
             Navigator.pushNamed(context, AppRoutes.logistics);
