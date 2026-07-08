@@ -57,7 +57,7 @@ class _DigitalOrdersInstallationScreenState extends State<DigitalOrdersInstallat
       barrierDismissible: false,
       builder: (dialogContext) {
         return StatefulBuilder(
-          builder: (context, setDialogState) {
+          builder: (dialogStateContext, setDialogState) {
             Timer? timer;
             
             // Start local periodic tick to simulate deployment progress

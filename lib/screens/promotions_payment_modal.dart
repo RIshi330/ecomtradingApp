@@ -84,7 +84,9 @@ class _PromotionsPaymentModalState extends State<PromotionsPaymentModal> {
 
       setState(() {
         ecashBalance = double.tryParse(ecashRes['available_balance']?.toString() ?? '0') ?? 0.0;
+        if (ecashBalance < 0.0) ecashBalance = 0.0;
         ewalletBalance = double.tryParse(ewalletRes['available_balance']?.toString() ?? '0') ?? 0.0;
+        if (ewalletBalance < 0.0) ewalletBalance = 0.0;
       });
     } catch (e) {
       debugPrint("Error fetching balances: $e");

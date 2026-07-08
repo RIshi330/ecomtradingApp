@@ -58,7 +58,7 @@ class Database {
         apiLogs.removeLast();
       }
 
-      print('Database [getData]: Sending request to $targetUrl with SESSION-ID: $existingSessionId');
+      print('Database [getData]: Sending request to $targetUrl with SESSION-ID: $existingSessionId and BODY: $stringBody');
 
       final response = await http.post(
         targetUrl,

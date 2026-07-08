@@ -1,5 +1,8 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import '../Database/Database.dart';
+import '../index.dart';
 
 class ProductListingScreen extends StatefulWidget {
   const ProductListingScreen({super.key});
@@ -9,6 +12,11 @@ class ProductListingScreen extends StatefulWidget {
 }
 
 class _ProductListingScreenState extends State<ProductListingScreen> {
+  // Membership & Posting limit variables
+  int? postsLeft;
+  bool isCheckingPosts = true;
+  bool isGeneratingAI = false;
+
   // Category variables
   String? category;
   String? subCategory;
@@ -102,6 +110,272 @@ class _ProductListingScreenState extends State<ProductListingScreen> {
   void initState() {
     super.initState();
     _fetchCategories();
+    _checkPostingLimit();
+  }
+
+  Future<void> _checkPostingLimit() async {
+    setState(() {
+      isCheckingPosts = true;
+    });
+    try {
+      final response = await Database().getJsonData({
+        'action': 'checkServicePosts',
+      }, endpoint: 'new_apis/product_listing_api.php');
+
+      if (response != null && response['success'] == true && response['data'] != null) {
+        final left = response['data']['posts_left'];
+        setState(() {
+          postsLeft = int.tryParse(left.toString()) ?? 0;
+          isCheckingPosts = false;
+        });
+
+        if (postsLeft == 0) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _showMembershipRequiredDialog();
+          });
+        }
+      } else {
+        setState(() {
+          isCheckingPosts = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error checking posting limit: $e");
+      setState(() {
+        isCheckingPosts = false;
+      });
+    }
+  }
+
+  void _showMembershipRequiredDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xffFEE2E2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.lock_outline_rounded,
+                            color: Color(0xffEF4444),
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          "Membership Required",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xff1E293B),
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 20, color: Colors.grey),
+                      onPressed: () => Navigator.pop(dialogContext),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "You have exhausted your product posting credits.",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff334155),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "You don't have any posts left for products. Please buy a membership or package to post.",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xff64748B),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xffF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xffE2E8F0)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(Icons.check_circle_outline, color: Colors.green, size: 18),
+                          SizedBox(width: 8),
+                          Text("Purchase a membership plan", style: TextStyle(fontSize: 13, color: Color(0xff475569))),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: const [
+                          Icon(Icons.check_circle_outline, color: Colors.green, size: 18),
+                          SizedBox(width: 8),
+                          Text("Buy a product posting package", style: TextStyle(fontSize: 13, color: Color(0xff475569))),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: const [
+                          Icon(Icons.check_circle_outline, color: Colors.green, size: 18),
+                          SizedBox(width: 8),
+                          Text("Upgrade your current membership", style: TextStyle(fontSize: 13, color: Color(0xff475569))),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xff008080),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(dialogContext);
+                      Navigator.pushNamed(context, AppRoutes.membershipPlans);
+                    },
+                    child: const Text(
+                      "View Plans",
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _generateDescriptionWithAI() async {
+    if (titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please enter a Product Title first to generate a description."),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      isGeneratingAI = true;
+    });
+
+    try {
+      final db = Database();
+      final keyResponse = await db.getData({
+        'action': 'get_gemini_key',
+      }, endpoint: 'new_apis/community_palatform_setting_api 2.php');
+
+      String? apiKey;
+      if (keyResponse != null && (keyResponse['success'] == true || keyResponse['status'] == 200)) {
+        apiKey = keyResponse['data']?['api_key']?.toString();
+      }
+
+      if (apiKey == null || apiKey.trim().isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Gemini API Key is missing. Please set it in Settings."),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        setState(() {
+          isGeneratingAI = false;
+        });
+        return;
+      }
+
+      final brandText = brandController.text.trim();
+      final brandInfo = brandText.isNotEmpty ? "brand '$brandText'" : "no brand";
+      final prompt = "Generate a professional, compelling, and descriptive product listing description for a product with the title: '${titleController.text.trim()}' and $brandInfo. Make it suitable for an e-commerce platform. Provide only the description text itself, without any Markdown formatting, backticks, or outer quotes.";
+
+      final response = await http.post(
+        Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'contents': [
+            {
+              'parts': [
+                {'text': prompt}
+              ]
+            }
+          ]
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final generatedText = data['candidates']?[0]['content']?[0]['parts']?[0]['text']?.toString();
+        if (generatedText != null && generatedText.isNotEmpty) {
+          setState(() {
+            descriptionController.text = generatedText.trim();
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Description generated successfully!"),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        } else {
+          throw Exception("Invalid content in Gemini response");
+        }
+      } else {
+        throw Exception("Gemini API returned status code ${response.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("Error generating description: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error generating description: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isGeneratingAI = false;
+        });
+      }
+    }
   }
 
   @override
@@ -182,6 +456,10 @@ class _ProductListingScreenState extends State<ProductListingScreen> {
 
   // --- Save Product (Draft or Publish) ---
   Future<void> _saveProduct({required int status}) async {
+    if (postsLeft != null && postsLeft! <= 0) {
+      _showMembershipRequiredDialog();
+      return;
+    }
     if (category == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please select a Category")),
@@ -385,6 +663,39 @@ class _ProductListingScreenState extends State<ProductListingScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            if (!isCheckingPosts && postsLeft != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: postsLeft! > 0 ? const Color(0xffE6F4F4) : const Color(0xffFEE2E2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: postsLeft! > 0 ? const Color(0xff99D6D6) : const Color(0xffFCA5A5),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      postsLeft! > 0 ? Icons.info_outline : Icons.error_outline,
+                      color: postsLeft! > 0 ? const Color(0xff008080) : const Color(0xffEF4444),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        postsLeft! > 0
+                            ? "$postsLeft of 10 Product Posts Remaining"
+                            : "0 of 10 Product Posts Remaining - Membership Required",
+                        style: TextStyle(
+                          color: postsLeft! > 0 ? const Color(0xff008080) : const Color(0xffEF4444),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             /// STEP 1: Basic Information
             buildAccordion(
               number: "1",
@@ -751,7 +1062,38 @@ class _ProductListingScreenState extends State<ProductListingScreen> {
 
         const SizedBox(height: 24),
 
-        buildLabel("Detailed Description"),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            buildLabel("Detailed Description"),
+            TextButton.icon(
+              onPressed: isGeneratingAI ? null : _generateDescriptionWithAI,
+              icon: isGeneratingAI
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xff008080),
+                      ),
+                    )
+                  : const Icon(
+                      Icons.psychology_outlined,
+                      size: 16,
+                      color: Color(0xff008080),
+                    ),
+              label: Text(
+                isGeneratingAI ? "Generating..." : "Generate with AI",
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xff008080),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+
 
         const SizedBox(height: 6),
 

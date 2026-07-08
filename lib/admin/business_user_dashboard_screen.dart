@@ -41,6 +41,7 @@ import 'package:trading_ecommerce_admin/screens/marketplace_trainings_screen.dar
 import 'package:trading_ecommerce_admin/screens/enrolled_trainings_screen.dart';
 import 'package:trading_ecommerce_admin/screens/mom_trainings_screen.dart';
 import 'package:trading_ecommerce_admin/admin/digital_marketplace_screen.dart';
+import 'package:trading_ecommerce_admin/screens/membership_payment_modal.dart';
 
 class BusinessUserDashboard extends StatefulWidget {
   const BusinessUserDashboard({super.key});
@@ -104,6 +105,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
   int _pendingApprovalsCount = 5;
   int _activeJobsCount = 3;
   String _currentMembershipTier = "Gold Plan";
+  List<dynamic> _matchingMemberships = [];
 
   // Mock lists
   final List<Map<String, dynamic>> _mockUsers = [
@@ -184,12 +186,12 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
         });
       }
     });
-    // Show Membership Upsell modal after 3.5 seconds, ensuring route is active
+    // Check Membership status after 3.5 seconds, ensuring route is active
     Future.delayed(const Duration(milliseconds: 3500), () {
       if (mounted) {
         final route = ModalRoute.of(context);
         if (route != null && route.isCurrent) {
-          _showMembershipUpsellDialog();
+          _checkMembershipStatus();
         }
       }
     });
@@ -368,6 +370,59 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
     setState(() => _isLoading = false);
   }
 
+  Future<void> _checkMembershipStatus() async {
+    try {
+      final vendorId = await AuthService.getVendorIdString();
+      final adminId = await AuthService.getAdminId();
+      print("CHECK_MEMBERSHIP_STATUS vendor_id: $vendorId, admin_id: $adminId");
+      final response = await Database().getData({
+        'action': 'check_membership_status',
+        'vendor_id': vendorId,
+        if (adminId != null) 'admin_id': adminId.toString(),
+      }, endpoint: 'new_apis/menu_apis.php');
+
+      if (response['success'] == true && response['data'] != null) {
+        final showModal = response['data']['show_modal'] ?? false;
+        final list = response['data']['memberships'] as List<dynamic>? ?? [];
+        if (showModal && list.isNotEmpty) {
+          setState(() {
+            _matchingMemberships = list;
+          });
+          _showMembershipUpsellDialog();
+        }
+      }
+    } catch (e) {
+      debugPrint("Error checking membership status: $e");
+    }
+  }
+
+  Color _getMembershipColor(String title) {
+    final t = title.toUpperCase();
+    if (t.contains("GOLD")) return const Color(0xFFB45309);
+    if (t.contains("SILVER")) return primaryTeal;
+    if (t.contains("BRONZE")) return Colors.grey.shade400;
+    return primaryTeal;
+  }
+
+  void _openCheckoutSheet(Map<String, dynamic> plan) {
+    showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => MembershipPaymentModal(
+        planId: plan['id'],
+        planTitle: plan['title'] ?? 'Membership',
+        totalRawPrice: double.tryParse(plan['final_price']?.toString() ?? '') ?? 0.0,
+        themeColor: primaryTeal,
+      ),
+    ).then((success) {
+      if (success == true) {
+        _showSuccess("Membership purchased successfully!");
+        _loadBusinessProfile();
+      }
+    });
+  }
+
   // ══════════════════════════════════════════════════════════
   // MEMBERSHIP UPSELL MODAL DIALOG
   // ══════════════════════════════════════════════════════════
@@ -465,26 +520,57 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                         // Plans Row (Responsive layout simulated with wrapping)
                         LayoutBuilder(
                           builder: (context, constraints) {
+                            if (_matchingMemberships.isEmpty) {
+                              return const Center(
+                                child: Text("No matching membership plans available"),
+                              );
+                            }
+                            
                             bool isWide = constraints.maxWidth > 850;
+                            final cards = _matchingMemberships.map<Widget>((plan) {
+                              final title = plan['title']?.toString() ?? 'Plan';
+                              final double price = double.tryParse(plan['price']?.toString() ?? '0') ?? 0.0;
+                              final double finalPrice = double.tryParse(plan['final_price']?.toString() ?? '0') ?? 0.0;
+                              final double discount = double.tryParse(plan['discount']?.toString() ?? '0') ?? 0.0;
+
+                              String validityText = '';
+                              if (plan['validity'].toString() == 'Unlimited') {
+                                validityText = 'Lifetime Validity';
+                              } else {
+                                validityText = '${plan['validity']} Days Validity';
+                              }
+
+                              final List<String> features = [];
+                              final details = plan['details'] as List<dynamic>? ?? [];
+                              for (var det in details) {
+                                features.add("${det['posts']} posts on ${det['display_name']}");
+                              }
+                              if (plan['include_team_members'] == 1 || plan['include_team_members'].toString() == '1') {
+                                features.add("Includes ${plan['team_member_count']} team members");
+                                features.add("Add member at ₹${plan['additional_member_price']}");
+                              }
+
+                              final color = _getMembershipColor(title);
+
+                              return _buildPlanCard(
+                                plan: Map<String, dynamic>.from(plan),
+                                title: title,
+                                price: "₹${finalPrice.toStringAsFixed(0)}",
+                                validity: validityText,
+                                oldPrice: discount > 0 ? "₹${price.toStringAsFixed(0)}" : "",
+                                features: features,
+                                color: color,
+                                isFeatured: plan == _matchingMemberships.first,
+                              );
+                            }).toList();
+
                             return isWide
                                 ? Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(child: _buildPlanCard("BRONZE", "₹2,499", "Standard Support", ["Up to 5 Listings", "Standard Marketplace Entry", "Email Support (48h)"], Colors.grey.shade400)),
-                                      const SizedBox(width: 16),
-                                      Expanded(child: _buildPlanCard("SILVER", "₹5,999", "Priority Partnerships", ["Unlimited Listings", "Priority Marketplace Placement", "Analytics Dashboard", "Email Support (12h)"], primaryTeal, isFeatured: true)),
-                                      const SizedBox(width: 16),
-                                      Expanded(child: _buildPlanCard("GOLD", "₹12,999", "Dedicated Account Director", ["Verified Partner Status", "Direct CRM Integration", "Concierge PR & Events", "24/7 Dedicated Support"], const Color(0xFFB45309))),
-                                    ],
+                                    children: cards.map((c) => Expanded(child: c)).toList(),
                                   )
                                 : Column(
-                                    children: [
-                                      _buildPlanCard("BRONZE", "₹2,499", "Standard Support", ["Up to 5 Listings", "Standard Marketplace Entry", "Email Support (48h)"], Colors.grey.shade400),
-                                      const SizedBox(height: 16),
-                                      _buildPlanCard("SILVER", "₹5,999", "Priority Partnerships", ["Unlimited Listings", "Priority Marketplace Placement", "Analytics Dashboard", "Email Support (12h)"], primaryTeal, isFeatured: true),
-                                      const SizedBox(height: 16),
-                                      _buildPlanCard("GOLD", "₹12,999", "Dedicated Account Director", ["Verified Partner Status", "Direct CRM Integration", "Concierge PR & Events", "24/7 Dedicated Support"], const Color(0xFFB45309)),
-                                    ],
+                                    children: cards.expand((c) => [c, const SizedBox(height: 16)]).toList()..removeLast(),
                                   );
                           },
                         ),
@@ -536,7 +622,16 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
     );
   }
 
-  Widget _buildPlanCard(String title, String price, String subtitle, List<String> features, Color color, {bool isFeatured = false}) {
+  Widget _buildPlanCard({
+    required Map<String, dynamic> plan,
+    required String title,
+    required String price,
+    required String validity,
+    required String oldPrice,
+    required List<String> features,
+    required Color color,
+    bool isFeatured = false,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -575,10 +670,20 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(price, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: textDark)),
-              const Text("/mo", style: TextStyle(fontSize: 13, color: textLight)),
+              if (oldPrice.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Text(
+                  oldPrice,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                    decoration: TextDecoration.lineThrough,
+                  ),
+                ),
+              ],
             ],
           ),
-          Text(subtitle, style: const TextStyle(fontSize: 12, color: textLight, fontWeight: FontWeight.w600)),
+          Text(validity, style: const TextStyle(fontSize: 12, color: textLight, fontWeight: FontWeight.w600)),
           const SizedBox(height: 20),
           const Divider(),
           const SizedBox(height: 16),
@@ -604,12 +709,9 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
               ),
               onPressed: () {
                 Navigator.pop(context);
-                setState(() {
-                  _currentMembershipTier = "$title Plan";
-                });
-                _showSuccess("Successfully switched to $title Plan!");
+                _openCheckoutSheet(plan);
               },
-              child: Text("Select $title", style: const TextStyle(fontWeight: FontWeight.bold)),
+              child: Text(plan['is_purchased'] == 1 || plan['is_purchased'].toString() == '1' ? "Purchased" : "Select $title", style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
           )
         ],
