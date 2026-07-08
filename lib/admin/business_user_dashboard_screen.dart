@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:trading_ecommerce_admin/admin/Admin_Dashboard.dart';
+import 'package:trading_ecommerce_admin/admin/recruiter_dashboard_screen.dart';
 import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:trading_ecommerce_admin/index.dart';
@@ -40,8 +42,11 @@ import 'package:trading_ecommerce_admin/user/seller_bank_accounts_screen.dart';
 import 'package:trading_ecommerce_admin/screens/marketplace_trainings_screen.dart';
 import 'package:trading_ecommerce_admin/screens/enrolled_trainings_screen.dart';
 import 'package:trading_ecommerce_admin/screens/mom_trainings_screen.dart';
-import 'package:trading_ecommerce_admin/admin/digital_marketplace_screen.dart';
-import 'package:trading_ecommerce_admin/screens/membership_payment_modal.dart';
+
+import 'candidate_manage_hub.dart';
+import 'job_applications_screen.dart';
+import 'job_form.dart';
+import 'joblisting.dart';
 
 class BusinessUserDashboard extends StatefulWidget {
   const BusinessUserDashboard({super.key});
@@ -105,7 +110,6 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
   int _pendingApprovalsCount = 5;
   int _activeJobsCount = 3;
   String _currentMembershipTier = "Gold Plan";
-  List<dynamic> _matchingMemberships = [];
 
   // Mock lists
   final List<Map<String, dynamic>> _mockUsers = [
@@ -186,12 +190,12 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
         });
       }
     });
-    // Check Membership status after 3.5 seconds, ensuring route is active
+    // Show Membership Upsell modal after 3.5 seconds, ensuring route is active
     Future.delayed(const Duration(milliseconds: 3500), () {
       if (mounted) {
         final route = ModalRoute.of(context);
         if (route != null && route.isCurrent) {
-          _checkMembershipStatus();
+          _showMembershipUpsellDialog();
         }
       }
     });
@@ -370,59 +374,6 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
     setState(() => _isLoading = false);
   }
 
-  Future<void> _checkMembershipStatus() async {
-    try {
-      final vendorId = await AuthService.getVendorIdString();
-      final adminId = await AuthService.getAdminId();
-      print("CHECK_MEMBERSHIP_STATUS vendor_id: $vendorId, admin_id: $adminId");
-      final response = await Database().getData({
-        'action': 'check_membership_status',
-        'vendor_id': vendorId,
-        if (adminId != null) 'admin_id': adminId.toString(),
-      }, endpoint: 'new_apis/menu_apis.php');
-
-      if (response['success'] == true && response['data'] != null) {
-        final showModal = response['data']['show_modal'] ?? false;
-        final list = response['data']['memberships'] as List<dynamic>? ?? [];
-        if (showModal && list.isNotEmpty) {
-          setState(() {
-            _matchingMemberships = list;
-          });
-          _showMembershipUpsellDialog();
-        }
-      }
-    } catch (e) {
-      debugPrint("Error checking membership status: $e");
-    }
-  }
-
-  Color _getMembershipColor(String title) {
-    final t = title.toUpperCase();
-    if (t.contains("GOLD")) return const Color(0xFFB45309);
-    if (t.contains("SILVER")) return primaryTeal;
-    if (t.contains("BRONZE")) return Colors.grey.shade400;
-    return primaryTeal;
-  }
-
-  void _openCheckoutSheet(Map<String, dynamic> plan) {
-    showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => MembershipPaymentModal(
-        planId: plan['id'],
-        planTitle: plan['title'] ?? 'Membership',
-        totalRawPrice: double.tryParse(plan['final_price']?.toString() ?? '') ?? 0.0,
-        themeColor: primaryTeal,
-      ),
-    ).then((success) {
-      if (success == true) {
-        _showSuccess("Membership purchased successfully!");
-        _loadBusinessProfile();
-      }
-    });
-  }
-
   // ══════════════════════════════════════════════════════════
   // MEMBERSHIP UPSELL MODAL DIALOG
   // ══════════════════════════════════════════════════════════
@@ -520,57 +471,26 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                         // Plans Row (Responsive layout simulated with wrapping)
                         LayoutBuilder(
                           builder: (context, constraints) {
-                            if (_matchingMemberships.isEmpty) {
-                              return const Center(
-                                child: Text("No matching membership plans available"),
-                              );
-                            }
-                            
                             bool isWide = constraints.maxWidth > 850;
-                            final cards = _matchingMemberships.map<Widget>((plan) {
-                              final title = plan['title']?.toString() ?? 'Plan';
-                              final double price = double.tryParse(plan['price']?.toString() ?? '0') ?? 0.0;
-                              final double finalPrice = double.tryParse(plan['final_price']?.toString() ?? '0') ?? 0.0;
-                              final double discount = double.tryParse(plan['discount']?.toString() ?? '0') ?? 0.0;
-
-                              String validityText = '';
-                              if (plan['validity'].toString() == 'Unlimited') {
-                                validityText = 'Lifetime Validity';
-                              } else {
-                                validityText = '${plan['validity']} Days Validity';
-                              }
-
-                              final List<String> features = [];
-                              final details = plan['details'] as List<dynamic>? ?? [];
-                              for (var det in details) {
-                                features.add("${det['posts']} posts on ${det['display_name']}");
-                              }
-                              if (plan['include_team_members'] == 1 || plan['include_team_members'].toString() == '1') {
-                                features.add("Includes ${plan['team_member_count']} team members");
-                                features.add("Add member at ₹${plan['additional_member_price']}");
-                              }
-
-                              final color = _getMembershipColor(title);
-
-                              return _buildPlanCard(
-                                plan: Map<String, dynamic>.from(plan),
-                                title: title,
-                                price: "₹${finalPrice.toStringAsFixed(0)}",
-                                validity: validityText,
-                                oldPrice: discount > 0 ? "₹${price.toStringAsFixed(0)}" : "",
-                                features: features,
-                                color: color,
-                                isFeatured: plan == _matchingMemberships.first,
-                              );
-                            }).toList();
-
                             return isWide
                                 ? Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: cards.map((c) => Expanded(child: c)).toList(),
+                                    children: [
+                                      Expanded(child: _buildPlanCard("BRONZE", "₹2,499", "Standard Support", ["Up to 5 Listings", "Standard Marketplace Entry", "Email Support (48h)"], Colors.grey.shade400)),
+                                      const SizedBox(width: 16),
+                                      Expanded(child: _buildPlanCard("SILVER", "₹5,999", "Priority Partnerships", ["Unlimited Listings", "Priority Marketplace Placement", "Analytics Dashboard", "Email Support (12h)"], primaryTeal, isFeatured: true)),
+                                      const SizedBox(width: 16),
+                                      Expanded(child: _buildPlanCard("GOLD", "₹12,999", "Dedicated Account Director", ["Verified Partner Status", "Direct CRM Integration", "Concierge PR & Events", "24/7 Dedicated Support"], const Color(0xFFB45309))),
+                                    ],
                                   )
                                 : Column(
-                                    children: cards.expand((c) => [c, const SizedBox(height: 16)]).toList()..removeLast(),
+                                    children: [
+                                      _buildPlanCard("BRONZE", "₹2,499", "Standard Support", ["Up to 5 Listings", "Standard Marketplace Entry", "Email Support (48h)"], Colors.grey.shade400),
+                                      const SizedBox(height: 16),
+                                      _buildPlanCard("SILVER", "₹5,999", "Priority Partnerships", ["Unlimited Listings", "Priority Marketplace Placement", "Analytics Dashboard", "Email Support (12h)"], primaryTeal, isFeatured: true),
+                                      const SizedBox(height: 16),
+                                      _buildPlanCard("GOLD", "₹12,999", "Dedicated Account Director", ["Verified Partner Status", "Direct CRM Integration", "Concierge PR & Events", "24/7 Dedicated Support"], const Color(0xFFB45309)),
+                                    ],
                                   );
                           },
                         ),
@@ -622,16 +542,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
     );
   }
 
-  Widget _buildPlanCard({
-    required Map<String, dynamic> plan,
-    required String title,
-    required String price,
-    required String validity,
-    required String oldPrice,
-    required List<String> features,
-    required Color color,
-    bool isFeatured = false,
-  }) {
+  Widget _buildPlanCard(String title, String price, String subtitle, List<String> features, Color color, {bool isFeatured = false}) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -670,20 +581,10 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(price, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: textDark)),
-              if (oldPrice.isNotEmpty) ...[
-                const SizedBox(width: 8),
-                Text(
-                  oldPrice,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                    decoration: TextDecoration.lineThrough,
-                  ),
-                ),
-              ],
+              const Text("/mo", style: TextStyle(fontSize: 13, color: textLight)),
             ],
           ),
-          Text(validity, style: const TextStyle(fontSize: 12, color: textLight, fontWeight: FontWeight.w600)),
+          Text(subtitle, style: const TextStyle(fontSize: 12, color: textLight, fontWeight: FontWeight.w600)),
           const SizedBox(height: 20),
           const Divider(),
           const SizedBox(height: 16),
@@ -709,9 +610,12 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
               ),
               onPressed: () {
                 Navigator.pop(context);
-                _openCheckoutSheet(plan);
+                setState(() {
+                  _currentMembershipTier = "$title Plan";
+                });
+                _showSuccess("Successfully switched to $title Plan!");
               },
-              child: Text(plan['is_purchased'] == 1 || plan['is_purchased'].toString() == '1' ? "Purchased" : "Select $title", style: const TextStyle(fontWeight: FontWeight.bold)),
+              child: Text("Select $title", style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
           )
         ],
@@ -1012,7 +916,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
   }
 
   PreferredSizeWidget _buildHeader() {
-    String titleText = "Business Central";
+    String titleText = "Admin Dashboard";
     switch (_currentIndex) {
       case 36: titleText = "Commission Settings"; break;
       case 1: titleText = "User Management"; break;
@@ -1050,6 +954,11 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       case 33: titleText = "Marketplace Trainings"; break;
       case 34: titleText = "Enrolled Trainings"; break;
       case 35: titleText = "MOM Trainings"; break;
+      case 42: titleText = "Recruiter Dashbord"; break;
+      case 41: titleText = "Job Listing"; break;
+      case 42: titleText = "MOM Trainings"; break;
+      case 43: titleText = "Candidate Manage"; break;
+
 
     }
 
@@ -1195,6 +1104,31 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                 ),
                 _buildDrawerItem(11, Icons.shopping_bag_rounded, "Order Management"),
                 _buildDrawerItem(12, Icons.diversity_3_rounded, "Manage Communities"),
+                  Theme(
+                    data: Theme.of(context).copyWith(
+                      dividerColor: Colors.transparent,
+                      listTileTheme: const ListTileThemeData(
+                        horizontalTitleGap: 8,
+                        dense: true,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                      child: ExpansionTile(
+                        shape: const Border(),
+                        collapsedShape: const Border(),
+                        tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                        leading: const Icon(Icons.work, color: textLight, size: 24),
+                        title: const Text("Talent Management", style: TextStyle(fontSize: 14, color: textDark)),
+                        children: [
+                          _buildDrawerItem(42, Icons.task_outlined, "Recruiter Dashboard", isSubItem: true),
+                          _buildDrawerItem(41, Icons.task_outlined, "Manage jobs", isSubItem: true),
+                          _buildDrawerItem(43, Icons.list, "Manage Candidate", isSubItem: true),
+                        ],
+                      ),
+                    ),
+                  ),
 
                 const Divider(height: 16),
                 _buildDrawerHeaderLabel("LISTINGS & CATALOGS"),
@@ -1226,7 +1160,6 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                   ),
                 ),
                 _buildDrawerItem(6, Icons.layers_outlined, "Packages Builder", isSubItem: true),
-                _buildDrawerItem(53, Icons.shop_outlined, "Digital Marketplace", isSubItem: true),
 
                 const Divider(height: 16),
                 _buildDrawerHeaderLabel("FINANCIALS"),
@@ -1412,7 +1345,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
 
   Widget _buildBodyContent() {
     switch (_currentIndex) {
-      case 0: return _buildDashboardView();
+      case 0: return AdminDashboard();
       case 36: return const CommissionSettingsScreen(isEmbedded: true);
       case 1: return const ManageVendorsScreen(isEmbedded: true);
       case 2: return const ProductManagementScreen(isEmbedded: true);
@@ -1453,8 +1386,11 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       case 33: return const MarketplaceTrainingsScreen(isEmbedded: true);
       case 34: return const EnrolledTrainingsScreen(isEmbedded: true);
       case 35: return const MomTrainingsScreen(isEmbedded: true);
-      case 53: return const DigitalMarketplaceScreen(isEmbedded: true);
-      default: return _buildDashboardView();
+      // case 40: return const JobApplicationsScreen();
+      case 41: return const JobManagementHub();
+      case 42: return const RecruiterApp();
+      case 43: return const CandidateHubScreen();
+      default: return AdminDashboard();
     }
   }
 
@@ -1463,831 +1399,799 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
   // ══════════════════════════════════════════════════════════
 
   // 1. Dashboard View (Serene Commerce Executive Dashboard Layout)
-  Widget _buildDashboardView() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Section
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 16,
-            runSpacing: 12,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    "Strategic Overview",
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryTeal, fontFamily: 'Manrope'),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    "Enhanced executive insights and operational flows.",
-                    style: TextStyle(fontSize: 12, color: textLight),
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 110,
-                    height: 36,
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: primaryTeal),
-                        foregroundColor: primaryTeal,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        padding: EdgeInsets.zero,
-                      ),
-                      onPressed: () => _showSuccess("Data exported successfully!"),
-                      child: const Text("Export Data", style: TextStyle(fontSize: 12)),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: primaryTeal,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
-                      onPressed: () => _showSuccess("Dashboard refreshed successfully!"),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // 1. Platform Health & Access Header
-          const Text("Platform Health & Access", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
-          const SizedBox(height: 12),
-
-          // Row 1: Horizontal Sliding Stats
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: [
-                // Current Membership Card
-                _buildSliderCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text("CURRENT MEMBERSHIP", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: primaryTeal, letterSpacing: 0.5)),
-                          const SizedBox(height: 4),
-                          Text(_currentMembershipTier, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDark)),
-                          const SizedBox(height: 4),
-                          const Text("Unlimited Marketplace Access", style: TextStyle(fontSize: 11, color: textLight)),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 32,
-                        child: FilledButton(
-                          style: FilledButton.styleFrom(backgroundColor: primaryTeal, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                          onPressed: _showMembershipUpsellDialog,
-                          child: const Text("Upgrade Plan", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-
-                // Space Utilization Circular Chart Card
-                _buildSliderCard(
-                  child: Row(
-                    children: [
-                      Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          SizedBox(
-                            width: 54,
-                            height: 54,
-                            child: CircularProgressIndicator(
-                              value: 0.75,
-                              strokeWidth: 5,
-                              color: primaryTeal,
-                              backgroundColor: Colors.grey.shade200,
-                            ),
-                          ),
-                          const Text("75%", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textDark)),
-                        ],
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Text("SPACE UTILIZATION", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: textLight, letterSpacing: 0.5)),
-                            SizedBox(height: 4),
-                            Text("6.4 / 8.0 TB", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
-                          ],
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-
-                // Platform Status
-                _buildSliderCard(
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(color: selectedBg, shape: BoxShape.circle),
-                        child: const Icon(Icons.verified, color: primaryTeal, size: 28),
-                      ),
-                      const SizedBox(width: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Text("PLATFORM STATUS", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: textLight, letterSpacing: 0.5)),
-                          SizedBox(height: 4),
-                          Text("Enterprise Elite", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
-                        ],
-                      )
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-
-                // Next Milestone
-                _buildSliderCard(
-                  color: primaryTeal,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text("NEXT MILESTONE", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white70, letterSpacing: 0.5)),
-                          SizedBox(height: 4),
-                          Text("Unlock Global Node Access", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 32,
-                        child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Colors.white),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                          ),
-                          onPressed: _showMembershipUpsellDialog,
-                          child: const Text("Upgrade Membership", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 28),
-
-          // 2. Advanced Analytics Header
-          const Text("Advanced Analytics", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
-          const SizedBox(height: 12),
-
-          // Row 2: Analytics Cards Horizontal Scroll
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: [
-                // Global Traffic Density Card
-                Container(
-                  width: 320,
-                  height: 260,
-                  decoration: _dashboardCardDecoration(),
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text("Global Traffic Density", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                              Text("VISITOR CLUSTERS BY REGION", style: TextStyle(fontSize: 8, color: textLight, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                            ],
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(color: Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(4)),
-                            child: const Text("LIVE", style: TextStyle(color: Colors.green, fontSize: 8, fontWeight: FontWeight.bold)),
-                          )
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      // Mock visual representation
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildProgressRow("North America", "42.5k", 0.85),
-                            const SizedBox(height: 16),
-                            _buildProgressRow("Europe", "38.2k", 0.76),
-                            const SizedBox(height: 16),
-                            _buildProgressRow("Asia Pacific", "24.1k", 0.48),
-                          ],
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-
-                // Listing Distribution Card
-                Container(
-                  width: 300,
-                  height: 260,
-                  decoration: _dashboardCardDecoration(),
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text("Listing Distribution", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      const Text("CATEGORY BREAKDOWN", style: TextStyle(fontSize: 8, color: textLight, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                      const SizedBox(height: 12),
-                      Expanded(
-                        child: Center(
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              SizedBox(
-                                width: 100,
-                                height: 100,
-                                child: CircularProgressIndicator(
-                                  value: 0.45,
-                                  strokeWidth: 16,
-                                  color: primaryTeal,
-                                  backgroundColor: Colors.grey.shade100,
-                                ),
-                              ),
-                              Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  Text("45%", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textDark)),
-                                  Text("PRODUCTS", style: TextStyle(fontSize: 8, color: textLight, fontWeight: FontWeight.bold)),
-                                ],
-                              )
-                            ],
-                          ),
-                        ),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Row(
-                            children: const [
-                              Icon(Icons.lens, color: primaryTeal, size: 8),
-                              SizedBox(width: 4),
-                              Text("Products", style: TextStyle(fontSize: 10, color: textLight)),
-                            ],
-                          ),
-                          Row(
-                            children: const [
-                              Icon(Icons.lens, color: Colors.grey, size: 8),
-                              SizedBox(width: 4),
-                              Text("Services", style: TextStyle(fontSize: 10, color: textLight)),
-                            ],
-                          ),
-                        ],
-                      )
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-
-                // Revenue Growth Card
-                Container(
-                  width: 320,
-                  height: 260,
-                  decoration: _dashboardCardDecoration(),
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text("Revenue Growth Cycle", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                              Text("PERFORMANCE OVER TIME", style: TextStyle(fontSize: 8, color: textLight, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                            ],
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(6)),
-                            child: const Text("LAST 30 DAYS", style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: textDark)),
-                          )
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      Expanded(
-                        child: CustomPaint(
-                          size: Size.infinite,
-                          painter: SparklinePainter(),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
-                          Text("Week 1", style: TextStyle(fontSize: 9, color: Colors.grey)),
-                          Text("Week 2", style: TextStyle(fontSize: 9, color: Colors.grey)),
-                          Text("Week 3", style: TextStyle(fontSize: 9, color: Colors.grey)),
-                          Text("Week 4", style: TextStyle(fontSize: 9, color: Colors.grey)),
-                        ],
-                      )
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 28),
-
-          // 3. Pending Seller Withdrawals
-          Container(
-            decoration: _dashboardCardDecoration(),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  color: Colors.grey.shade50,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text("Pending Seller Withdrawals", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textDark)),
-                          Text("Review and authorize financial payouts", style: TextStyle(fontSize: 11, color: textLight)),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(color: selectedBg, borderRadius: BorderRadius.circular(12)),
-                        child: const Text("2 PENDING", style: TextStyle(color: primaryTeal, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                      )
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _mockPayouts.length,
-                  separatorBuilder: (context, index) => const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final item = _mockPayouts[index];
-                    return Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(color: bgLight, borderRadius: BorderRadius.circular(10)),
-                                child: const Icon(Icons.account_balance, color: primaryTeal),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Text(item["vendor"], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textDark)),
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                                          decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(4)),
-                                          child: Text(item["id"], style: TextStyle(fontSize: 8, color: Colors.grey.shade700, fontWeight: FontWeight.bold)),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(item["amount"], style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryTeal)),
-                                    const SizedBox(height: 4),
-                                    Text("Request Date: ${item['date']} • Method: ${item['method']}", style: const TextStyle(fontSize: 9, color: Colors.grey)),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: SizedBox(
-                                  height: 36,
-                                  child: OutlinedButton(
-                                    style: OutlinedButton.styleFrom(
-                                      side: const BorderSide(color: outlineVariant),
-                                      foregroundColor: primaryTeal,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                      padding: EdgeInsets.zero,
-                                    ),
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => ChatScreen(
-                                            user: ChatUser(
-                                              id: item["id"],
-                                              name: item["vendor"],
-                                              lastMessage: "",
-                                              time: "",
-                                              avatarUrl: "",
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    child: const Text("Contact", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: SizedBox(
-                                  height: 36,
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFFFFEBEE), // Soft pinkish red
-                                      foregroundColor: const Color(0xFFC62828), // Crimson red
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                      padding: EdgeInsets.zero,
-                                      elevation: 0,
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _mockPayouts.removeAt(index);
-                                      });
-                                      _showSuccess("Payout request disapproved.");
-                                    },
-                                    child: const Text("Disapprove", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: SizedBox(
-                                  height: 36,
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: primaryTeal,
-                                      foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                      padding: EdgeInsets.zero,
-                                      elevation: 0,
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _mockPayouts.removeAt(index);
-                                      });
-                                      _showSuccess("Payout approved successfully!");
-                                    },
-                                    child: const Text("Approve", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                )
-              ],
-            ),
-          ),
-          const SizedBox(height: 28),
-
-          // 4. Live Stream: Recent Orders Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text("Live Stream: Recent Orders", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
-              TextButton(
-                style: TextButton.styleFrom(foregroundColor: primaryTeal),
-                onPressed: () => setState(() => _currentIndex = 11),
-                child: Row(
-                  children: const [
-                    Text("View Ledger", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                    SizedBox(width: 4),
-                    Icon(Icons.arrow_forward, size: 14),
-                  ],
-                ),
-              )
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Orders Horizontal Card
-          Container(
-            width: double.infinity,
-            decoration: _dashboardCardDecoration(),
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.headphones, color: primaryTeal),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Expanded(
-                            child: Text(
-                              "Zen Series Wireless Earbuds",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(color: selectedBg, borderRadius: BorderRadius.circular(8)),
-                            child: const Text("Fulfilled", style: TextStyle(color: primaryTeal, fontSize: 9, fontWeight: FontWeight.bold)),
-                          )
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      const Text("ID: #ORD-22910", style: TextStyle(fontSize: 10, color: Colors.grey)),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 16,
-                        runSpacing: 4,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.store, color: Colors.grey, size: 14),
-                              SizedBox(width: 4),
-                              Text("Seller: ", style: TextStyle(fontSize: 11, color: textLight)),
-                              Text("Urban Electronics", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textDark)),
-                            ],
-                          ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.person, color: Colors.grey, size: 14),
-                              SizedBox(width: 4),
-                              Text("Buyer: ", style: TextStyle(fontSize: 11, color: textLight)),
-                              Text("Sarah Jenkins", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textDark)),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const Divider(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text("₹18,900.00", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
-                          TextButton(
-                            style: TextButton.styleFrom(foregroundColor: primaryTeal, padding: EdgeInsets.zero, minimumSize: Size.zero),
-                            onPressed: () {},
-                            child: const Text("Contact Seller", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                          )
-                        ],
-                      )
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 28),
-
-          // 5. Curated Queue: Listing Approvals
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text("Curated Queue: Listing Approvals", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(color: const Color(0xFFFFEBEE), borderRadius: BorderRadius.circular(8)),
-                child: const Text("12 New", style: TextStyle(color: Color(0xFFC62828), fontSize: 9, fontWeight: FontWeight.bold)),
-              )
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isNarrow = constraints.maxWidth < 500;
-              final cards = [
-                // Card 1: Soundbar Pro
-                Container(
-                  decoration: _dashboardCardDecoration(),
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        height: 100,
-                        decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
-                        alignment: Alignment.center,
-                        child: const Icon(Icons.speaker, color: primaryTeal, size: 36),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text("Premium Soundbar Pro", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      const Text("Requested by: TechNexus", style: TextStyle(fontSize: 10, color: Colors.grey)),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 38,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFFFEBEE), // Soft pinkish red
-                                  foregroundColor: const Color(0xFFC62828), // Crimson red
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                ),
-                                onPressed: () => _showSuccess("Soundbar Pro listing rejected."),
-                                child: const Text("Reject", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: primaryTeal,
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                ),
-                                onPressed: () => _showSuccess("Soundbar Pro listing approved!"),
-                                child: const Text("Approve", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                              ),
-                            )
-                          ],
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-                // Card 2: Brand Strategy Workshop
-                Container(
-                  decoration: _dashboardCardDecoration(),
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        height: 100,
-                        decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
-                        alignment: Alignment.center,
-                        child: const Icon(Icons.brush, color: primaryTeal, size: 36),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text("Brand Strategy Workshop", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      const Text("Requested by: Creative Labs", style: TextStyle(fontSize: 10, color: Colors.grey)),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 38,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFFFEBEE), // Soft pinkish red
-                                  foregroundColor: const Color(0xFFC62828), // Crimson red
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                ),
-                                onPressed: () => _showSuccess("Workshop listing rejected."),
-                                child: const Text("Reject", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: primaryTeal,
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                ),
-                                onPressed: () => _showSuccess("Workshop listing approved!"),
-                                child: const Text("Approve", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                              ),
-                            )
-                          ],
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-              ];
-
-              return isNarrow
-                  ? Column(
-                      children: [
-                        cards[0],
-                        const SizedBox(height: 16),
-                        cards[1],
-                      ],
-                    )
-                  : Row(
-                      children: [
-                        Expanded(child: cards[0]),
-                        const SizedBox(width: 16),
-                        Expanded(child: cards[1]),
-                      ],
-                    );
-            },
-          ),
-          const SizedBox(height: 28),
-
-          // 6. News & Insights
-          const Text("News & Global Insights", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
-          const SizedBox(height: 12),
-          Container(
-            decoration: _dashboardCardDecoration(),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  height: 140,
-                  color: primaryTeal.withOpacity(0.2),
-                  width: double.infinity,
-                  alignment: Alignment.center,
-                  child: const Icon(Icons.newspaper, color: primaryTeal, size: 48),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text("FUTURE-PROOFING COMMERCE", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: primaryTeal, letterSpacing: 0.5)),
-                      SizedBox(height: 4),
-                      Text("Future-proofing commerce: The rise of hybrid supply chains.", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textDark)),
-                    ],
-                  ),
-                )
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildDashboardView() {
+  //   return SingleChildScrollView(
+  //     padding: const EdgeInsets.all(20),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         // Header Section
+  //         Wrap(
+  //           alignment: WrapAlignment.spaceBetween,
+  //           crossAxisAlignment: WrapCrossAlignment.center,
+  //           spacing: 16,
+  //           runSpacing: 12,
+  //           children: [
+  //             Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: const [
+  //                 Text(
+  //                   "Strategic Overview",
+  //                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryTeal, fontFamily: 'Manrope'),
+  //                 ),
+  //                 SizedBox(height: 2),
+  //                 Text(
+  //                   "Enhanced executive insights and operational flows.",
+  //                   style: TextStyle(fontSize: 12, color: textLight),
+  //                 ),
+  //               ],
+  //             ),
+  //           ],
+  //         ),
+  //         const Divider(),
+  //
+  //         // 1. Platform Health & Access Header
+  //         const Text("Platform Health & Access", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
+  //         const SizedBox(height: 12),
+  //
+  //         // Row 1: Horizontal Sliding Stats
+  //         SingleChildScrollView(
+  //           scrollDirection: Axis.horizontal,
+  //           physics: const BouncingScrollPhysics(),
+  //           child: Row(
+  //             children: [
+  //               // Current Membership Card
+  //               _buildSliderCard(
+  //                 child: Column(
+  //                   crossAxisAlignment: CrossAxisAlignment.start,
+  //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                   children: [
+  //                     Column(
+  //                       crossAxisAlignment: CrossAxisAlignment.start,
+  //                       children: [
+  //                         const Text("CURRENT MEMBERSHIP", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: primaryTeal, letterSpacing: 0.5)),
+  //                         const SizedBox(height: 4),
+  //                         Text(_currentMembershipTier, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDark)),
+  //                         const SizedBox(height: 4),
+  //                         const Text("Unlimited Marketplace Access", style: TextStyle(fontSize: 11, color: textLight)),
+  //                       ],
+  //                     ),
+  //                     const SizedBox(height: 12),
+  //                     SizedBox(
+  //                       width: double.infinity,
+  //                       height: 32,
+  //                       child: FilledButton(
+  //                         style: FilledButton.styleFrom(backgroundColor: primaryTeal, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+  //                         onPressed: _showMembershipUpsellDialog,
+  //                         child: const Text("Upgrade Plan", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+  //                       ),
+  //                     )
+  //                   ],
+  //                 ),
+  //               ),
+  //               const SizedBox(width: 16),
+  //
+  //               // Space Utilization Circular Chart Card
+  //               _buildSliderCard(
+  //                 child: Row(
+  //                   children: [
+  //                     Stack(
+  //                       alignment: Alignment.center,
+  //                       children: [
+  //                         SizedBox(
+  //                           width: 54,
+  //                           height: 54,
+  //                           child: CircularProgressIndicator(
+  //                             value: 0.75,
+  //                             strokeWidth: 5,
+  //                             color: primaryTeal,
+  //                             backgroundColor: Colors.grey.shade200,
+  //                           ),
+  //                         ),
+  //                         const Text("75%", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textDark)),
+  //                       ],
+  //                     ),
+  //                     const SizedBox(width: 16),
+  //                     Expanded(
+  //                       child: Column(
+  //                         crossAxisAlignment: CrossAxisAlignment.start,
+  //                         mainAxisAlignment: MainAxisAlignment.center,
+  //                         children: const [
+  //                           Text("SPACE UTILIZATION", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: textLight, letterSpacing: 0.5)),
+  //                           SizedBox(height: 4),
+  //                           Text("6.4 / 8.0 TB", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
+  //                         ],
+  //                       ),
+  //                     )
+  //                   ],
+  //                 ),
+  //               ),
+  //               const SizedBox(width: 16),
+  //
+  //               // Platform Status
+  //               _buildSliderCard(
+  //                 child: Row(
+  //                   children: [
+  //                     Container(
+  //                       width: 50,
+  //                       height: 50,
+  //                       decoration: BoxDecoration(color: selectedBg, shape: BoxShape.circle),
+  //                       child: const Icon(Icons.verified, color: primaryTeal, size: 28),
+  //                     ),
+  //                     const SizedBox(width: 16),
+  //                     Column(
+  //                       crossAxisAlignment: CrossAxisAlignment.start,
+  //                       mainAxisAlignment: MainAxisAlignment.center,
+  //                       children: const [
+  //                         Text("PLATFORM STATUS", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: textLight, letterSpacing: 0.5)),
+  //                         SizedBox(height: 4),
+  //                         Text("Enterprise Elite", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
+  //                       ],
+  //                     )
+  //                   ],
+  //                 ),
+  //               ),
+  //               const SizedBox(width: 16),
+  //
+  //               // Next Milestone
+  //               _buildSliderCard(
+  //                 color: primaryTeal,
+  //                 child: Column(
+  //                   crossAxisAlignment: CrossAxisAlignment.start,
+  //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                   children: [
+  //                     Column(
+  //                       crossAxisAlignment: CrossAxisAlignment.start,
+  //                       children: const [
+  //                         Text("NEXT MILESTONE", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white70, letterSpacing: 0.5)),
+  //                         SizedBox(height: 4),
+  //                         Text("Unlock Global Node Access", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+  //                       ],
+  //                     ),
+  //                     const SizedBox(height: 12),
+  //                     SizedBox(
+  //                       height: 32,
+  //                       child: OutlinedButton(
+  //                         style: OutlinedButton.styleFrom(
+  //                           side: const BorderSide(color: Colors.white),
+  //                           foregroundColor: Colors.white,
+  //                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+  //                           padding: const EdgeInsets.symmetric(horizontal: 16),
+  //                         ),
+  //                         onPressed: _showMembershipUpsellDialog,
+  //                         child: const Text("Upgrade Membership", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+  //                       ),
+  //                     )
+  //                   ],
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //         const SizedBox(height: 28),
+  //
+  //         // 2. Advanced Analytics Header
+  //         const Text("Advanced Analytics", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
+  //         const SizedBox(height: 12),
+  //
+  //         // Row 2: Analytics Cards Horizontal Scroll
+  //         SingleChildScrollView(
+  //           scrollDirection: Axis.horizontal,
+  //           physics: const BouncingScrollPhysics(),
+  //           child: Row(
+  //             children: [
+  //               // Global Traffic Density Card
+  //               Container(
+  //                 width: 320,
+  //                 height: 260,
+  //                 decoration: _dashboardCardDecoration(),
+  //                 padding: const EdgeInsets.all(20),
+  //                 child: Column(
+  //                   crossAxisAlignment: CrossAxisAlignment.start,
+  //                   children: [
+  //                     Row(
+  //                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                       children: [
+  //                         Column(
+  //                           crossAxisAlignment: CrossAxisAlignment.start,
+  //                           children: const [
+  //                             Text("Global Traffic Density", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+  //                             Text("VISITOR CLUSTERS BY REGION", style: TextStyle(fontSize: 8, color: textLight, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+  //                           ],
+  //                         ),
+  //                         Container(
+  //                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+  //                           decoration: BoxDecoration(color: Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(4)),
+  //                           child: const Text("LIVE", style: TextStyle(color: Colors.green, fontSize: 8, fontWeight: FontWeight.bold)),
+  //                         )
+  //                       ],
+  //                     ),
+  //                     const SizedBox(height: 16),
+  //                     // Mock visual representation
+  //                     Expanded(
+  //                       child: Column(
+  //                         mainAxisAlignment: MainAxisAlignment.center,
+  //                         children: [
+  //                           _buildProgressRow("North America", "42.5k", 0.85),
+  //                           const SizedBox(height: 16),
+  //                           _buildProgressRow("Europe", "38.2k", 0.76),
+  //                           const SizedBox(height: 16),
+  //                           _buildProgressRow("Asia Pacific", "24.1k", 0.48),
+  //                         ],
+  //                       ),
+  //                     )
+  //                   ],
+  //                 ),
+  //               ),
+  //               const SizedBox(width: 16),
+  //
+  //               // Listing Distribution Card
+  //               Container(
+  //                 width: 300,
+  //                 height: 260,
+  //                 decoration: _dashboardCardDecoration(),
+  //                 padding: const EdgeInsets.all(20),
+  //                 child: Column(
+  //                   crossAxisAlignment: CrossAxisAlignment.start,
+  //                   children: [
+  //                     const Text("Listing Distribution", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+  //                     const Text("CATEGORY BREAKDOWN", style: TextStyle(fontSize: 8, color: textLight, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+  //                     const SizedBox(height: 12),
+  //                     Expanded(
+  //                       child: Center(
+  //                         child: Stack(
+  //                           alignment: Alignment.center,
+  //                           children: [
+  //                             SizedBox(
+  //                               width: 100,
+  //                               height: 100,
+  //                               child: CircularProgressIndicator(
+  //                                 value: 0.45,
+  //                                 strokeWidth: 16,
+  //                                 color: primaryTeal,
+  //                                 backgroundColor: Colors.grey.shade100,
+  //                               ),
+  //                             ),
+  //                             Column(
+  //                               mainAxisAlignment: MainAxisAlignment.center,
+  //                               children: const [
+  //                                 Text("45%", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textDark)),
+  //                                 Text("PRODUCTS", style: TextStyle(fontSize: 8, color: textLight, fontWeight: FontWeight.bold)),
+  //                               ],
+  //                             )
+  //                           ],
+  //                         ),
+  //                       ),
+  //                     ),
+  //                     Row(
+  //                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  //                       children: [
+  //                         Row(
+  //                           children: const [
+  //                             Icon(Icons.lens, color: primaryTeal, size: 8),
+  //                             SizedBox(width: 4),
+  //                             Text("Products", style: TextStyle(fontSize: 10, color: textLight)),
+  //                           ],
+  //                         ),
+  //                         Row(
+  //                           children: const [
+  //                             Icon(Icons.lens, color: Colors.grey, size: 8),
+  //                             SizedBox(width: 4),
+  //                             Text("Services", style: TextStyle(fontSize: 10, color: textLight)),
+  //                           ],
+  //                         ),
+  //                       ],
+  //                     )
+  //                   ],
+  //                 ),
+  //               ),
+  //               const SizedBox(width: 16),
+  //
+  //               // Revenue Growth Card
+  //               Container(
+  //                 width: 320,
+  //                 height: 260,
+  //                 decoration: _dashboardCardDecoration(),
+  //                 padding: const EdgeInsets.all(20),
+  //                 child: Column(
+  //                   crossAxisAlignment: CrossAxisAlignment.start,
+  //                   children: [
+  //                     Row(
+  //                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                       children: [
+  //                         Column(
+  //                           crossAxisAlignment: CrossAxisAlignment.start,
+  //                           children: const [
+  //                             Text("Revenue Growth Cycle", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+  //                             Text("PERFORMANCE OVER TIME", style: TextStyle(fontSize: 8, color: textLight, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+  //                           ],
+  //                         ),
+  //                         Container(
+  //                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+  //                           decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(6)),
+  //                           child: const Text("LAST 30 DAYS", style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: textDark)),
+  //                         )
+  //                       ],
+  //                     ),
+  //                     const SizedBox(height: 24),
+  //                     Expanded(
+  //                       child: CustomPaint(
+  //                         size: Size.infinite,
+  //                         painter: SparklinePainter(),
+  //                       ),
+  //                     ),
+  //                     const SizedBox(height: 12),
+  //                     Row(
+  //                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                       children: const [
+  //                         Text("Week 1", style: TextStyle(fontSize: 9, color: Colors.grey)),
+  //                         Text("Week 2", style: TextStyle(fontSize: 9, color: Colors.grey)),
+  //                         Text("Week 3", style: TextStyle(fontSize: 9, color: Colors.grey)),
+  //                         Text("Week 4", style: TextStyle(fontSize: 9, color: Colors.grey)),
+  //                       ],
+  //                     )
+  //                   ],
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //         const SizedBox(height: 28),
+  //
+  //         // 3. Pending Seller Withdrawals
+  //         Container(
+  //           decoration: _dashboardCardDecoration(),
+  //           clipBehavior: Clip.antiAlias,
+  //           child: Column(
+  //             crossAxisAlignment: CrossAxisAlignment.start,
+  //             children: [
+  //               Container(
+  //                 padding: const EdgeInsets.all(16),
+  //                 color: Colors.grey.shade50,
+  //                 child: Row(
+  //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                   children: [
+  //                     Column(
+  //                       crossAxisAlignment: CrossAxisAlignment.start,
+  //                       children: const [
+  //                         Text("Pending Seller Withdrawals", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textDark)),
+  //                         Text("Review and authorize financial payouts", style: TextStyle(fontSize: 11, color: textLight)),
+  //                       ],
+  //                     ),
+  //                     Container(
+  //                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+  //                       decoration: BoxDecoration(color: selectedBg, borderRadius: BorderRadius.circular(12)),
+  //                       child: const Text("2 PENDING", style: TextStyle(color: primaryTeal, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+  //                     )
+  //                   ],
+  //                 ),
+  //               ),
+  //               const Divider(height: 1),
+  //               ListView.separated(
+  //                 shrinkWrap: true,
+  //                 physics: const NeverScrollableScrollPhysics(),
+  //                 itemCount: _mockPayouts.length,
+  //                 separatorBuilder: (context, index) => const Divider(height: 1),
+  //                 itemBuilder: (context, index) {
+  //                   final item = _mockPayouts[index];
+  //                   return Padding(
+  //                     padding: const EdgeInsets.all(16),
+  //                     child: Column(
+  //                       crossAxisAlignment: CrossAxisAlignment.start,
+  //                       children: [
+  //                         Row(
+  //                           crossAxisAlignment: CrossAxisAlignment.start,
+  //                           children: [
+  //                             Container(
+  //                               width: 44,
+  //                               height: 44,
+  //                               decoration: BoxDecoration(color: bgLight, borderRadius: BorderRadius.circular(10)),
+  //                               child: const Icon(Icons.account_balance, color: primaryTeal),
+  //                             ),
+  //                             const SizedBox(width: 16),
+  //                             Expanded(
+  //                               child: Column(
+  //                                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                                 children: [
+  //                                   Row(
+  //                                     children: [
+  //                                       Text(item["vendor"], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textDark)),
+  //                                       const SizedBox(width: 8),
+  //                                       Container(
+  //                                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+  //                                         decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(4)),
+  //                                         child: Text(item["id"], style: TextStyle(fontSize: 8, color: Colors.grey.shade700, fontWeight: FontWeight.bold)),
+  //                                       ),
+  //                                     ],
+  //                                   ),
+  //                                   const SizedBox(height: 4),
+  //                                   Text(item["amount"], style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryTeal)),
+  //                                   const SizedBox(height: 4),
+  //                                   Text("Request Date: ${item['date']} • Method: ${item['method']}", style: const TextStyle(fontSize: 9, color: Colors.grey)),
+  //                                 ],
+  //                               ),
+  //                             ),
+  //                           ],
+  //                         ),
+  //                         const SizedBox(height: 12),
+  //                         Row(
+  //                           children: [
+  //                             Expanded(
+  //                               child: SizedBox(
+  //                                 height: 36,
+  //                                 child: OutlinedButton(
+  //                                   style: OutlinedButton.styleFrom(
+  //                                     side: const BorderSide(color: outlineVariant),
+  //                                     foregroundColor: primaryTeal,
+  //                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+  //                                     padding: EdgeInsets.zero,
+  //                                   ),
+  //                                   onPressed: () {
+  //                                     Navigator.push(
+  //                                       context,
+  //                                       MaterialPageRoute(
+  //                                         builder: (_) => ChatScreen(
+  //                                           user: ChatUser(
+  //                                             id: item["id"],
+  //                                             name: item["vendor"],
+  //                                             lastMessage: "",
+  //                                             time: "",
+  //                                             avatarUrl: "",
+  //                                           ),
+  //                                         ),
+  //                                       ),
+  //                                     );
+  //                                   },
+  //                                   child: const Text("Contact", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+  //                                 ),
+  //                               ),
+  //                             ),
+  //                             const SizedBox(width: 8),
+  //                             Expanded(
+  //                               child: SizedBox(
+  //                                 height: 36,
+  //                                 child: ElevatedButton(
+  //                                   style: ElevatedButton.styleFrom(
+  //                                     backgroundColor: const Color(0xFFFFEBEE), // Soft pinkish red
+  //                                     foregroundColor: const Color(0xFFC62828), // Crimson red
+  //                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+  //                                     padding: EdgeInsets.zero,
+  //                                     elevation: 0,
+  //                                   ),
+  //                                   onPressed: () {
+  //                                     setState(() {
+  //                                       _mockPayouts.removeAt(index);
+  //                                     });
+  //                                     _showSuccess("Payout request disapproved.");
+  //                                   },
+  //                                   child: const Text("Disapprove", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+  //                                 ),
+  //                               ),
+  //                             ),
+  //                             const SizedBox(width: 8),
+  //                             Expanded(
+  //                               child: SizedBox(
+  //                                 height: 36,
+  //                                 child: ElevatedButton(
+  //                                   style: ElevatedButton.styleFrom(
+  //                                     backgroundColor: primaryTeal,
+  //                                     foregroundColor: Colors.white,
+  //                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+  //                                     padding: EdgeInsets.zero,
+  //                                     elevation: 0,
+  //                                   ),
+  //                                   onPressed: () {
+  //                                     setState(() {
+  //                                       _mockPayouts.removeAt(index);
+  //                                     });
+  //                                     _showSuccess("Payout approved successfully!");
+  //                                   },
+  //                                   child: const Text("Approve", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+  //                                 ),
+  //                               ),
+  //                             ),
+  //                           ],
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   );
+  //                 },
+  //               )
+  //             ],
+  //           ),
+  //         ),
+  //         const SizedBox(height: 28),
+  //
+  //         // 4. Live Stream: Recent Orders Header
+  //         Row(
+  //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //           children: [
+  //             const Text("Live Stream: Recent Orders", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
+  //             TextButton(
+  //               style: TextButton.styleFrom(foregroundColor: primaryTeal),
+  //               onPressed: () => setState(() => _currentIndex = 11),
+  //               child: Row(
+  //                 children: const [
+  //                   Text("View Ledger", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+  //                   SizedBox(width: 4),
+  //                   Icon(Icons.arrow_forward, size: 14),
+  //                 ],
+  //               ),
+  //             )
+  //           ],
+  //         ),
+  //         const SizedBox(height: 8),
+  //
+  //         // Orders Horizontal Card
+  //         Container(
+  //           width: double.infinity,
+  //           decoration: _dashboardCardDecoration(),
+  //           padding: const EdgeInsets.all(16),
+  //           child: Row(
+  //             crossAxisAlignment: CrossAxisAlignment.start,
+  //             children: [
+  //               Container(
+  //                 width: 48,
+  //                 height: 48,
+  //                 decoration: BoxDecoration(
+  //                   color: Colors.grey.shade100,
+  //                   borderRadius: BorderRadius.circular(10),
+  //                 ),
+  //                 child: const Icon(Icons.headphones, color: primaryTeal),
+  //               ),
+  //               const SizedBox(width: 16),
+  //               Expanded(
+  //                 child: Column(
+  //                   crossAxisAlignment: CrossAxisAlignment.start,
+  //                   children: [
+  //                     Row(
+  //                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                       children: [
+  //                         const Expanded(
+  //                           child: Text(
+  //                             "Zen Series Wireless Earbuds",
+  //                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+  //                             maxLines: 1,
+  //                             overflow: TextOverflow.ellipsis,
+  //                           ),
+  //                         ),
+  //                         const SizedBox(width: 8),
+  //                         Container(
+  //                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+  //                           decoration: BoxDecoration(color: selectedBg, borderRadius: BorderRadius.circular(8)),
+  //                           child: const Text("Fulfilled", style: TextStyle(color: primaryTeal, fontSize: 9, fontWeight: FontWeight.bold)),
+  //                         )
+  //                       ],
+  //                     ),
+  //                     const SizedBox(height: 2),
+  //                     const Text("ID: #ORD-22910", style: TextStyle(fontSize: 10, color: Colors.grey)),
+  //                     const SizedBox(height: 8),
+  //                     Wrap(
+  //                       spacing: 16,
+  //                       runSpacing: 4,
+  //                       crossAxisAlignment: WrapCrossAlignment.center,
+  //                       children: [
+  //                         Row(
+  //                           mainAxisSize: MainAxisSize.min,
+  //                           children: const [
+  //                             Icon(Icons.store, color: Colors.grey, size: 14),
+  //                             SizedBox(width: 4),
+  //                             Text("Seller: ", style: TextStyle(fontSize: 11, color: textLight)),
+  //                             Text("Urban Electronics", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textDark)),
+  //                           ],
+  //                         ),
+  //                         Row(
+  //                           mainAxisSize: MainAxisSize.min,
+  //                           children: const [
+  //                             Icon(Icons.person, color: Colors.grey, size: 14),
+  //                             SizedBox(width: 4),
+  //                             Text("Buyer: ", style: TextStyle(fontSize: 11, color: textLight)),
+  //                             Text("Sarah Jenkins", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textDark)),
+  //                           ],
+  //                         ),
+  //                       ],
+  //                     ),
+  //                     const Divider(height: 24),
+  //                     Row(
+  //                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                       children: [
+  //                         const Text("₹18,900.00", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
+  //                         TextButton(
+  //                           style: TextButton.styleFrom(foregroundColor: primaryTeal, padding: EdgeInsets.zero, minimumSize: Size.zero),
+  //                           onPressed: () {},
+  //                           child: const Text("Contact Seller", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+  //                         )
+  //                       ],
+  //                     )
+  //                   ],
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //         const SizedBox(height: 28),
+  //
+  //         // 5. Curated Queue: Listing Approvals
+  //         Row(
+  //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //           children: [
+  //             const Text("Curated Queue: Listing Approvals", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
+  //             Container(
+  //               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+  //               decoration: BoxDecoration(color: const Color(0xFFFFEBEE), borderRadius: BorderRadius.circular(8)),
+  //               child: const Text("12 New", style: TextStyle(color: Color(0xFFC62828), fontSize: 9, fontWeight: FontWeight.bold)),
+  //             )
+  //           ],
+  //         ),
+  //         const SizedBox(height: 12),
+  //
+  //         LayoutBuilder(
+  //           builder: (context, constraints) {
+  //             final isNarrow = constraints.maxWidth < 500;
+  //             final cards = [
+  //               // Card 1: Soundbar Pro
+  //               Container(
+  //                 decoration: _dashboardCardDecoration(),
+  //                 padding: const EdgeInsets.all(12),
+  //                 child: Column(
+  //                   crossAxisAlignment: CrossAxisAlignment.start,
+  //                   children: [
+  //                     Container(
+  //                       height: 100,
+  //                       decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
+  //                       alignment: Alignment.center,
+  //                       child: const Icon(Icons.speaker, color: primaryTeal, size: 36),
+  //                     ),
+  //                     const SizedBox(height: 8),
+  //                     const Text("Premium Soundbar Pro", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+  //                     const Text("Requested by: TechNexus", style: TextStyle(fontSize: 10, color: Colors.grey)),
+  //                     const SizedBox(height: 12),
+  //                     SizedBox(
+  //                       height: 38,
+  //                       child: Row(
+  //                         children: [
+  //                           Expanded(
+  //                             child: ElevatedButton(
+  //                               style: ElevatedButton.styleFrom(
+  //                                 backgroundColor: const Color(0xFFFFEBEE), // Soft pinkish red
+  //                                 foregroundColor: const Color(0xFFC62828), // Crimson red
+  //                                 elevation: 0,
+  //                                 padding: const EdgeInsets.symmetric(vertical: 8),
+  //                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+  //                               ),
+  //                               onPressed: () => _showSuccess("Soundbar Pro listing rejected."),
+  //                               child: const Text("Reject", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+  //                             ),
+  //                           ),
+  //                           const SizedBox(width: 8),
+  //                           Expanded(
+  //                             child: ElevatedButton(
+  //                               style: ElevatedButton.styleFrom(
+  //                                 backgroundColor: primaryTeal,
+  //                                 foregroundColor: Colors.white,
+  //                                 elevation: 0,
+  //                                 padding: const EdgeInsets.symmetric(vertical: 8),
+  //                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+  //                               ),
+  //                               onPressed: () => _showSuccess("Soundbar Pro listing approved!"),
+  //                               child: const Text("Approve", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+  //                             ),
+  //                           )
+  //                         ],
+  //                       ),
+  //                     )
+  //                   ],
+  //                 ),
+  //               ),
+  //               // Card 2: Brand Strategy Workshop
+  //               Container(
+  //                 decoration: _dashboardCardDecoration(),
+  //                 padding: const EdgeInsets.all(12),
+  //                 child: Column(
+  //                   crossAxisAlignment: CrossAxisAlignment.start,
+  //                   children: [
+  //                     Container(
+  //                       height: 100,
+  //                       decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
+  //                       alignment: Alignment.center,
+  //                       child: const Icon(Icons.brush, color: primaryTeal, size: 36),
+  //                     ),
+  //                     const SizedBox(height: 8),
+  //                     const Text("Brand Strategy Workshop", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+  //                     const Text("Requested by: Creative Labs", style: TextStyle(fontSize: 10, color: Colors.grey)),
+  //                     const SizedBox(height: 12),
+  //                     SizedBox(
+  //                       height: 38,
+  //                       child: Row(
+  //                         children: [
+  //                           Expanded(
+  //                             child: ElevatedButton(
+  //                               style: ElevatedButton.styleFrom(
+  //                                 backgroundColor: const Color(0xFFFFEBEE), // Soft pinkish red
+  //                                 foregroundColor: const Color(0xFFC62828), // Crimson red
+  //                                 elevation: 0,
+  //                                 padding: const EdgeInsets.symmetric(vertical: 8),
+  //                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+  //                               ),
+  //                               onPressed: () => _showSuccess("Workshop listing rejected."),
+  //                               child: const Text("Reject", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+  //                             ),
+  //                           ),
+  //                           const SizedBox(width: 8),
+  //                           Expanded(
+  //                             child: ElevatedButton(
+  //                               style: ElevatedButton.styleFrom(
+  //                                 backgroundColor: primaryTeal,
+  //                                 foregroundColor: Colors.white,
+  //                                 elevation: 0,
+  //                                 padding: const EdgeInsets.symmetric(vertical: 8),
+  //                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+  //                               ),
+  //                               onPressed: () => _showSuccess("Workshop listing approved!"),
+  //                               child: const Text("Approve", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+  //                             ),
+  //                           )
+  //                         ],
+  //                       ),
+  //                     )
+  //                   ],
+  //                 ),
+  //               ),
+  //             ];
+  //
+  //             return isNarrow
+  //                 ? Column(
+  //                     children: [
+  //                       cards[0],
+  //                       const SizedBox(height: 16),
+  //                       cards[1],
+  //                     ],
+  //                   )
+  //                 : Row(
+  //                     children: [
+  //                       Expanded(child: cards[0]),
+  //                       const SizedBox(width: 16),
+  //                       Expanded(child: cards[1]),
+  //                     ],
+  //                   );
+  //           },
+  //         ),
+  //         const SizedBox(height: 28),
+  //
+  //         // 6. News & Insights
+  //         const Text("News & Global Insights", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
+  //         const SizedBox(height: 12),
+  //         Container(
+  //           decoration: _dashboardCardDecoration(),
+  //           clipBehavior: Clip.antiAlias,
+  //           child: Column(
+  //             crossAxisAlignment: CrossAxisAlignment.start,
+  //             children: [
+  //               Container(
+  //                 height: 140,
+  //                 color: primaryTeal.withOpacity(0.2),
+  //                 width: double.infinity,
+  //                 alignment: Alignment.center,
+  //                 child: const Icon(Icons.newspaper, color: primaryTeal, size: 48),
+  //               ),
+  //               Padding(
+  //                 padding: const EdgeInsets.all(16),
+  //                 child: Column(
+  //                   crossAxisAlignment: CrossAxisAlignment.start,
+  //                   children: const [
+  //                     Text("FUTURE-PROOFING COMMERCE", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: primaryTeal, letterSpacing: 0.5)),
+  //                     SizedBox(height: 4),
+  //                     Text("Future-proofing commerce: The rise of hybrid supply chains.", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textDark)),
+  //                   ],
+  //                 ),
+  //               )
+  //             ],
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildSliderCard({required Widget child, Color? color}) {
     return SizedBox(

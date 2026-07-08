@@ -13,12 +13,54 @@ import '../services/auth_service.dart';
 class Database {
   int retry = 0;
   static String? _cachedSessionId;
-  static final List<Map<String, dynamic>> apiLogs = [];
+
+  // ADDED: some endpoints (e.g. admin_login_api.php) rely on PHP's native
+  // session_start()/PHPSESSID cookie rather than the custom SESSION_ID
+  // field the rest of the app uses. Previously nothing captured
+  // Set-Cookie from responses, so those sessions were silently dropped
+  // after the very first request. This caches the raw cookie separately
+  // from the custom SESSION_ID mechanism so both can coexist.
+  static String? _cachedRawCookie;
 
   /// Get Android options for secure storage
   AndroidOptions _getAndroidOptions() => const AndroidOptions(
-        encryptedSharedPreferences: true,
-      );
+    encryptedSharedPreferences: true,
+  );
+
+  // ADDED: loads any previously-saved raw cookie (e.g. "PHPSESSID=abc123")
+  Future<String?> _getSavedRawCookie(FlutterSecureStorage storage) async {
+    if (_cachedRawCookie != null && _cachedRawCookie!.isNotEmpty) {
+      return _cachedRawCookie;
+    }
+    _cachedRawCookie = await _readSecureKey(storage, "RAW_COOKIE");
+    return _cachedRawCookie;
+  }
+
+  // ADDED: captures Set-Cookie from a response and persists it
+  Future<void> _saveRawCookieFromResponse(
+      http.Response response,
+      FlutterSecureStorage storage,
+      ) async {
+    final rawCookie = response.headers['set-cookie'];
+    if (rawCookie == null || rawCookie.isEmpty) return;
+
+    final cookiePart = rawCookie.split(';').first;
+    _cachedRawCookie = cookiePart;
+    await storage.write(key: "RAW_COOKIE", value: cookiePart);
+  }
+
+  // ADDED: builds the Cookie header value, preferring a captured raw
+  // cookie (native PHP session) and falling back to the app's custom
+  // SESSION_ID-as-PHPSESSID construction if no raw cookie is cached yet.
+  String? _buildCookieHeader(String? rawCookie, String? existingSessionId) {
+    if (rawCookie != null && rawCookie.isNotEmpty) {
+      return rawCookie;
+    }
+    if (existingSessionId != null && existingSessionId.isNotEmpty) {
+      return 'PHPSESSID=$existingSessionId';
+    }
+    return null;
+  }
 
   /// Main API communication method
   /// Handles all API calls with session management and error handling
@@ -31,6 +73,7 @@ class Database {
       _cachedSessionId = await _readSecureKey(storage, "SESSION_ID");
     }
     final existingSessionId = _cachedSessionId;
+    final rawCookie = await _getSavedRawCookie(storage); // ADDED
 
     try {
       // Convert all body values to strings to avoid type cast issues
@@ -41,24 +84,7 @@ class Database {
           ? Uri.parse(Uri.encodeFull('$baseUrl?endpoint=$endpoint'))
           : Uri.parse(baseUrl);
 
-      final logEntry = {
-        'timestamp': DateTime.now().toString(),
-        'url': targetUrl.toString(),
-        'body': stringBody.toString(),
-        'headers': {
-          'APP_ID': (appIdOverride ?? appId).toString(),
-          'SESSION-ID': existingSessionId?.toString() ?? '',
-        }.toString(),
-        'response': '',
-        'statusCode': 0,
-        'error': '',
-      };
-      apiLogs.insert(0, logEntry);
-      if (apiLogs.length > 100) {
-        apiLogs.removeLast();
-      }
-
-      print('Database [getData]: Sending request to $targetUrl with SESSION-ID: $existingSessionId and BODY: $stringBody');
+      print('Database [getData]: Sending request to $targetUrl with SESSION-ID: $existingSessionId');
 
       final response = await http.post(
         targetUrl,
@@ -66,13 +92,15 @@ class Database {
         headers: {
           'APP_ID': (appIdOverride ?? appId).toString(),
           'SESSION-ID': existingSessionId?.toString() ?? '',
-          if (existingSessionId != null && existingSessionId.isNotEmpty)
-            'Cookie': 'PHPSESSID=$existingSessionId',
+          // CHANGED: use the shared cookie builder instead of only ever
+          // constructing "PHPSESSID=$existingSessionId" — this now also
+          // replays a captured native PHP session cookie if one exists.
+          if (_buildCookieHeader(rawCookie, existingSessionId) != null)
+            'Cookie': _buildCookieHeader(rawCookie, existingSessionId)!,
         },
       );
 
-      logEntry['statusCode'] = response.statusCode;
-      logEntry['response'] = response.body;
+      await _saveRawCookieFromResponse(response, storage); // ADDED
 
       var copy = response.body;
       print('RAW RESPONSE BODY: "${copy}"');
@@ -142,15 +170,16 @@ class Database {
       if (isUnauthorized) {
         print('Database [getData]: Unauthorized response detected (401 or Unauthorized message). Logging out.');
         _cachedSessionId = null;
+        _cachedRawCookie = null; // ADDED
         final storage = FlutterSecureStorage(aOptions: _getAndroidOptions());
         await storage.deleteAll();
         await AuthService.clearSession();
-        
+
         AppRoutes.navigatorKey.currentState?.pushNamedAndRemoveUntil(
           AppRoutes.login,
-          (route) => false,
+              (route) => false,
         );
-        
+
         return {
           'success': false,
           'message': 'Session expired. Please log in again.',
@@ -235,10 +264,6 @@ class Database {
         }
       }
     } catch (e) {
-      if (apiLogs.isNotEmpty) {
-        apiLogs.first['error'] = e.toString();
-        apiLogs.first['statusCode'] = 500;
-      }
       print('Database.dart - Network Error Details:');
       print('Error: $e');
       print('Error Type: ${e.runtimeType}');
@@ -269,6 +294,7 @@ class Database {
       _cachedSessionId = await _readSecureKey(storage, "SESSION_ID");
     }
     final existingSessionId = _cachedSessionId;
+    final rawCookie = await _getSavedRawCookie(storage); // ADDED
 
     try {
       final targetUrl = endpoint != null
@@ -284,10 +310,12 @@ class Database {
           'Content-Type': 'application/json',
           'APP_ID': appId.toString(),
           'SESSION-ID': existingSessionId?.toString() ?? '',
-          if (existingSessionId != null && existingSessionId.isNotEmpty)
-            'Cookie': 'PHPSESSID=$existingSessionId',
+          if (_buildCookieHeader(rawCookie, existingSessionId) != null)
+            'Cookie': _buildCookieHeader(rawCookie, existingSessionId)!,
         },
       );
+
+      await _saveRawCookieFromResponse(response, storage); // ADDED
 
       var copy = response.body;
       print('RAW JSON RESPONSE BODY: "${copy}"');
@@ -357,15 +385,16 @@ class Database {
       if (isUnauthorized) {
         print('Database [getJsonData]: Unauthorized response detected (401 or Unauthorized message). Logging out.');
         _cachedSessionId = null;
+        _cachedRawCookie = null; // ADDED
         final storage = FlutterSecureStorage(aOptions: _getAndroidOptions());
         await storage.deleteAll();
         await AuthService.clearSession();
-        
+
         AppRoutes.navigatorKey.currentState?.pushNamedAndRemoveUntil(
           AppRoutes.login,
-          (route) => false,
+              (route) => false,
         );
-        
+
         return {
           'success': false,
           'message': 'Session expired. Please log in again.',
@@ -458,6 +487,7 @@ class Database {
   /// Clear all stored data (for logout)
   Future<void> clearAllData() async {
     _cachedSessionId = null;
+    _cachedRawCookie = null; // ADDED
     final storage = FlutterSecureStorage(aOptions: _getAndroidOptions());
     await storage.deleteAll();
   }
@@ -506,6 +536,393 @@ class Database {
         print("Failed to delete corrupted storage: $clearError");
       }
       return null;
+    }
+  }
+
+  /// Get marketplace jobs with pagination and filtering
+  Future<Map<String, dynamic>> getJobs({
+    int page = 1,
+    String? category,
+    int perPage = 12,
+  }) async {
+    try {
+      final postBody = {
+        'action': 'get_marketplace_jobs_with_counts',
+        'page': page - 1, // API uses 0-based pagination
+        'per_page': perPage,
+      };
+
+      if (category != null && category.isNotEmpty && category != 'All Categories') {
+        postBody['category'] = category;
+      }
+
+      final result = await getData(postBody);
+
+      if (result['success'] == true) {
+        final data = result['data'] as List? ?? [];
+
+        // Parse filters from the response if available
+        Map<String, dynamic> filters = {};
+        if (result['filters'] != null) {
+          filters = Map<String, dynamic>.from(result['filters']);
+        }
+
+        return {
+          'success': true,
+          'data': data,
+          'filters': filters,
+          'total': data.length,
+          'last_page': 1, // API doesn't return pagination metadata, so we assume 1 page
+          'message': result['message'] ?? 'Jobs fetched successfully',
+        };
+      } else {
+        return {
+          'success': false,
+          'data': [],
+          'filters': {},
+          'message': result['message'] ?? 'Failed to fetch jobs',
+          'error': result['error'] ?? 'Unknown error',
+        };
+      }
+    } catch (e) {
+      print('Error fetching jobs: $e');
+      return {
+        'success': false,
+        'data': [],
+        'filters': {},
+        'message': 'Network error: ${e.toString()}',
+        'error': e.toString(),
+      };
+    }
+  }
+
+  /// Get a single job by ID
+  Future<Map<String, dynamic>> getJobById(String jobId) async {
+    try {
+      final postBody = {
+        'action': 'get_marketplace_job',
+        'job_id': jobId,
+      };
+
+      final result = await getData(postBody);
+
+      if (result['success'] == true) {
+        return {
+          'success': true,
+          'data': result['data'],
+          'message': result['message'] ?? 'Job fetched successfully',
+        };
+      } else {
+        return {
+          'success': false,
+          'data': null,
+          'message': result['message'] ?? 'Failed to fetch job',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'data': null,
+        'message': 'Network error: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Update job status
+  Future<Map<String, dynamic>> updateJobStatus({
+    required String jobId,
+    required String status,
+  }) async {
+    try {
+      final postBody = {
+        'action': 'update_job_status',
+        'jid': jobId,
+        'status': status,
+      };
+
+      final result = await getData(postBody);
+
+      return {
+        'success': result['success'] ?? false,
+        'message': result['message'] ?? 'Status update failed',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Network error: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Delete a job
+  Future<Map<String, dynamic>> deleteJob(String jobId) async {
+    try {
+      final postBody = {
+        'action': 'delete_marketplace_job',
+        'deleteid': jobId,
+      };
+
+      final result = await getData(postBody);
+
+      return {
+        'success': result['success'] ?? false,
+        'message': result['message'] ?? 'Deletion failed',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Network error: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Update job share status
+  Future<Map<String, dynamic>> updateJobShareStatus({
+    required String jobId,
+    required String status,
+  }) async {
+    try {
+      final postBody = {
+        'action': 'update_job_share_status',
+        'job_id': jobId,
+        'status': status,
+      };
+
+      final result = await getData(postBody);
+
+      return {
+        'success': result['success'] ?? false,
+        'message': result['message'] ?? 'Share status update failed',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Network error: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Update job paid status
+  Future<Map<String, dynamic>> updateJobPaidStatus({
+    required String jobId,
+    required String paidStatus,
+    String? paidAmount,
+    String? rpaidAmount,
+  }) async {
+    try {
+      final postBody = {
+        'action': 'update_job_paid_status',
+        'jobid': jobId,
+        'paid_status': paidStatus,
+      };
+
+      if (paidAmount != null) {
+        postBody['paid_amount'] = paidAmount;
+      }
+      if (rpaidAmount != null) {
+        postBody['rpaid_amount'] = rpaidAmount;
+      }
+
+      final result = await getData(postBody);
+
+      return {
+        'success': result['success'] ?? false,
+        'message': result['message'] ?? 'Paid status update failed',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Network error: ${e.toString()}',
+      };
+    }
+  }
+
+  /// ============================================================
+  /// JOB APPLICATIONS / RESPONSES API METHODS
+  /// ============================================================
+
+  /// Get job responses (applicants) for a specific job
+  Future<Map<String, dynamic>> getJobResponses({
+    required String jobId,
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    try {
+      final postBody = {
+        'action': 'get_job_responses',
+        'job_id': jobId,
+        'page': page - 1, // API uses 0-based pagination
+        'per_page': perPage,
+      };
+
+      final result = await getData(postBody);
+
+      if (result['success'] == true) {
+        final data = result['data'] as Map? ?? {};
+        final responses = data['responses'] as List? ?? [];
+
+        // Extract pagination info
+        final pagination = data['pagination'] as Map? ?? {};
+
+        return {
+          'success': true,
+          'data': {
+            'responses': responses,
+            'pagination': {
+              'current_page': page,
+              'per_page': perPage,
+              'total_responses': pagination['total_responses'] ?? responses.length,
+              'total_pages': pagination['total_pages'] ?? 1,
+            },
+            'job_title': data['job_title'] ?? '',
+          },
+          'message': result['message'] ?? 'Responses fetched successfully',
+        };
+      } else {
+        return {
+          'success': false,
+          'data': {
+            'responses': [],
+            'pagination': {
+              'total_responses': 0,
+              'total_pages': 1,
+            },
+            'job_title': '',
+          },
+          'message': result['message'] ?? 'Failed to fetch responses',
+          'error': result['error'] ?? 'Unknown error',
+        };
+      }
+    } catch (e) {
+      print('Error fetching job responses: $e');
+      return {
+        'success': false,
+        'data': {
+          'responses': [],
+          'pagination': {
+            'total_responses': 0,
+            'total_pages': 1,
+          },
+          'job_title': '',
+        },
+        'message': 'Network error: ${e.toString()}',
+        'error': e.toString(),
+      };
+    }
+  }
+
+  /// Update applicant status
+  Future<Map<String, dynamic>> updateApplicantStatus({
+    required String vendorId,
+    required String itemId,
+    required String status,
+  }) async {
+    try {
+      final postBody = {
+        'action': 'update_response_status',
+        'vendor_id': vendorId,
+        'item_id': itemId,
+        'status': status,
+      };
+
+      final result = await getData(postBody);
+
+      return {
+        'success': result['success'] ?? false,
+        'message': result['message'] ?? 'Status update failed',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Network error: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Schedule interview
+  Future<Map<String, dynamic>> scheduleInterview({
+    required String vendorId,
+    required String itemId,
+    required String schedule,
+    required String platform,
+    required String message,
+  }) async {
+    try {
+      final postBody = {
+        'action': 'schedule_interview',
+        'vendor_id': vendorId,
+        'item_id': itemId,
+        'schedule': schedule,
+        'platform': platform,
+        'message': message,
+      };
+
+      final result = await getData(postBody);
+
+      return {
+        'success': result['success'] ?? false,
+        'message': result['message'] ?? 'Interview scheduling failed',
+        'data': result['data'],
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Network error: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Send message to applicant
+  Future<Map<String, dynamic>> sendMessage({
+    required String vendorId,
+    required String message,
+  }) async {
+    try {
+      final postBody = {
+        'action': 'send_message_to_applicant',
+        'vendor_id': vendorId,
+        'message': message,
+      };
+
+      final result = await getData(postBody);
+
+      return {
+        'success': result['success'] ?? false,
+        'message': result['message'] ?? 'Failed to send message',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Network error: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Get applicant details
+  Future<Map<String, dynamic>> getApplicantDetails({
+    required String vendorId,
+    required String itemId,
+  }) async {
+    try {
+      final postBody = {
+        'action': 'get_applicant_details',
+        'vendor_id': vendorId,
+        'item_id': itemId,
+      };
+
+      final result = await getData(postBody);
+
+      return {
+        'success': result['success'] ?? false,
+        'data': result['data'],
+        'message': result['message'] ?? 'Failed to get applicant details',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'data': null,
+        'message': 'Network error: ${e.toString()}',
+      };
     }
   }
 }
