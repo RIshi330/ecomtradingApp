@@ -1,6 +1,6 @@
 import 'package:trading_ecommerce_admin/common/choicescreen.dart';
 import 'package:trading_ecommerce_admin/common/industries_screen.dart';
-import 'package:trading_ecommerce_admin/auth_screen.dart';
+import 'package:trading_ecommerce_admin/index.dart';
 import 'package:trading_ecommerce_admin/services/auth_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -1326,9 +1326,9 @@ class _SignOutSheet extends StatelessWidget {
                 Navigator.pop(context); // close sheet
                 await AuthService.logout();
                 if (!context.mounted) return;
-                Navigator.pushAndRemoveUntil(
+                Navigator.pushNamedAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (_) => const AuthProduction()),
+                  AppRoutes.login,
                   (route) => false,
                 );
               },

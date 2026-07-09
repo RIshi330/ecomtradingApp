@@ -6,6 +6,7 @@ import 'signupscreen.dart';
 import 'otp_screen.dart';
 import 'auth_screen.dart';
 import 'admin/Community_Admin_Dashboard.dart';
+import 'admin/admin_loginscreen.dart';
 import 'admin/business_user_dashboard_screen.dart';
 import 'admin/create_community_screen.dart';
 import 'admin/profile_screen.dart' as admin;
@@ -79,6 +80,7 @@ class AppRoutes {
   // Route Name Constants
   static const String splash = '/';
   static const String login = '/login';
+  static const String adminLogin = '/admin/login';
   static const String signup = '/signup';
   static const String otp = '/otp';
   static const String auth = '/auth';
@@ -155,6 +157,7 @@ class AppRoutes {
   static Map<String, WidgetBuilder> get routes => {
         splash: (context) => const WelcomeSplashScreen(),
         login: (context) => const LoginScreen(),
+        adminLogin: (context) => const AdminLoginScreen(),
         signup: (context) => const SignupScreen(),
         otp: (context) {
           final args = ModalRoute.of(context)!.settings.arguments

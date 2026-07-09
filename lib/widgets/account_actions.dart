@@ -150,7 +150,7 @@ class AccountActions {
                           Navigator.pop(context); // Pop loading indicator
                           Navigator.pushNamedAndRemoveUntil(
                             context,
-                            AppRoutes.auth,
+                            AppRoutes.login,
                             (route) => false,
                           );
                         }

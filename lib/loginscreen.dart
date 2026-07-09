@@ -11,6 +11,7 @@ import 'package:trading_ecommerce_admin/otp_screen.dart';
 import 'package:trading_ecommerce_admin/admin/Community_Admin_Dashboard.dart';
 import 'package:trading_ecommerce_admin/admin/business_user_dashboard_screen.dart';
 import 'package:trading_ecommerce_admin/admin/seller_dashboard_screen.dart';
+import 'package:trading_ecommerce_admin/admin/admin_loginscreen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -711,7 +712,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Flexible(
                   child: ListView.separated(
                     shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
+                    physics: const BouncingScrollPhysics(),
                     itemCount: accounts.length,
                     separatorBuilder: (context, index) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
@@ -1142,7 +1143,6 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           _buildRoleItem('Normal', Icons.person_outline_rounded, 'Normal User'),
           _buildRoleItem('Business', Icons.business_outlined, 'Business User'),
-          _buildRoleItem('Admin', Icons.shield_outlined, 'Admin'),
         ],
       ),
     );
@@ -1573,7 +1573,30 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
+        Center(
+          child: TextButton(
+            onPressed: _isLoading
+                ? null
+                : () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AdminLoginScreen(),
+                      ),
+                    );
+                  },
+            child: const Text(
+              "Admin Login",
+              style: TextStyle(
+                color: accentColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
 
         // Main Sign In Button
         SizedBox(
