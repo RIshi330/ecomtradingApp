@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:trading_ecommerce_admin/admin/test.dart';
 import 'package:trading_ecommerce_admin/index.dart';
 import 'package:trading_ecommerce_admin/services/auth_service.dart';
 import 'package:trading_ecommerce_admin/common/industries_screen.dart';
@@ -162,10 +163,11 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
     // Default fallback to login screen
     Navigator.pushReplacementNamed(
       context,
-      AppRoutes.login,
-     // AppRoutes.businessDashboard
+        AppRoutes.login,
+       // AppRoutes.businessDashboard
+
     );
-    //  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => JobApplicationsScreen(),));
+    //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => testapp(),));
   }
 
   @override

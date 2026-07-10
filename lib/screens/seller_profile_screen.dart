@@ -382,7 +382,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen>
     setState(() => _isLoading = true);
     try {
       final session = await _db.getSessionId();
-      final url = Uri.parse('$baseUrlLegacy' + 'new_apis/seller_profile_API.php');
+      final url = Uri.parse('$baseUrl' + 'new_apis/seller_profile_API.php');//biswajit
 
       var request = http.MultipartRequest('POST', url);
       request.headers['SESSION-ID'] = session ?? '';

@@ -11,7 +11,7 @@ import '../Database/Database.dart';
 /// whatever value your server-side router expects for this file — I don't
 /// have that mapping, so this is a placeholder.
 class AdminDashboardService {
-  static const String _endpoint = 'admin_dashboard';
+  static const String _endpoint = 'new_apis/admin_dashboard_api.php';
 
   final Database _db = Database();
 

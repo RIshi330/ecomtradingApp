@@ -12,6 +12,7 @@ import 'package:trading_ecommerce_admin/admin/business_user_dashboard_screen.dar
 
 import 'Database/Database.dart';
 import 'admin/admin_login.dart';
+import 'admin/admin_loginscreen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -143,7 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
         await Future.delayed(const Duration(milliseconds: 1500));
         if (!mounted) return;
 
-        await _showLocationPermissionDialog();
+        // await _showLocationPermissionDialog();
         if (!mounted) return;
 
         if (selectedRole == 'Admin') {
@@ -346,8 +347,8 @@ class _LoginScreenState extends State<LoginScreen> {
         _showSuccessBanner('Login successful! Redirecting...');
         await Future.delayed(const Duration(milliseconds: 1500));
         if (!mounted) return;
-
-        await _showLocationPermissionDialog();
+        //biswajit
+        // await _showLocationPermissionDialog();
         if (!mounted) return;
 
         if (selectedRole == 'Business' &&

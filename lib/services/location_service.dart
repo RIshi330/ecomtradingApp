@@ -118,7 +118,7 @@ class LocationService {
     try {
       final vendorId = await AuthService.getVendorIdString();
       final database = Database();
-      
+
       final response = await database.getData({
         'action': 'update_location',
         'vendor_id': vendorId,

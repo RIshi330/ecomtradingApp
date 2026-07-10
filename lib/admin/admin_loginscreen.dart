@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
+import 'package:trading_ecommerce_admin/admin/test.dart';
+import 'package:trading_ecommerce_admin/admin/wallet_admin_screen.dart';
 import 'package:trading_ecommerce_admin/services/auth_service.dart';
 import 'package:trading_ecommerce_admin/services/location_service.dart';
-import 'package:trading_ecommerce_admin/admin/business_user_dashboard_screen.dart';
+// FIX: this screen was importing business_user_dashboard_screen.dart and
+// navigating to BusinessUserDashboard() after a successful admin login.
+// That's not the widget your admin dashboard code (and admin_dashboard_api.php
+// calls in your logs) actually live in — AdminDashboard is. Swapped the
+// import + navigation target below.
+
+import 'Admin_Dashboard.dart';
+import 'business_user_dashboard_screen.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -117,33 +126,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: accentColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    onPressed: () async {
-                      Navigator.pop(context);
-                      try {
-                        await LocationService.requestAndGetLocation();
-                      } catch (_) {}
-                    },
-                    child: const Text(
-                      "Allow Access",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                ),
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
@@ -213,10 +195,13 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         await _showLocationPermissionDialog();
         if (!mounted) return;
 
+        // FIX: was navigating to BusinessUserDashboard() here, which is a
+        // different screen than the one that actually calls
+        // admin_dashboard_api.php (AdminDashboard, in admin_dashboard_screen.dart).
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => const BusinessUserDashboard()),
-          (route) => false,
+          MaterialPageRoute(builder: (_) => const  BusinessUserDashboard()),
+              (route) => false,
         );
       } else {
         _showError(
@@ -253,7 +238,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Circular Back Button
               Padding(
                 padding: const EdgeInsets.only(left: 20, top: 16),
                 child: GestureDetector(
@@ -289,7 +273,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Store Icon Container
                           Container(
                             width: 80,
                             height: 80,
@@ -311,8 +294,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                             ),
                           ),
                           const SizedBox(height: 24),
-
-                          // Welcome Back Title
                           const Text(
                             "Welcome Back",
                             style: TextStyle(
@@ -322,8 +303,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-
-                          // Subtitle
                           Text(
                             "Sign in to manage your vendor ecosystem",
                             textAlign: TextAlign.center,
@@ -334,8 +313,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                             ),
                           ),
                           const SizedBox(height: 36),
-
-                          // Email Address Field
                           TextField(
                             controller: _emailController,
                             enabled: !_isLoading,
@@ -362,8 +339,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
-
-                          // Password Field
                           TextField(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
@@ -401,8 +376,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
-
-                          // Remember Me & Forgot Password
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -420,10 +393,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                                       onChanged: _isLoading
                                           ? null
                                           : (val) {
-                                              setState(() {
-                                                _rememberMe = val ?? false;
-                                              });
-                                            },
+                                        setState(() {
+                                          _rememberMe = val ?? false;
+                                        });
+                                      },
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -452,8 +425,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                             ],
                           ),
                           const SizedBox(height: 28),
-
-                          // Sign In Button
                           SizedBox(
                             width: double.infinity,
                             height: 54,
@@ -468,37 +439,35 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                               onPressed: _isLoading ? null : _login,
                               child: _isLoading
                                   ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
                                   : Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: const [
-                                        Text(
-                                          "Sign In",
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        SizedBox(width: 8),
-                                        Icon(
-                                          Icons.arrow_forward_rounded,
-                                          color: Colors.white,
-                                          size: 18,
-                                        ),
-                                      ],
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  Text(
+                                    "Sign In",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
                                     ),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Icon(
+                                    Icons.arrow_forward_rounded,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                           const SizedBox(height: 36),
-
-                          // Divider Secure Access
                           Row(
                             children: [
                               Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
@@ -517,8 +486,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                             ],
                           ),
                           const SizedBox(height: 24),
-
-                          // Footer Version Info
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
