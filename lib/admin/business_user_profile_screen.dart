@@ -53,10 +53,9 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _loadProfileData().then((_) {
-      _fetchBalances();
-      _fetchLinkedBank();
-    });
+    _loadProfileData();
+    _fetchBalances();
+    _fetchLinkedBank();
   }
 
   Future<void> _loadProfileData() async {
@@ -124,10 +123,8 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
 
   Future<void> _fetchBalances() async {
     try {
-      final vendorId = await AuthService.getVendorIdString();
       final balanceRes = await Database().getJsonData({
         'action': 'get_balances',
-        'vendor_id': vendorId,
       }, endpoint: 'new_apis/payment_modal_API 1.php');
 
       if (balanceRes['success'] == true && balanceRes['data'] != null) {
@@ -141,10 +138,8 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
 
   Future<void> _fetchLinkedBank() async {
     try {
-      final vendorId = await AuthService.getVendorIdString();
       final response = await Database().getData({
         'action': 'fetch_all',
-        'vendor_id': vendorId,
       }, endpoint: 'new_apis/bank_details_API 1.php');
 
       if ((response['success'] == true || response['status'] == 200) && response['data'] != null) {
