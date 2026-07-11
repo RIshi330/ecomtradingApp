@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 import 'package:trading_ecommerce_admin/widgets/personalize_feed_dialog.dart';
@@ -30,6 +31,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:trading_ecommerce_admin/admin/taxonomy_manager_screen.dart';
 import 'package:trading_ecommerce_admin/admin/manage_items_screen.dart';
 import 'package:trading_ecommerce_admin/admin/platform_settings_screen.dart';
+import 'package:trading_ecommerce_admin/admin/community_manager_screen.dart';
 import 'package:trading_ecommerce_admin/admin/wallet_admin_screen.dart';
 import 'package:trading_ecommerce_admin/admin/membership_plans_screen.dart';
 import 'package:trading_ecommerce_admin/admin/membership_builder_screen.dart';
@@ -61,12 +63,13 @@ class CommunityAdminDashboard extends StatefulWidget {
   const CommunityAdminDashboard({super.key});
 
   @override
-  State<CommunityAdminDashboard> createState() => _CommunityAdminDashboardState();
+  State<CommunityAdminDashboard> createState() =>
+      _CommunityAdminDashboardState();
 }
 
 class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  
+
   // Navigation Index State
   // 0: Dashboard, 1: Users, 2: Products, 3: Orders,
   // 4: Category Management, 5: List Items, 6: Platform Settings,
@@ -136,7 +139,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
 
   Widget _buildYoutubePreview(String youtubeId) {
     final String thumbnailUrl = "https://img.youtube.com/vi/$youtubeId/0.jpg";
-    final Uri youtubeUri = Uri.parse("https://www.youtube.com/watch?v=$youtubeId");
+    final Uri youtubeUri =
+        Uri.parse("https://www.youtube.com/watch?v=$youtubeId");
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -162,7 +166,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
                     color: Colors.black12,
-                    child: const Icon(Icons.video_library_rounded, size: 48, color: Colors.grey),
+                    child: const Icon(Icons.video_library_rounded,
+                        size: 48, color: Colors.grey),
                   );
                 },
               ),
@@ -187,7 +192,10 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 color: Colors.black87,
                 child: const Text(
                   "WATCH ON YOUTUBE",
-                  style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -221,7 +229,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 color: Colors.white24,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 28),
+              child: const Icon(Icons.play_arrow_rounded,
+                  color: Colors.white, size: 28),
             ),
             const SizedBox(width: 12),
             const Expanded(
@@ -230,7 +239,11 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 children: [
                   Text(
                     "WATCH VIDEO ON X / TWITTER",
-                    style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5),
                   ),
                   SizedBox(height: 2),
                   Text(
@@ -240,7 +253,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 ],
               ),
             ),
-            const Icon(Icons.open_in_new_rounded, color: Colors.white54, size: 16),
+            const Icon(Icons.open_in_new_rounded,
+                color: Colors.white54, size: 16),
           ],
         ),
       ),
@@ -248,8 +262,10 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   }
 
   // Colors
-  static const Color primaryPurple = Color(0xFF006565); // Changed to Teal matching AppTheme.primary
-  static const Color accentPurple = Color(0xFF008080);  // Changed to Teal Container matching AppTheme.primaryContainer
+  static const Color primaryPurple =
+      Color(0xFF006565); // Changed to Teal matching AppTheme.primary
+  static const Color accentPurple = Color(
+      0xFF008080); // Changed to Teal Container matching AppTheme.primaryContainer
   static const Color bgDark = Color(0xFF1E1E2C);
   static const Color bgLight = Color(0xFFF4F6FC);
   static const Color cardColor = Colors.white;
@@ -300,10 +316,16 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   int? _activeCommunityId;
   String _activeCommunityTitle = "Select Community";
   List<dynamic> _myCommunities = [];
+  List<dynamic> _communityOrders = [];
+  bool _isLoadingOrders = false;
+  String _orderSearchQuery = '';
+  String _orderSortBy = 'order_id';
+  String _orderSortOrder = 'DESC';
 
   Future<void> _checkAndShowPersonalizeFeedModal() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final bool hasPersonalized = prefs.getBool('has_personalized_feed') ?? false;
+    final bool hasPersonalized =
+        prefs.getBool('has_personalized_feed') ?? false;
     if (!hasPersonalized) {
       if (mounted) {
         showDialog(
@@ -334,9 +356,15 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       if (args is int) {
         setState(() {
           switch (args) {
-            case 0: _currentIndex = 0; break;
-            case 1: _currentIndex = 3; break;
-            case 2: _currentIndex = 2; break;
+            case 0:
+              _currentIndex = 0;
+              break;
+            case 1:
+              _currentIndex = 3;
+              break;
+            case 2:
+              _currentIndex = 2;
+              break;
           }
         });
       }
@@ -355,7 +383,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     try {
       final vendorId = await AuthService.getVendorIdString();
       final adminId = await AuthService.getAdminId();
-      print("CHECK_MEMBERSHIP_STATUS community vendor_id: $vendorId, admin_id: $adminId");
+      print(
+          "CHECK_MEMBERSHIP_STATUS community vendor_id: $vendorId, admin_id: $adminId");
       final response = await Database().getData({
         'action': 'check_membership_status',
         'vendor_id': vendorId,
@@ -393,7 +422,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       builder: (_) => MembershipPaymentModal(
         planId: plan['id'],
         planTitle: plan['title'] ?? 'Membership',
-        totalRawPrice: double.tryParse(plan['final_price']?.toString() ?? '') ?? 0.0,
+        totalRawPrice:
+            double.tryParse(plan['final_price']?.toString() ?? '') ?? 0.0,
         themeColor: const Color(0xff006565),
       ),
     ).then((success) {
@@ -415,9 +445,11 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       barrierDismissible: true,
       builder: (BuildContext context) {
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
           backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           child: ConstrainedBox(
             constraints: BoxConstraints(
               maxWidth: 900,
@@ -428,14 +460,16 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
               children: [
                 // Modal Header
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
                         child: Row(
                           children: const [
-                            Icon(Icons.verified, color: Color(0xff006565), size: 20),
+                            Icon(Icons.verified,
+                                color: Color(0xff006565), size: 20),
                             SizedBox(width: 6),
                             Flexible(
                               child: Text(
@@ -455,7 +489,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       const SizedBox(width: 8),
                       TextButton(
                         style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
@@ -496,40 +531,55 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                         const Text(
                           "Get exclusive access to strategic partnerships, priority placement, and dedicated support designed for high-stakes administrative environments.",
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 14, color: Color(0xFF3E4949)),
+                          style:
+                              TextStyle(fontSize: 14, color: Color(0xFF3E4949)),
                         ),
                         const SizedBox(height: 32),
-
                         LayoutBuilder(
                           builder: (context, constraints) {
                             if (_matchingMemberships.isEmpty) {
                               return const Center(
-                                child: Text("No matching membership plans available"),
+                                child: Text(
+                                    "No matching membership plans available"),
                               );
                             }
-                            
+
                             bool isWide = constraints.maxWidth > 850;
-                            final cards = _matchingMemberships.map<Widget>((plan) {
+                            final cards =
+                                _matchingMemberships.map<Widget>((plan) {
                               final title = plan['title']?.toString() ?? 'Plan';
-                              final double price = double.tryParse(plan['price']?.toString() ?? '0') ?? 0.0;
-                              final double finalPrice = double.tryParse(plan['final_price']?.toString() ?? '0') ?? 0.0;
-                              final double discount = double.tryParse(plan['discount']?.toString() ?? '0') ?? 0.0;
+                              final double price = double.tryParse(
+                                      plan['price']?.toString() ?? '0') ??
+                                  0.0;
+                              final double finalPrice = double.tryParse(
+                                      plan['final_price']?.toString() ?? '0') ??
+                                  0.0;
+                              final double discount = double.tryParse(
+                                      plan['discount']?.toString() ?? '0') ??
+                                  0.0;
 
                               String validityText = '';
                               if (plan['validity'].toString() == 'Unlimited') {
                                 validityText = 'Lifetime Validity';
                               } else {
-                                validityText = '${plan['validity']} Days Validity';
+                                validityText =
+                                    '${plan['validity']} Days Validity';
                               }
 
                               final List<String> features = [];
-                              final details = plan['details'] as List<dynamic>? ?? [];
+                              final details =
+                                  plan['details'] as List<dynamic>? ?? [];
                               for (var det in details) {
-                                features.add("${det['posts']} posts on ${det['display_name']}");
+                                features.add(
+                                    "${det['posts']} posts on ${det['display_name']}");
                               }
-                              if (plan['include_team_members'] == 1 || plan['include_team_members'].toString() == '1') {
-                                features.add("Includes ${plan['team_member_count']} team members");
-                                features.add("Add member at ₹${plan['additional_member_price']}");
+                              if (plan['include_team_members'] == 1 ||
+                                  plan['include_team_members'].toString() ==
+                                      '1') {
+                                features.add(
+                                    "Includes ${plan['team_member_count']} team members");
+                                features.add(
+                                    "Add member at ₹${plan['additional_member_price']}");
                               }
 
                               final color = _getMembershipColor(title);
@@ -539,7 +589,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                                 title: title,
                                 price: "₹${finalPrice.toStringAsFixed(0)}",
                                 validity: validityText,
-                                oldPrice: discount > 0 ? "₹${price.toStringAsFixed(0)}" : "",
+                                oldPrice: discount > 0
+                                    ? "₹${price.toStringAsFixed(0)}"
+                                    : "",
                                 features: features,
                                 color: color,
                                 isFeatured: plan == _matchingMemberships.first,
@@ -548,11 +600,18 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
 
                             return isWide
                                 ? Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: cards.map((c) => Expanded(child: c)).toList(),
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: cards
+                                        .map((c) => Expanded(child: c))
+                                        .toList(),
                                   )
                                 : Column(
-                                    children: cards.expand((c) => [c, const SizedBox(height: 16)]).toList()..removeLast(),
+                                    children: cards
+                                        .expand((c) =>
+                                            [c, const SizedBox(height: 16)])
+                                        .toList()
+                                      ..removeLast(),
                                   );
                           },
                         ),
@@ -573,29 +632,35 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                         child: FilledButton.icon(
                           style: FilledButton.styleFrom(
                             backgroundColor: const Color(0xff006565),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
                           ),
                           onPressed: () {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text("Redirecting to all membership plans..."),
+                                content: Text(
+                                    "Redirecting to all membership plans..."),
                                 backgroundColor: Color(0xff006565),
                               ),
                             );
                           },
-                          icon: const Text("View All Membership Plans", style: TextStyle(fontWeight: FontWeight.bold)),
+                          icon: const Text("View All Membership Plans",
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                           label: const Icon(Icons.arrow_forward),
                         ),
                       ),
                       const SizedBox(height: 12),
                       TextButton(
-                        style: TextButton.styleFrom(foregroundColor: const Color(0xFF3E4949)),
+                        style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFF3E4949)),
                         onPressed: () => Navigator.pop(context),
                         child: const Text(
                           "Not interested right now, take me to my dashboard",
                           textAlign: TextAlign.center,
-                          style: TextStyle(decoration: TextDecoration.underline, fontSize: 13),
+                          style: TextStyle(
+                              decoration: TextDecoration.underline,
+                              fontSize: 13),
                         ),
                       )
                     ],
@@ -623,10 +688,22 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isFeatured ? const Color(0xff006565) : Colors.grey.shade200, width: isFeatured ? 2.5 : 1),
+        border: Border.all(
+            color: isFeatured ? const Color(0xff006565) : Colors.grey.shade200,
+            width: isFeatured ? 2.5 : 1),
         boxShadow: isFeatured
-            ? [BoxShadow(color: const Color(0xff006565).withOpacity(0.1), blurRadius: 16, offset: const Offset(0, 8))]
-            : [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 4))],
+            ? [
+                BoxShadow(
+                    color: const Color(0xff006565).withOpacity(0.1),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8))
+              ]
+            : [
+                BoxShadow(
+                    color: Colors.black.withOpacity(0.02),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4))
+              ],
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -635,8 +712,15 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           if (isFeatured) ...[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(color: const Color(0xff006565), borderRadius: BorderRadius.circular(8)),
-              child: const Text("MOST STRATEGIC CHOICE", style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+              decoration: BoxDecoration(
+                  color: const Color(0xff006565),
+                  borderRadius: BorderRadius.circular(8)),
+              child: const Text("MOST STRATEGIC CHOICE",
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5)),
             ),
             const SizedBox(height: 8),
           ],
@@ -644,9 +728,17 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                child: Text(title, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8)),
+                child: Text(title,
+                    style: TextStyle(
+                        color: color,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5)),
               ),
               Icon(Icons.workspace_premium, color: color, size: 20),
             ],
@@ -656,7 +748,11 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Text(price, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1C1B1B))),
+              Text(price,
+                  style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1C1B1B))),
               if (oldPrice.isNotEmpty) ...[
                 const SizedBox(width: 8),
                 Text(
@@ -670,7 +766,11 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
               ],
             ],
           ),
-          Text(validity, style: const TextStyle(fontSize: 12, color: Color(0xFF3E4949), fontWeight: FontWeight.w600)),
+          Text(validity,
+              style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF3E4949),
+                  fontWeight: FontWeight.w600)),
           const SizedBox(height: 20),
           const Divider(),
           const SizedBox(height: 16),
@@ -678,9 +778,13 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle, color: Color(0xff006565), size: 16),
+                    const Icon(Icons.check_circle,
+                        color: Color(0xff006565), size: 16),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(f, style: const TextStyle(fontSize: 12, color: Color(0xFF1C1B1B)))),
+                    Expanded(
+                        child: Text(f,
+                            style: const TextStyle(
+                                fontSize: 12, color: Color(0xFF1C1B1B)))),
                   ],
                 ),
               )),
@@ -691,14 +795,21 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: color),
                 foregroundColor: color,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                backgroundColor: isFeatured ? color.withOpacity(0.05) : Colors.transparent,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                backgroundColor:
+                    isFeatured ? color.withOpacity(0.05) : Colors.transparent,
               ),
               onPressed: () {
                 Navigator.pop(context);
                 _openCheckoutSheet(plan);
               },
-              child: Text(plan['is_purchased'] == 1 || plan['is_purchased'].toString() == '1' ? "Purchased" : "Select $title", style: const TextStyle(fontWeight: FontWeight.bold)),
+              child: Text(
+                  plan['is_purchased'] == 1 ||
+                          plan['is_purchased'].toString() == '1'
+                      ? "Purchased"
+                      : "Select $title",
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
           )
         ],
@@ -809,9 +920,11 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       final database = Database();
       final response = await database.getData({
         'action': 'get_users_list',
-      }, endpoint: 'new_apis/manage_user_api.php');
-      
-      if (response['success'] == true || response['status'] == 200 || response.containsKey('general_users')) {
+      }, endpoint: 'new_apis/community_dashboard_api.php');
+
+      if (response['success'] == true ||
+          response['status'] == 200 ||
+          response.containsKey('general_users')) {
         setState(() {
           _generalUsers = response['general_users'] ?? [];
           _businessUsers = response['business_users'] ?? [];
@@ -833,19 +946,22 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       final response = await Database().getData({
         'action': 'fetch_shared_invites_admin',
       }, endpoint: 'new_apis/community_dashboard_api.php');
-      
+
       if (response['success'] == true && response['data'] != null) {
         final List<dynamic> data = response['data'] ?? [];
         setState(() {
           _myCommunities = data;
           if (data.isNotEmpty) {
-            _activeCommunityId = int.tryParse(data[0]['community_id']?.toString() ?? '');
-            _activeCommunityTitle = data[0]['community_title']?.toString() ?? 'Community';
+            _activeCommunityId =
+                int.tryParse(data[0]['community_id']?.toString() ?? '');
+            _activeCommunityTitle =
+                data[0]['community_title']?.toString() ?? 'Community';
           }
         });
         if (_activeCommunityId != null) {
           _fetchCommunityStats(_activeCommunityId!);
           _fetchCommunityMembers(_activeCommunityId!);
+          _fetchCommunityOrders();
         }
       }
     } catch (e) {
@@ -862,13 +978,17 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         'action': 'getCommunityStats',
         'community_id': communityId.toString(),
       }, endpoint: 'new_apis/community_dashboard_api.php');
-      
+
       if (response['success'] == true && response['data'] != null) {
         final data = response['data'];
         setState(() {
-          _totalMembers = int.tryParse(data['total_members']?.toString() ?? '0') ?? 0;
-          _totalPaidMembers = int.tryParse(data['total_paid_members']?.toString() ?? '0') ?? 0;
-          _totalRevenue = double.tryParse(data['total_revenue']?.toString() ?? '0.0') ?? 0.0;
+          _totalMembers =
+              int.tryParse(data['total_members']?.toString() ?? '0') ?? 0;
+          _totalPaidMembers =
+              int.tryParse(data['total_paid_members']?.toString() ?? '0') ?? 0;
+          _totalRevenue =
+              double.tryParse(data['total_revenue']?.toString() ?? '0.0') ??
+                  0.0;
         });
       }
     } catch (e) {
@@ -889,16 +1009,20 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         'action': 'fetch_community_members',
         'community_id': communityId.toString(),
       }, endpoint: 'new_apis/community_dashboard_api.php');
-      
+
       if (response['success'] == true && response['data'] != null) {
         final data = response['data'];
         final List<dynamic> members = data['members'] ?? [];
-        
+
         setState(() {
-          _pendingApprovals = members.where((m) => m['join_status']?.toString() == 'pending').toList();
+          _pendingApprovals = members
+              .where((m) => m['join_status']?.toString() == 'pending')
+              .toList();
           _pendingApprovalsCount = _pendingApprovals.length;
-          
-          final approved = members.where((m) => m['join_status']?.toString() == 'approved').toList();
+
+          final approved = members
+              .where((m) => m['join_status']?.toString() == 'approved')
+              .toList();
           _activeMembers.clear();
           for (var m in approved) {
             final details = m['vendor_details'] ?? {};
@@ -906,7 +1030,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
             final role = m['member_id'].toString() == '1' ? 'Admin' : 'Member';
             _activeMembers.add({
               "name": name,
-              "initials": name.isNotEmpty ? name.substring(0, 1).toUpperCase() : "M",
+              "initials":
+                  name.isNotEmpty ? name.substring(0, 1).toUpperCase() : "M",
               "role": role,
               "status": "ACTIVE",
               "statusColor": const Color(0xFF008080),
@@ -933,7 +1058,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         'member_id': memberId.toString(),
         'status': status,
       }, endpoint: 'new_apis/community_dashboard_api.php');
-      
+
       if (response['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -949,7 +1074,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response['message']?.toString() ?? "Failed to update member status"),
+            content: Text(response['message']?.toString() ??
+                "Failed to update member status"),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),
@@ -969,7 +1095,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       final response = await Database().getData({
         'action': 'get_feed',
       }, endpoint: 'new_apis/social_feed_api.php');
-      
+
       if (response['success'] == true && response['data'] != null) {
         setState(() {
           _feedPosts = response['data'] ?? [];
@@ -1049,7 +1175,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         'visibility': 'public',
         'label': content,
       }, endpoint: 'new_apis/social_feed_api.php');
-      
+
       if (response['success'] == true) {
         _postController.clear();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1076,8 +1202,10 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       final response = await database.getData({
         'action': 'getWithdrawRequests',
       }, endpoint: 'new_apis/withdrawl_request_api.php');
-      
-      if (response['success'] == true || response['status'] == 200 || response.containsKey('data')) {
+
+      if (response['success'] == true ||
+          response['status'] == 200 ||
+          response.containsKey('data')) {
         setState(() {
           _withdrawalRequests = response['data'] ?? [];
         });
@@ -1103,7 +1231,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       if (response['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("User successfully ${type == 'suspend' ? 'suspended' : 'activated'}!"),
+            content: Text(
+                "User successfully ${type == 'suspend' ? 'suspended' : 'activated'}!"),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
           ),
@@ -1123,6 +1252,456 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     }
   }
 
+  Future<void> _fetchCommunityOrders() async {
+    if (_activeCommunityId == null) return;
+    setState(() {
+      _isLoadingOrders = true;
+    });
+    try {
+      final response = await Database().getData({
+        'action': 'getCommunityOrders',
+        'community_id': _activeCommunityId.toString(),
+        'search': _orderSearchQuery,
+        'sort_by': _orderSortBy,
+        'sort_order': _orderSortOrder,
+      }, endpoint: 'new_apis/community_dashboard_api.php');
+
+      if (response['success'] == true && response['data'] != null) {
+        setState(() {
+          _communityOrders = response['data'] ?? [];
+        });
+      }
+    } catch (e) {
+      print("Error fetching community orders: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingOrders = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _updateCommunityOrderStatus(int orderId, String status) async {
+    try {
+      final response = await Database().getData({
+        'action': 'updateCommunityOrderStatus',
+        'order_id': orderId.toString(),
+        'status': status,
+      }, endpoint: 'new_apis/community_dashboard_api.php');
+
+      if (response['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Order status updated to $status successfully!"),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        _fetchCommunityOrders();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response['message']?.toString() ??
+                "Failed to update order status"),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      print("Error updating community order status: $e");
+    }
+  }
+
+  Future<void> _updatePostStatus(int postId, String status) async {
+    try {
+      final response = await Database().getData({
+        'action': 'update_post_status',
+        'post_id': postId.toString(),
+        'status': status,
+      }, endpoint: 'new_apis/community_dashboard_api.php');
+      if (response['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Post status updated to $status successfully!"),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        _fetchHomeFeed();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response['message']?.toString() ??
+                "Failed to update post status"),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      print("Error updating post status: $e");
+    }
+  }
+
+  void _showInviteMemberDialog() {
+    int validityDays = 10;
+    int? selectedVendorId;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              title: const Text("Generate Invite Link",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Select Vendor to Invite:",
+                      style:
+                          TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  DropdownButton<int>(
+                    isExpanded: true,
+                    value: selectedVendorId,
+                    hint: const Text("Select a vendor"),
+                    items: [..._generalUsers, ..._businessUsers]
+                        .map<DropdownMenuItem<int>>((user) {
+                      final name = user['name']?.toString() ?? 'User';
+                      final id =
+                          int.tryParse(user['id']?.toString() ?? '') ?? 0;
+                      return DropdownMenuItem<int>(
+                        value: id,
+                        child: Text("$name (ID: $id)"),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      setDialogState(() {
+                        selectedVendorId = val;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  const Text("Link Validity (Days):",
+                      style:
+                          TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  DropdownButton<int>(
+                    isExpanded: true,
+                    value: validityDays,
+                    items: [1, 3, 7, 10, 30].map<DropdownMenuItem<int>>((days) {
+                      return DropdownMenuItem<int>(
+                        value: days,
+                        child: Text("$days Days"),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setDialogState(() {
+                          validityDays = val;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text("Cancel",
+                      style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryPurple,
+                      foregroundColor: Colors.white),
+                  onPressed: () async {
+                    if (_activeCommunityId == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text("No active community selected!"),
+                            backgroundColor: Colors.red),
+                      );
+                      Navigator.pop(dialogContext);
+                      return;
+                    }
+                    Navigator.pop(dialogContext);
+
+                    try {
+                      final response = await Database().getData({
+                        'action': 'share_invite_link',
+                        'community_id': _activeCommunityId.toString(),
+                        'validity_days': validityDays.toString(),
+                        'shared_to_vendor': selectedVendorId?.toString() ?? '0',
+                      }, endpoint: 'new_apis/community_dashboard_api.php');
+
+                      if (response['success'] == true &&
+                          response['data'] != null) {
+                        final link =
+                            response['data']['invite_link']?.toString() ?? '';
+                        _showInviteLinkSuccessDialog(link);
+                        _fetchMyCommunities(); // Refresh list to fetch new shared invites
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(response['message']?.toString() ??
+                                "Failed to generate invite link"),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      print("Error sharing invite link: $e");
+                    }
+                  },
+                  child: const Text("Generate Link"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showInviteLinkSuccessDialog(String link) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: const Text("Invite Link Generated",
+              style:
+                  TextStyle(fontWeight: FontWeight.bold, color: primaryPurple)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                  "Share this link with the vendor to invite them to the community:"),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8)),
+                child: Text(link,
+                    style:
+                        const TextStyle(fontSize: 12, color: Colors.black87)),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: link));
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text("Copied to clipboard!"),
+                      backgroundColor: primaryPurple),
+                );
+              },
+              child: const Text("Copy & Close",
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, color: primaryPurple)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildCommunityOrdersView() {
+    return Column(
+      children: [
+        // Filters & Search
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: "Search orders by ID or vendor name...",
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onChanged: (val) {
+                    _orderSearchQuery = val;
+                    _fetchCommunityOrders();
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              DropdownButton<String>(
+                value: _orderSortBy,
+                items: const [
+                  DropdownMenuItem(value: 'order_id', child: Text("Order ID")),
+                  DropdownMenuItem(
+                      value: 'order_date', child: Text("Order Date")),
+                  DropdownMenuItem(value: 'price', child: Text("Amount")),
+                ],
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      _orderSortBy = val;
+                    });
+                    _fetchCommunityOrders();
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+        // Orders List
+        Expanded(
+          child: _isLoadingOrders
+              ? const Center(
+                  child: CircularProgressIndicator(color: primaryPurple))
+              : _communityOrders.isEmpty
+                  ? const Center(
+                      child: Text("No community orders found.",
+                          style: TextStyle(color: textLight)))
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: _communityOrders.length,
+                      itemBuilder: (context, index) {
+                        final item = _communityOrders[index];
+                        final order =
+                            (item is Map ? item['order'] : null) ?? {};
+                        final vendor =
+                            (item is Map ? item['vendor'] : null) ?? {};
+                        final orderId = order['id']?.toString() ?? '';
+                        final date = order['created_at']?.toString() ?? '';
+                        final amount = order['amount']?.toString() ??
+                            order['price']?.toString() ??
+                            '0';
+                        final status =
+                            order['order_status']?.toString() ?? 'PENDING';
+                        final vendorName =
+                            vendor['name']?.toString() ?? 'Unknown Vendor';
+
+                        return Card(
+                          color: Colors.white,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: const BorderSide(color: Color(0xFFBDC9C8)),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text("Order ID: #$orderId",
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14)),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: (status == 'COMPLETED'
+                                                ? Colors.green
+                                                : Colors.orange)
+                                            .withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        status,
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: status == 'COMPLETED'
+                                              ? Colors.green
+                                              : Colors.orange,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Divider(height: 24),
+                                Text("Vendor: $vendorName",
+                                    style: const TextStyle(
+                                        fontSize: 13, color: textDark)),
+                                const SizedBox(height: 4),
+                                Text("Date: $date",
+                                    style: const TextStyle(
+                                        fontSize: 12, color: Colors.grey)),
+                                const SizedBox(height: 4),
+                                Text("Amount: ₹$amount",
+                                    style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: primaryPurple)),
+                                const SizedBox(height: 12),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    PopupMenuButton<String>(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          border:
+                                              Border.all(color: primaryPurple),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: const Text(
+                                          "UPDATE STATUS",
+                                          style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: primaryPurple),
+                                        ),
+                                      ),
+                                      onSelected: (value) {
+                                        final int? idInt =
+                                            int.tryParse(orderId);
+                                        if (idInt != null) {
+                                          _updateCommunityOrderStatus(
+                                              idInt, value);
+                                        }
+                                      },
+                                      itemBuilder: (BuildContext context) =>
+                                          <PopupMenuEntry<String>>[
+                                        const PopupMenuItem(
+                                            value: 'APPROVED',
+                                            child: Text("APPROVED")),
+                                        const PopupMenuItem(
+                                            value: 'IN_PROGRESS',
+                                            child: Text("IN_PROGRESS")),
+                                        const PopupMenuItem(
+                                            value: 'COMPLETED',
+                                            child: Text("COMPLETED")),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+        ),
+      ],
+    );
+  }
+
   // Details dialog showing user's joined communities and actions
   void _showUserDetailsDialog(Map<String, dynamic> user) {
     final joined = user["community_list"] ?? user["joined_communities"];
@@ -1130,29 +1709,41 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     if (joined is List) {
       communities = joined;
     }
-    
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(user["name"] ?? "User Details", style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(user["name"] ?? "User Details",
+            style: const TextStyle(fontWeight: FontWeight.bold)),
         content: SizedBox(
           width: double.maxFinite,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Email: ${user['email'] ?? 'N/A'}", style: const TextStyle(color: textDark)),
+              Text("Email: ${user['email'] ?? 'N/A'}",
+                  style: const TextStyle(color: textDark)),
               const SizedBox(height: 8),
-              Text("Mobile: ${user['mobile'] ?? 'N/A'}", style: const TextStyle(color: textDark)),
+              Text("Mobile: ${user['mobile'] ?? 'N/A'}",
+                  style: const TextStyle(color: textDark)),
               const SizedBox(height: 8),
-              Text("Status: ${user['status'] ?? 'Active'}", style: TextStyle(fontWeight: FontWeight.bold, color: user['status'] == 'Active' ? Colors.green : Colors.red)),
+              Text("Status: ${user['status'] ?? 'Active'}",
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: user['status'] == 'Active'
+                          ? Colors.green
+                          : Colors.red)),
               const SizedBox(height: 12),
-              const Text("Joined Communities:", style: TextStyle(fontWeight: FontWeight.bold, color: primaryPurple)),
+              const Text("Joined Communities:",
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, color: primaryPurple)),
               const SizedBox(height: 8),
               if (communities.isEmpty)
-                const Text("No joined communities.", style: TextStyle(fontStyle: FontStyle.italic, color: textLight))
+                const Text("No joined communities.",
+                    style: TextStyle(
+                        fontStyle: FontStyle.italic, color: textLight))
               else
                 Flexible(
                   child: ListView.builder(
@@ -1160,11 +1751,14 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     itemCount: communities.length,
                     itemBuilder: (context, i) {
                       final item = communities[i];
-                      final String comName = item is Map ? (item["title"] ?? item["name"] ?? "") : item.toString();
+                      final String comName = item is Map
+                          ? (item["title"] ?? item["name"] ?? "")
+                          : item.toString();
                       return ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: const Icon(Icons.group, color: primaryPurple),
-                        title: Text(comName, style: const TextStyle(fontSize: 14)),
+                        title:
+                            Text(comName, style: const TextStyle(fontSize: 14)),
                       );
                     },
                   ),
@@ -1176,14 +1770,18 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              final int userId = int.tryParse(user['id']?.toString() ?? '0') ?? 0;
+              final int userId =
+                  int.tryParse(user['id']?.toString() ?? '0') ?? 0;
               if (userId > 0) {
-                _updateUserStatus(userId, user['status'] == 'Active' ? 'suspend' : 'activate');
+                _updateUserStatus(userId,
+                    user['status'] == 'Active' ? 'suspend' : 'activate');
               }
             },
             child: Text(
               user['status'] == 'Active' ? "Suspend User" : "Activate User",
-              style: TextStyle(color: user['status'] == 'Active' ? Colors.red : Colors.green),
+              style: TextStyle(
+                  color:
+                      user['status'] == 'Active' ? Colors.red : Colors.green),
             ),
           ),
           TextButton(
@@ -1197,23 +1795,74 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
 
   // Mock Data (legacy placeholders)
   final List<Map<String, dynamic>> _mockProducts = [
-    {"title": "Rolex Submariner", "price": "₹12,500", "stock": 4, "status": "Approved"},
-    {"title": "Louis Vuitton Keepall", "price": "₹2,800", "stock": 12, "status": "Approved"},
-    {"title": "Gucci Double G Belt", "price": "₹650", "stock": 45, "status": "Pending"},
-    {"title": "Hermes Birkin 30", "price": "₹22,000", "stock": 2, "status": "Approved"},
+    {
+      "title": "Rolex Submariner",
+      "price": "₹12,500",
+      "stock": 4,
+      "status": "Approved"
+    },
+    {
+      "title": "Louis Vuitton Keepall",
+      "price": "₹2,800",
+      "stock": 12,
+      "status": "Approved"
+    },
+    {
+      "title": "Gucci Double G Belt",
+      "price": "₹650",
+      "stock": 45,
+      "status": "Pending"
+    },
+    {
+      "title": "Hermes Birkin 30",
+      "price": "₹22,000",
+      "stock": 2,
+      "status": "Approved"
+    },
   ];
 
   final List<Map<String, dynamic>> _mockOrders = [
-    {"id": "LX-9082", "user": "Aditya Singh", "amount": "₹12,500", "status": "Delivered"},
-    {"id": "LX-9083", "user": "Nehal Gupta", "amount": "₹650", "status": "Pending"},
-    {"id": "LX-9084", "user": "Vikram Rathore", "amount": "₹2,800", "status": "Shipped"},
+    {
+      "id": "LX-9082",
+      "user": "Aditya Singh",
+      "amount": "₹12,500",
+      "status": "Delivered"
+    },
+    {
+      "id": "LX-9083",
+      "user": "Nehal Gupta",
+      "amount": "₹650",
+      "status": "Pending"
+    },
+    {
+      "id": "LX-9084",
+      "user": "Vikram Rathore",
+      "amount": "₹2,800",
+      "status": "Shipped"
+    },
   ];
 
-  final List<String> _mockCategories = ["Luxury Watches", "Leather Bags", "Fine Jewelry", "Designer Belts", "Apparel"];
+  final List<String> _mockCategories = [
+    "Luxury Watches",
+    "Leather Bags",
+    "Fine Jewelry",
+    "Designer Belts",
+    "Apparel"
+  ];
 
   final List<Map<String, dynamic>> _mockBankDetails = [
-    {"vendor": "Ananya Sharma", "bank": "HDFC Bank", "account": "******9824", "ifsc": "HDFC0001202"},
-    {"vendor": "Siddharth Sen", "bank": "ICICI Bank", "account": "******4019", "ifsc": "ICIC0000047"},
+    {
+      "vendor": "Ananya Sharma",
+      "bank": "HDFC Bank",
+      "account": "******9824",
+      "ifsc": "HDFC0001202"
+    },
+    {
+      "vendor": "Siddharth Sen",
+      "bank": "ICICI Bank",
+      "account": "******4019",
+      "ifsc": "ICIC0000047"
+    },
   ];
 
   final List<Map<String, dynamic>> _mockOpportunities = [
@@ -1244,43 +1893,91 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   ];
 
   final List<Map<String, dynamic>> _mockMembershipPlans = [
-    {"tier": "Basic (Free)", "price": "₹0", "duration": "Lifetime", "features": "List up to 5 items"},
-    {"tier": "Silver Premium", "price": "₹29/mo", "duration": "1 Month", "features": "List up to 50 items, 5% commission"},
-    {"tier": "Gold Elite", "price": "₹79/mo", "duration": "3 Months", "features": "Unlimited listings, 2.5% commission"},
-    {"tier": "Platinum Royalty", "price": "₹249/yr", "duration": "1 Year", "features": "Unlimited listings, 0% commission, Priority Support"},
+    {
+      "tier": "Basic (Free)",
+      "price": "₹0",
+      "duration": "Lifetime",
+      "features": "List up to 5 items"
+    },
+    {
+      "tier": "Silver Premium",
+      "price": "₹29/mo",
+      "duration": "1 Month",
+      "features": "List up to 50 items, 5% commission"
+    },
+    {
+      "tier": "Gold Elite",
+      "price": "₹79/mo",
+      "duration": "3 Months",
+      "features": "Unlimited listings, 2.5% commission"
+    },
+    {
+      "tier": "Platinum Royalty",
+      "price": "₹249/yr",
+      "duration": "1 Year",
+      "features": "Unlimited listings, 0% commission, Priority Support"
+    },
   ];
 
   // Helper method to get screen title
   String _getTitle() {
     switch (_currentIndex) {
-      case 0: return "Admin Dashboard";
-      case 1: return "User Management";
-      case 2: return "Product Catalog";
-      case 3: return "Order Management";
-      case 4: return "Category Management";
-      case 5: return "List Items";
-      case 6: return "Platform Settings";
-      case 7: return "Financial Wallet";
-      case 8: return "Withdrawal Requests";
-      case 9: return "Seller Bank Details";
-      case 10: return "Membership Plans";
-      case 11: return "Admin Profile";
-      case 15: return "Community Approvals";
-      case 18: return "Marketplace Opportunities";
-      case 19: return "My Listings";
-      case 20: return "My Submissions";
-      case 22: return "Order Management";
-      case 23: return "Trading Opportunities";
-      case 24: return "My Selected Items";
-      case 25: return "Affiliate Orders";
-      case 28: return "Explore Partners";
-      case 29: return "Explore Talent";
-      case 40: return "Logistics Dashboard";
-      case 41: return "Packaging Inventory";
-      case 42: return "Promotions & Discounts";
-      case 43: return "Local Delivery Logistics";
-      case 44: return "Combo Packages";
-      default: return "Admin Portal";
+      case 0:
+        return "Admin Dashboard";
+      case 1:
+        return "User Management";
+      case 2:
+        return "Product Catalog";
+      case 3:
+        return "Order Management";
+      case 4:
+        return "Category Management";
+      case 5:
+        return "List Items";
+      case 6:
+        return "Platform Settings";
+      case 7:
+        return "Financial Wallet";
+      case 8:
+        return "Withdrawal Requests";
+      case 9:
+        return "Seller Bank Details";
+      case 10:
+        return "Membership Plans";
+      case 11:
+        return "Admin Profile";
+      case 15:
+        return "Community Approvals";
+      case 18:
+        return "Marketplace Opportunities";
+      case 19:
+        return "My Listings";
+      case 20:
+        return "My Submissions";
+      case 22:
+        return "Order Management";
+      case 23:
+        return "Trading Opportunities";
+      case 24:
+        return "My Selected Items";
+      case 25:
+        return "Affiliate Orders";
+      case 28:
+        return "Explore Partners";
+      case 29:
+        return "Explore Talent";
+      case 40:
+        return "Logistics Dashboard";
+      case 41:
+        return "Packaging Inventory";
+      case 42:
+        return "Promotions & Discounts";
+      case 43:
+        return "Local Delivery Logistics";
+      case 44:
+        return "Combo Packages";
+      default:
+        return "Admin Portal";
     }
   }
 
@@ -1311,7 +2008,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   ),
                 ),
               ),
-              
+
               // Header Row (Icon + Title & Subtitle)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -1355,7 +2052,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 ],
               ),
               const SizedBox(height: 20),
-              
+
               // Body message
               const Text(
                 "Are you sure you want to sign out of your account?\nYou will need to enter your credentials to log back in.",
@@ -1366,7 +2063,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Action Buttons Row
               Row(
                 children: [
@@ -1383,7 +2080,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       ),
                       child: const Text(
                         "Cancel",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14),
                       ),
                     ),
                   ),
@@ -1394,11 +2092,13 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                         Navigator.pop(ctx);
                         await AuthService.logout();
                         if (mounted) {
-                          Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+                          Navigator.pushNamedAndRemoveUntil(
+                              context, AppRoutes.login, (route) => false);
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFFEBEE), // Light red background
+                        backgroundColor:
+                            const Color(0xFFFFEBEE), // Light red background
                         foregroundColor: const Color(0xFFC62828), // Red text
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1408,7 +2108,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       ),
                       child: const Text(
                         "Logout",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14),
                       ),
                     ),
                   ),
@@ -1503,615 +2204,785 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         }
       },
       child: Scaffold(
-      key: _scaffoldKey,
-      backgroundColor: bgLight,
-      floatingActionButton: (_vendorType == '200')
-          ? _buildCommunityAdminFAB()
-          : ((_currentIndex == 18 || _currentIndex == 19)
-              ? FloatingActionButton.small(
-                  backgroundColor: primaryPurple,
-                  foregroundColor: Colors.white,
+        key: _scaffoldKey,
+        backgroundColor: bgLight,
+        floatingActionButton: (_vendorType == '200')
+            ? _buildCommunityAdminFAB()
+            : ((_currentIndex == 18 || _currentIndex == 19)
+                ? FloatingActionButton.small(
+                    backgroundColor: primaryPurple,
+                    foregroundColor: Colors.white,
+                    onPressed: () {
+                      Navigator.pushNamed(context, AppRoutes.createOpportunity)
+                          .then((didCreate) {
+                        if (didCreate == true) {
+                          _fetchOpportunities();
+                          _fetchMyListings();
+                        }
+                      });
+                    },
+                    child: const Icon(Icons.add),
+                  )
+                : null),
+        appBar: (_currentIndex == 0 ||
+                _currentIndex == 12 ||
+                _currentIndex == 50)
+            ? _buildSellerHeader()
+            : AppBar(
+                backgroundColor: Colors.white,
+                elevation: 1,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Color(0xFF006565)),
                   onPressed: () {
-                    Navigator.pushNamed(context, AppRoutes.createOpportunity).then((didCreate) {
-                      if (didCreate == true) {
-                        _fetchOpportunities();
-                        _fetchMyListings();
-                      }
+                    setState(() {
+                      _currentIndex = (_vendorType == '200') ? 0 : 12;
                     });
                   },
-                  child: const Icon(Icons.add),
-                )
-              : null),
-      appBar: (_currentIndex == 0 || _currentIndex == 12 || _currentIndex == 50)
-          ? _buildSellerHeader()
-              : AppBar(
-              backgroundColor: Colors.white,
-              elevation: 1,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Color(0xFF006565)),
-                onPressed: () {
-                  setState(() {
-                    _currentIndex = (_vendorType == '200') ? 0 : 12;
-                  });
-                },
-              ),
-              centerTitle: true,
-                  title: Text(
-                    _getAppBarTitle(),
-                    style: const TextStyle(
-                      color: Color(0xFF006565),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 19,
-                    ),
+                ),
+                centerTitle: true,
+                title: Text(
+                  _getAppBarTitle(),
+                  style: const TextStyle(
+                    color: Color(0xFF006565),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 19,
                   ),
-              actions: [
-                if (_currentIndex == 27 && _vendorType == '200')
-                  IconButton(
-                    icon: const Icon(Icons.calendar_month_rounded, color: Color(0xFF006565)),
-                    tooltip: "Campaign Scheduler",
-                    onPressed: () => Navigator.pushNamed(context, AppRoutes.campaignScheduler),
-                  ),
-                Stack(
-                  children: [
+                ),
+                actions: [
+                  if (_currentIndex == 27 && _vendorType == '200')
                     IconButton(
-                      icon: const Icon(Icons.notifications_outlined, color: Color(0xFF006565)),
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const LocalNotificationsScreen()),
-                      ),
+                      icon: const Icon(Icons.calendar_month_rounded,
+                          color: Color(0xFF006565)),
+                      tooltip: "Campaign Scheduler",
+                      onPressed: () => Navigator.pushNamed(
+                          context, AppRoutes.campaignScheduler),
                     ),
-                    Positioned(
-                      right: 12,
-                      top: 12,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
+                  Stack(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.notifications_outlined,
+                            color: Color(0xFF006565)),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const LocalNotificationsScreen()),
                         ),
                       ),
-                    ),
-                  ],
+                      Positioned(
+                        right: 12,
+                        top: 12,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.person_outline,
+                        color: Color(0xFF006565)),
+                    onPressed: () {
+                      setState(() =>
+                          _currentIndex = 11); // Navigates to Admin Profile
+                    },
+                  ),
+                ],
+              ),
+
+        // Left Navigation Drawer
+        drawer: Drawer(
+          backgroundColor: Colors.white,
+          child: SafeArea(
+            child: Column(
+              children: [
+                // Profile Header
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      const CircleAvatar(
+                        radius: 28,
+                        backgroundImage: NetworkImage(
+                          "https://i.pravatar.cc/150",
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Elite Partner",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color:
+                                    Color(0xFF1C1B1B), // AppTheme.textPrimary
+                              ),
+                            ),
+                            Row(
+                              children: const [
+                                Icon(
+                                  Icons.verified,
+                                  color: Color(0xFF006565), // AppTheme.primary
+                                  size: 16,
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  "Verified B2B",
+                                  style: TextStyle(
+                                    color: Color(
+                                        0xFF3E4949), // AppTheme.textSecondary
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Text(
+                              "Mumbai, India",
+                              style: TextStyle(
+                                color:
+                                    Color(0xFF3E4949), // AppTheme.textSecondary
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.person_outline, color: Color(0xFF006565)),
-                  onPressed: () {
-                    setState(() => _currentIndex = 11); // Navigates to Admin Profile
+
+                const Divider(),
+
+                // Navigation Drawer Items List
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      if (_vendorType == '200') ...[
+                        _buildDrawerItem(
+                            0, Icons.dashboard_rounded, "Community Dashboard"),
+                        _buildDrawerItem(
+                            19, Icons.forum_rounded, "Manage Communities"),
+                        _buildDrawerItem(
+                            51, Icons.explore_rounded, "Explore Communities"),
+                        _buildDrawerItem(
+                            15, Icons.people_rounded, "Manage Members"),
+                        _buildDrawerItem(
+                            20, Icons.post_add_rounded, "Manage Posts"),
+                        _buildDrawerItem(10, Icons.monetization_on_rounded,
+                            "Community Monetization"),
+                        _buildDrawerItem(52, Icons.card_membership_rounded,
+                            "Membership Plans"),
+                        _buildDrawerItem(7, Icons.wallet_rounded, "Wallet"),
+                        _buildDrawerItem(
+                            9, Icons.account_balance_rounded, "Bank Details"),
+                        _buildDrawerItem(
+                            3, Icons.receipt_long_rounded, "Orders"),
+                        _buildDrawerItem(
+                            27, Icons.campaign_rounded, "Schedule Campaigns"),
+                        _buildDrawerItem(6, Icons.settings_rounded, "Settings"),
+                      ] else ...[
+                        // _buildDrawerItem(0, Icons.dashboard_rounded, "Dashboard"),
+                        _buildDrawerItem(
+                            12, Icons.storefront_rounded, "Seller Dashboard"),
+                        _buildDrawerItem(
+                            33, Icons.chat_bubble_outline_rounded, "Inbox"),
+                        _buildDrawerItem(60, Icons.campaign_rounded,
+                            "Marketplace Promotions"),
+                        // _buildDrawerItem(13, Icons.supervised_user_circle_rounded, "Seller Management"),
+                        // _buildDrawerItem(1, Icons.people_rounded, "Users"),
+                        // _buildDrawerItem(15, Icons.group_add_rounded, "Community Approvals"),
+
+                        // Collapsible Products (aligned and borderless)
+                        Theme(
+                          data: Theme.of(context).copyWith(
+                            dividerColor: Colors.transparent,
+                            listTileTheme: const ListTileThemeData(
+                              horizontalTitleGap: 8,
+                              dense: true,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                          child: Container(
+                            margin: const EdgeInsets.only(
+                                left: 8, right: 8, top: 4, bottom: 4),
+                            child: ExpansionTile(
+                              shape: const Border(),
+                              collapsedShape: const Border(),
+                              tilePadding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              leading: const Icon(Icons.shopping_bag_rounded,
+                                  color: Color(0xFF3E4949)),
+                              title: const Text(
+                                "Products menus",
+                                style: TextStyle(
+                                    color: Color(0xFF1C1B1B), fontSize: 14),
+                              ),
+                              iconColor: Color(0xFF1C1B1B),
+                              collapsedIconColor: Color(0xFF3E4949),
+                              children: [
+                                _buildDrawerItem(2, Icons.inventory_2_rounded,
+                                    "Manage Listing",
+                                    isSubItem: true),
+                                _buildDrawerItem(3, Icons.receipt_long_rounded,
+                                    "Manage Orders",
+                                    isSubItem: true),
+                                _buildDrawerItem(
+                                    31,
+                                    Icons.warning_amber_rounded,
+                                    "Manage Inventory",
+                                    isSubItem: true),
+                                _buildDrawerItem(44, Icons.layers, "Combo Pack",
+                                    isSubItem: true),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Collapsible Operations (aligned and borderless)
+                        Theme(
+                          data: Theme.of(context).copyWith(
+                            dividerColor: Colors.transparent,
+                            listTileTheme: const ListTileThemeData(
+                              horizontalTitleGap: 8,
+                              dense: true,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                          child: Container(
+                            margin: const EdgeInsets.only(
+                                left: 8, right: 8, top: 4, bottom: 4),
+                            child: ExpansionTile(
+                              shape: const Border(),
+                              collapsedShape: const Border(),
+                              tilePadding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              leading: const Icon(Icons.build_circle_rounded,
+                                  color: Color(0xFF3E4949)),
+                              title: const Text(
+                                "Operations",
+                                style: TextStyle(
+                                    color: Color(0xFF1C1B1B), fontSize: 14),
+                              ),
+                              iconColor: Color(0xFF1C1B1B),
+                              collapsedIconColor: Color(0xFF3E4949),
+                              children: [
+                                _buildDrawerItem(40,
+                                    Icons.local_shipping_rounded, "Logistics",
+                                    isSubItem: true),
+                                _buildDrawerItem(
+                                    41, Icons.inventory_rounded, "Packaging",
+                                    isSubItem: true),
+                                _buildDrawerItem(
+                                    42, Icons.local_offer_rounded, "Promotions",
+                                    isSubItem: true),
+                                _buildDrawerItem(
+                                    29, Icons.work_outline_rounded, "Talent",
+                                    isSubItem: true),
+                                _buildDrawerItem(
+                                    28, Icons.handshake_rounded, "Partnerships",
+                                    isSubItem: true),
+                                _buildDrawerItem(
+                                    43,
+                                    Icons.electric_scooter_rounded,
+                                    "Local Delivery",
+                                    isSubItem: true),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Collapsible Memberships (aligned and borderless)
+                        Theme(
+                          data: Theme.of(context).copyWith(
+                            dividerColor: Colors.transparent,
+                            listTileTheme: const ListTileThemeData(
+                              horizontalTitleGap: 8,
+                              dense: true,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                          child: Container(
+                            margin: const EdgeInsets.only(
+                                left: 8, right: 8, top: 4, bottom: 4),
+                            child: ExpansionTile(
+                              shape: const Border(),
+                              collapsedShape: const Border(),
+                              tilePadding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              leading: const Icon(Icons.card_membership_rounded,
+                                  color: Color(0xFF3E4949)),
+                              title: const Text(
+                                "Memberships",
+                                style: TextStyle(
+                                    color: Color(0xFF1C1B1B), fontSize: 14),
+                              ),
+                              iconColor: Color(0xFF1C1B1B),
+                              collapsedIconColor: Color(0xFF3E4949),
+                              children: [
+                                _buildDrawerItem(
+                                    10,
+                                    Icons.card_membership_rounded,
+                                    "Membership Plans",
+                                    isSubItem: true),
+                                _buildDrawerItem(14, Icons.build_rounded,
+                                    "Membership Builder",
+                                    isSubItem: true),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Collapsible Business Opportunities (aligned and borderless)
+                        Theme(
+                          data: Theme.of(context).copyWith(
+                            dividerColor: Colors.transparent,
+                            listTileTheme: const ListTileThemeData(
+                              horizontalTitleGap: 8,
+                              dense: true,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                          child: Container(
+                            margin: const EdgeInsets.only(
+                                left: 8, right: 8, top: 4, bottom: 4),
+                            child: ExpansionTile(
+                              shape: const Border(),
+                              collapsedShape: const Border(),
+                              tilePadding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              leading: const Icon(Icons.business_center_rounded,
+                                  color: Color(0xFF3E4949)),
+                              title: const Text(
+                                "Business Opportunities",
+                                style: TextStyle(
+                                    color: Color(0xFF1C1B1B), fontSize: 14),
+                              ),
+                              iconColor: Color(0xFF1C1B1B),
+                              collapsedIconColor: Color(0xFF3E4949),
+                              children: [
+                                _buildDrawerItem(18, Icons.work_outline_rounded,
+                                    "Marketplace Opportunities",
+                                    isSubItem: true),
+                                _buildDrawerItem(
+                                    20,
+                                    Icons.assignment_turned_in_rounded,
+                                    "My Submissions",
+                                    isSubItem: true),
+                                _buildDrawerItem(
+                                    19, Icons.list_alt_rounded, "My Listings",
+                                    isSubItem: true),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Collapsible Trading Opportunities (aligned and borderless)
+                        Theme(
+                          data: Theme.of(context).copyWith(
+                            dividerColor: Colors.transparent,
+                            listTileTheme: const ListTileThemeData(
+                              horizontalTitleGap: 8,
+                              dense: true,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                          child: Container(
+                            margin: const EdgeInsets.only(
+                                left: 8, right: 8, top: 4, bottom: 4),
+                            child: ExpansionTile(
+                              shape: const Border(),
+                              collapsedShape: const Border(),
+                              tilePadding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              leading: const Icon(Icons.swap_horiz_rounded,
+                                  color: Color(0xFF3E4949)),
+                              title: const Text(
+                                "Trading Opportunities",
+                                style: TextStyle(
+                                    color: Color(0xFF1C1B1B), fontSize: 14),
+                              ),
+                              iconColor: Color(0xFF1C1B1B),
+                              collapsedIconColor: Color(0xFF3E4949),
+                              children: [
+                                _buildDrawerItem(23, Icons.swap_horiz,
+                                    "Explore Opportunities",
+                                    isSubItem: true),
+                                _buildDrawerItem(24, Icons.bookmark_border,
+                                    "My Selected Items",
+                                    isSubItem: true),
+                                _buildDrawerItem(
+                                    25, Icons.receipt_long, "Affiliate Orders",
+                                    isSubItem: true),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Collapsible Financial (aligned and borderless)
+                        Theme(
+                          data: Theme.of(context).copyWith(
+                            dividerColor: Colors.transparent,
+                            listTileTheme: const ListTileThemeData(
+                              horizontalTitleGap: 8,
+                              dense: true,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                          child: Container(
+                            margin: const EdgeInsets.only(
+                                left: 8, right: 8, top: 4, bottom: 4),
+                            child: ExpansionTile(
+                              shape: const Border(),
+                              collapsedShape: const Border(),
+                              tilePadding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              leading: const Icon(
+                                  Icons.account_balance_wallet_rounded,
+                                  color: Color(0xFF3E4949)),
+                              title: const Text(
+                                "Financial",
+                                style: TextStyle(
+                                    color: Color(0xFF1C1B1B), fontSize: 14),
+                              ),
+                              iconColor: Color(0xFF1C1B1B),
+                              collapsedIconColor: Color(0xFF3E4949),
+                              children: [
+                                _buildDrawerItem(
+                                    7, Icons.wallet_giftcard_rounded, "Wallet",
+                                    isSubItem: true),
+                                // _buildDrawerItem(8, Icons.monetization_on_rounded, "Withdrawal Requests", isSubItem: true),
+                                _buildDrawerItem(
+                                    9,
+                                    Icons.account_balance_rounded,
+                                    "Bank Details",
+                                    isSubItem: true),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Collapsible Module Integration (aligned and borderless)
+                        Theme(
+                          data: Theme.of(context).copyWith(
+                            dividerColor: Colors.transparent,
+                            listTileTheme: const ListTileThemeData(
+                              horizontalTitleGap: 8,
+                              dense: true,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                          child: Container(
+                            margin: const EdgeInsets.only(
+                                left: 8, right: 8, top: 4, bottom: 4),
+                            child: ExpansionTile(
+                              shape: const Border(),
+                              collapsedShape: const Border(),
+                              tilePadding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              leading: const Icon(
+                                  Icons.integration_instructions_rounded,
+                                  color: Color(0xFF3E4949)),
+                              title: const Text(
+                                "Module Integration",
+                                style: TextStyle(
+                                    color: Color(0xFF1C1B1B), fontSize: 14),
+                              ),
+                              iconColor: Color(0xFF1C1B1B),
+                              collapsedIconColor: Color(0xFF3E4949),
+                              children: [
+                                _buildDrawerItem(16, Icons.shopping_bag_rounded,
+                                    "Module Marketplace",
+                                    isSubItem: true),
+                                _buildDrawerItem(32, Icons.extension_rounded,
+                                    "Module Manager",
+                                    isSubItem: true),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Collapsible General Settings (aligned and borderless)
+                        Theme(
+                          data: Theme.of(context).copyWith(
+                            dividerColor: Colors.transparent,
+                            listTileTheme: const ListTileThemeData(
+                              horizontalTitleGap: 8,
+                              dense: true,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                          child: Container(
+                            margin: const EdgeInsets.only(
+                                left: 8, right: 8, top: 4, bottom: 4),
+                            child: ExpansionTile(
+                              shape: const Border(),
+                              collapsedShape: const Border(),
+                              tilePadding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              leading: const Icon(Icons.settings_rounded,
+                                  color: Color(0xFF3E4949)),
+                              title: const Text(
+                                "General Settings",
+                                style: TextStyle(
+                                    color: Color(0xFF1C1B1B), fontSize: 14),
+                              ),
+                              iconColor: Color(0xFF1C1B1B),
+                              collapsedIconColor: Color(0xFF3E4949),
+                              children: [
+                                _buildDrawerItem(4, Icons.category_rounded,
+                                    "Category management",
+                                    isSubItem: true),
+                                _buildDrawerItem(
+                                    5, Icons.list_alt_rounded, "List Items",
+                                    isSubItem: true),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Collapsible Team Building (aligned and borderless)
+                        Theme(
+                          data: Theme.of(context).copyWith(
+                            dividerColor: Colors.transparent,
+                            listTileTheme: const ListTileThemeData(
+                              horizontalTitleGap: 8,
+                              dense: true,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                          child: Container(
+                            margin: const EdgeInsets.only(
+                                left: 8, right: 8, top: 4, bottom: 4),
+                            child: ExpansionTile(
+                              shape: const Border(),
+                              collapsedShape: const Border(),
+                              tilePadding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              leading: const Icon(Icons.groups_rounded,
+                                  color: Color(0xFF3E4949)),
+                              title: const Text(
+                                "Team Building",
+                                style: TextStyle(
+                                    color: Color(0xFF1C1B1B), fontSize: 14),
+                              ),
+                              iconColor: Color(0xFF1C1B1B),
+                              collapsedIconColor: Color(0xFF3E4949),
+                              children: [
+                                _buildDrawerItem(26,
+                                    Icons.people_outline_rounded, "Manage Team",
+                                    isSubItem: true),
+                                _buildDrawerItem(
+                                    27, Icons.task_outlined, "Manage Task",
+                                    isSubItem: true),
+                                _buildDrawerItem(28, Icons.handshake_outlined,
+                                    "Explore Partners",
+                                    isSubItem: true),
+                                _buildDrawerItem(29, Icons.work_outline_rounded,
+                                    "Explore Talent",
+                                    isSubItem: true),
+                                _buildDrawerItem(
+                                    30,
+                                    Icons.emoji_events_outlined,
+                                    "Rewards & Recognition",
+                                    isSubItem: true),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Collapsible Support a Cause (aligned and borderless)
+                        Theme(
+                          data: Theme.of(context).copyWith(
+                            dividerColor: Colors.transparent,
+                            listTileTheme: const ListTileThemeData(
+                              horizontalTitleGap: 8,
+                              dense: true,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                          child: Container(
+                            margin: const EdgeInsets.only(
+                                left: 8, right: 8, top: 4, bottom: 4),
+                            child: ExpansionTile(
+                              shape: const Border(),
+                              collapsedShape: const Border(),
+                              tilePadding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              leading: const Icon(
+                                  Icons.volunteer_activism_rounded,
+                                  color: Color(0xFF3E4949)),
+                              title: const Text(
+                                "Support a Cause",
+                                style: TextStyle(
+                                    color: Color(0xFF1C1B1B), fontSize: 14),
+                              ),
+                              iconColor: Color(0xFF1C1B1B),
+                              collapsedIconColor: Color(0xFF3E4949),
+                              children: [
+                                _buildDrawerItem(45, Icons.explore_outlined,
+                                    "Explore Charity Projects",
+                                    isSubItem: true),
+                                _buildDrawerItem(46, Icons.storefront_outlined,
+                                    "Charity Marketplace",
+                                    isSubItem: true),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Collapsible Events (aligned and borderless)
+                        Theme(
+                          data: Theme.of(context).copyWith(
+                            dividerColor: Colors.transparent,
+                            listTileTheme: const ListTileThemeData(
+                              horizontalTitleGap: 8,
+                              dense: true,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                          child: Container(
+                            margin: const EdgeInsets.only(
+                                left: 8, right: 8, top: 4, bottom: 4),
+                            child: ExpansionTile(
+                              shape: const Border(),
+                              collapsedShape: const Border(),
+                              tilePadding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              leading: const Icon(Icons.event_rounded,
+                                  color: Color(0xFF3E4949)),
+                              title: const Text(
+                                "Events",
+                                style: TextStyle(
+                                    color: Color(0xFF1C1B1B), fontSize: 14),
+                              ),
+                              iconColor: Color(0xFF1C1B1B),
+                              collapsedIconColor: Color(0xFF3E4949),
+                              children: [
+                                _buildDrawerItem(47, Icons.storefront_outlined,
+                                    "Event marketplace",
+                                    isSubItem: true),
+                                _buildDrawerItem(48,
+                                    Icons.event_available_outlined, "My Events",
+                                    isSubItem: true),
+                                _buildDrawerItem(49, Icons.work_outline_rounded,
+                                    "Event Opportunities",
+                                    isSubItem: true),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        _buildDrawerItem(
+                            6,
+                            Icons.settings_input_component_rounded,
+                            "Platform Settings"),
+                        // _buildDrawerItem(11, Icons.person_rounded, "Profile"),
+                      ],
+                    ],
+                  ),
+                ),
+
+                const Divider(),
+
+                ListTile(
+                  leading: const Icon(
+                    Icons.logout,
+                    color: Color(0xFFBA1A1A),
+                  ),
+                  title: const Text(
+                    "Sign Out",
+                    style: TextStyle(color: Color(0xFFBA1A1A)),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    AccountActions.showLogoutSheet(context);
                   },
                 ),
               ],
             ),
-
-      // Left Navigation Drawer
-      drawer: Drawer(
-        backgroundColor: Colors.white,
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Profile Header
-              Container(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    const CircleAvatar(
-                      radius: 28,
-                      backgroundImage: NetworkImage(
-                        "https://i.pravatar.cc/150",
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Elite Partner",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1C1B1B), // AppTheme.textPrimary
-                            ),
-                          ),
-                          Row(
-                            children: const [
-                              Icon(
-                                Icons.verified,
-                                color: Color(0xFF006565), // AppTheme.primary
-                                size: 16,
-                              ),
-                              SizedBox(width: 4),
-                              Text(
-                                "Verified B2B",
-                                style: TextStyle(
-                                  color: Color(0xFF3E4949), // AppTheme.textSecondary
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Text(
-                            "Mumbai, India",
-                            style: TextStyle(
-                              color: Color(0xFF3E4949), // AppTheme.textSecondary
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const Divider(),
-
-              // Navigation Drawer Items List
-              Expanded(
-                child: ListView(
-                  padding: EdgeInsets.zero,
-                  children: [
-                    if (_vendorType == '200') ...[
-                      _buildDrawerItem(0, Icons.dashboard_rounded, "Community Dashboard"),
-                      _buildDrawerItem(19, Icons.forum_rounded, "Manage Communities"),
-                      _buildDrawerItem(51, Icons.explore_rounded, "Explore Communities"),
-                      _buildDrawerItem(15, Icons.people_rounded, "Manage Members"),
-                      _buildDrawerItem(20, Icons.post_add_rounded, "Manage Posts"),
-                      _buildDrawerItem(10, Icons.monetization_on_rounded, "Community Monetization"),
-                      _buildDrawerItem(52, Icons.card_membership_rounded, "Membership Plans"),
-                      _buildDrawerItem(7, Icons.wallet_rounded, "Wallet"),
-                      _buildDrawerItem(9, Icons.account_balance_rounded, "Bank Details"),
-                      _buildDrawerItem(3, Icons.receipt_long_rounded, "Orders"),
-                      _buildDrawerItem(27, Icons.campaign_rounded, "Schedule Campaigns"),
-                      _buildDrawerItem(6, Icons.settings_rounded, "Settings"),
-                    ] else ...[
-                      // _buildDrawerItem(0, Icons.dashboard_rounded, "Dashboard"),
-                      _buildDrawerItem(12, Icons.storefront_rounded, "Seller Dashboard"),
-                    _buildDrawerItem(33, Icons.chat_bubble_outline_rounded, "Inbox"),
-                    _buildDrawerItem(60, Icons.campaign_rounded, "Marketplace Promotions"),
-                    // _buildDrawerItem(13, Icons.supervised_user_circle_rounded, "Seller Management"),
-                    // _buildDrawerItem(1, Icons.people_rounded, "Users"),
-                    // _buildDrawerItem(15, Icons.group_add_rounded, "Community Approvals"),
-                    
-                    // Collapsible Products (aligned and borderless)
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        dividerColor: Colors.transparent,
-                        listTileTheme: const ListTileThemeData(
-                          horizontalTitleGap: 8,
-                          dense: true,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
-                        child: ExpansionTile(
-                          shape: const Border(),
-                          collapsedShape: const Border(),
-                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                          leading: const Icon(Icons.shopping_bag_rounded, color: Color(0xFF3E4949)),
-                          title: const Text(
-                            "Products menus",
-                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
-                          ),
-                          iconColor: Color(0xFF1C1B1B),
-                          collapsedIconColor: Color(0xFF3E4949),
-                          children: [
-                            _buildDrawerItem(2, Icons.inventory_2_rounded, "Manage Listing", isSubItem: true),
-                            _buildDrawerItem(3, Icons.receipt_long_rounded, "Manage Orders", isSubItem: true),
-                            _buildDrawerItem(31, Icons.warning_amber_rounded, "Manage Inventory", isSubItem: true),
-                            _buildDrawerItem(44, Icons.layers, "Combo Pack", isSubItem: true),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // Collapsible Operations (aligned and borderless)
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        dividerColor: Colors.transparent,
-                        listTileTheme: const ListTileThemeData(
-                          horizontalTitleGap: 8,
-                          dense: true,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
-                        child: ExpansionTile(
-                          shape: const Border(),
-                          collapsedShape: const Border(),
-                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                          leading: const Icon(Icons.build_circle_rounded, color: Color(0xFF3E4949)),
-                          title: const Text(
-                            "Operations",
-                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
-                          ),
-                          iconColor: Color(0xFF1C1B1B),
-                          collapsedIconColor: Color(0xFF3E4949),
-                          children: [
-                            _buildDrawerItem(40, Icons.local_shipping_rounded, "Logistics", isSubItem: true),
-                            _buildDrawerItem(41, Icons.inventory_rounded, "Packaging", isSubItem: true),
-                            _buildDrawerItem(42, Icons.local_offer_rounded, "Promotions", isSubItem: true),
-                            _buildDrawerItem(29, Icons.work_outline_rounded, "Talent", isSubItem: true),
-                            _buildDrawerItem(28, Icons.handshake_rounded, "Partnerships", isSubItem: true),
-                            _buildDrawerItem(43, Icons.electric_scooter_rounded, "Local Delivery", isSubItem: true),
-                          ],
-                        ),
-                      ),
-                    ),
-                    
-                    // Collapsible Memberships (aligned and borderless)
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        dividerColor: Colors.transparent,
-                        listTileTheme: const ListTileThemeData(
-                          horizontalTitleGap: 8,
-                          dense: true,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
-                        child: ExpansionTile(
-                          shape: const Border(),
-                          collapsedShape: const Border(),
-                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                          leading: const Icon(Icons.card_membership_rounded, color: Color(0xFF3E4949)),
-                          title: const Text(
-                            "Memberships",
-                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
-                          ),
-                          iconColor: Color(0xFF1C1B1B),
-                          collapsedIconColor: Color(0xFF3E4949),
-                          children: [
-                            _buildDrawerItem(10, Icons.card_membership_rounded, "Membership Plans", isSubItem: true),
-                            _buildDrawerItem(14, Icons.build_rounded, "Membership Builder", isSubItem: true),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // Collapsible Business Opportunities (aligned and borderless)
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        dividerColor: Colors.transparent,
-                        listTileTheme: const ListTileThemeData(
-                          horizontalTitleGap: 8,
-                          dense: true,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
-                        child: ExpansionTile(
-                          shape: const Border(),
-                          collapsedShape: const Border(),
-                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                          leading: const Icon(Icons.business_center_rounded, color: Color(0xFF3E4949)),
-                          title: const Text(
-                            "Business Opportunities",
-                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
-                          ),
-                          iconColor: Color(0xFF1C1B1B),
-                          collapsedIconColor: Color(0xFF3E4949),
-                          children: [
-                            _buildDrawerItem(18, Icons.work_outline_rounded, "Marketplace Opportunities", isSubItem: true),
-                            _buildDrawerItem(20, Icons.assignment_turned_in_rounded, "My Submissions", isSubItem: true),
-                            _buildDrawerItem(19, Icons.list_alt_rounded, "My Listings", isSubItem: true),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // Collapsible Trading Opportunities (aligned and borderless)
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        dividerColor: Colors.transparent,
-                        listTileTheme: const ListTileThemeData(
-                          horizontalTitleGap: 8,
-                          dense: true,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
-                        child: ExpansionTile(
-                          shape: const Border(),
-                          collapsedShape: const Border(),
-                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                          leading: const Icon(Icons.swap_horiz_rounded, color: Color(0xFF3E4949)),
-                          title: const Text(
-                            "Trading Opportunities",
-                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
-                          ),
-                          iconColor: Color(0xFF1C1B1B),
-                          collapsedIconColor: Color(0xFF3E4949),
-                          children: [
-                            _buildDrawerItem(23, Icons.swap_horiz, "Explore Opportunities", isSubItem: true),
-                            _buildDrawerItem(24, Icons.bookmark_border, "My Selected Items", isSubItem: true),
-                            _buildDrawerItem(25, Icons.receipt_long, "Affiliate Orders", isSubItem: true),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // Collapsible Financial (aligned and borderless)
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        dividerColor: Colors.transparent,
-                        listTileTheme: const ListTileThemeData(
-                          horizontalTitleGap: 8,
-                          dense: true,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
-                        child: ExpansionTile(
-                          shape: const Border(),
-                          collapsedShape: const Border(),
-                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                          leading: const Icon(Icons.account_balance_wallet_rounded, color: Color(0xFF3E4949)),
-                          title: const Text(
-                            "Financial",
-                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
-                          ),
-                          iconColor: Color(0xFF1C1B1B),
-                          collapsedIconColor: Color(0xFF3E4949),
-                          children: [
-                            _buildDrawerItem(7, Icons.wallet_giftcard_rounded, "Wallet", isSubItem: true),
-                            // _buildDrawerItem(8, Icons.monetization_on_rounded, "Withdrawal Requests", isSubItem: true),
-                            _buildDrawerItem(9, Icons.account_balance_rounded, "Bank Details", isSubItem: true),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // Collapsible Module Integration (aligned and borderless)
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        dividerColor: Colors.transparent,
-                        listTileTheme: const ListTileThemeData(
-                          horizontalTitleGap: 8,
-                          dense: true,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
-                        child: ExpansionTile(
-                          shape: const Border(),
-                          collapsedShape: const Border(),
-                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                          leading: const Icon(Icons.integration_instructions_rounded, color: Color(0xFF3E4949)),
-                          title: const Text(
-                            "Module Integration",
-                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
-                          ),
-                          iconColor: Color(0xFF1C1B1B),
-                          collapsedIconColor: Color(0xFF3E4949),
-                          children: [
-                            _buildDrawerItem(16, Icons.shopping_bag_rounded, "Module Marketplace", isSubItem: true),
-                            _buildDrawerItem(32, Icons.extension_rounded, "Module Manager", isSubItem: true),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // Collapsible General Settings (aligned and borderless)
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        dividerColor: Colors.transparent,
-                        listTileTheme: const ListTileThemeData(
-                          horizontalTitleGap: 8,
-                          dense: true,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
-                        child: ExpansionTile(
-                          shape: const Border(),
-                          collapsedShape: const Border(),
-                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                          leading: const Icon(Icons.settings_rounded, color: Color(0xFF3E4949)),
-                          title: const Text(
-                            "General Settings",
-                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
-                          ),
-                          iconColor: Color(0xFF1C1B1B),
-                          collapsedIconColor: Color(0xFF3E4949),
-                          children: [
-                            _buildDrawerItem(4, Icons.category_rounded, "Category management", isSubItem: true),
-                            _buildDrawerItem(5, Icons.list_alt_rounded, "List Items", isSubItem: true),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // Collapsible Team Building (aligned and borderless)
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        dividerColor: Colors.transparent,
-                        listTileTheme: const ListTileThemeData(
-                          horizontalTitleGap: 8,
-                          dense: true,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
-                        child: ExpansionTile(
-                          shape: const Border(),
-                          collapsedShape: const Border(),
-                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                          leading: const Icon(Icons.groups_rounded, color: Color(0xFF3E4949)),
-                          title: const Text(
-                            "Team Building",
-                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
-                          ),
-                          iconColor: Color(0xFF1C1B1B),
-                          collapsedIconColor: Color(0xFF3E4949),
-                          children: [
-                            _buildDrawerItem(26, Icons.people_outline_rounded, "Manage Team", isSubItem: true),
-                            _buildDrawerItem(27, Icons.task_outlined, "Manage Task", isSubItem: true),
-                            _buildDrawerItem(28, Icons.handshake_outlined, "Explore Partners", isSubItem: true),
-                            _buildDrawerItem(29, Icons.work_outline_rounded, "Explore Talent", isSubItem: true),
-                            _buildDrawerItem(30, Icons.emoji_events_outlined, "Rewards & Recognition", isSubItem: true),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // Collapsible Support a Cause (aligned and borderless)
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        dividerColor: Colors.transparent,
-                        listTileTheme: const ListTileThemeData(
-                          horizontalTitleGap: 8,
-                          dense: true,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
-                        child: ExpansionTile(
-                          shape: const Border(),
-                          collapsedShape: const Border(),
-                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                          leading: const Icon(Icons.volunteer_activism_rounded, color: Color(0xFF3E4949)),
-                          title: const Text(
-                            "Support a Cause",
-                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
-                          ),
-                          iconColor: Color(0xFF1C1B1B),
-                          collapsedIconColor: Color(0xFF3E4949),
-                          children: [
-                            _buildDrawerItem(45, Icons.explore_outlined, "Explore Charity Projects", isSubItem: true),
-                            _buildDrawerItem(46, Icons.storefront_outlined, "Charity Marketplace", isSubItem: true),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // Collapsible Events (aligned and borderless)
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        dividerColor: Colors.transparent,
-                        listTileTheme: const ListTileThemeData(
-                          horizontalTitleGap: 8,
-                          dense: true,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
-                        child: ExpansionTile(
-                          shape: const Border(),
-                          collapsedShape: const Border(),
-                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                          leading: const Icon(Icons.event_rounded, color: Color(0xFF3E4949)),
-                          title: const Text(
-                            "Events",
-                            style: TextStyle(color: Color(0xFF1C1B1B), fontSize: 14),
-                          ),
-                          iconColor: Color(0xFF1C1B1B),
-                          collapsedIconColor: Color(0xFF3E4949),
-                          children: [
-                            _buildDrawerItem(47, Icons.storefront_outlined, "Event marketplace", isSubItem: true),
-                            _buildDrawerItem(48, Icons.event_available_outlined, "My Events", isSubItem: true),
-                            _buildDrawerItem(49, Icons.work_outline_rounded, "Event Opportunities", isSubItem: true),
-                          ],
-                        ),
-                      ),
-                    ),
-                    
-                      _buildDrawerItem(6, Icons.settings_input_component_rounded, "Platform Settings"),
-                      // _buildDrawerItem(11, Icons.person_rounded, "Profile"),
-                    ],
-                  ],
-                ),
-              ),
-
-              const Divider(),
-
-              ListTile(
-                leading: const Icon(
-                  Icons.logout,
-                  color: Color(0xFFBA1A1A),
-                ),
-                title: const Text(
-                  "Sign Out",
-                  style: TextStyle(color: Color(0xFFBA1A1A)),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  AccountActions.showLogoutSheet(context);
-                },
-              ),
-            ],
           ),
         ),
-      ),
 
-      // Page Contents
-      body: SafeArea(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
-            return Stack(
-              fit: StackFit.expand,
-              children: <Widget>[
-                ...previousChildren,
-                if (currentChild != null) currentChild,
-              ],
-            );
+        // Page Contents
+        body: SafeArea(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            layoutBuilder:
+                (Widget? currentChild, List<Widget> previousChildren) {
+              return Stack(
+                fit: StackFit.expand,
+                children: <Widget>[
+                  ...previousChildren,
+                  if (currentChild != null) currentChild,
+                ],
+              );
+            },
+            child: _buildBodyContent(),
+          ),
+        ),
+
+        // Footer Navigation Bar
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _getBottomNavBarIndex(),
+          onTap: (index) {
+            if (_vendorType == '200') {
+              _setTabFromBottomNav(index);
+            } else {
+              if (index == 4) {
+                // Tapping 'More' opens Left Navigation Drawer
+                _scaffoldKey.currentState?.openDrawer();
+              } else {
+                _setTabFromBottomNav(index);
+              }
+            }
           },
-          child: _buildBodyContent(),
+          backgroundColor: Colors.white,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: primaryPurple,
+          unselectedItemColor: Colors.grey,
+          showSelectedLabels: true,
+          showUnselectedLabels: true,
+          selectedLabelStyle:
+              const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+          unselectedLabelStyle: const TextStyle(fontSize: 11),
+          items: _vendorType == '200'
+              ? const [
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.dashboard_rounded), label: "Dashboard"),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.people_rounded), label: "Members"),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.card_membership_rounded),
+                      label: "Packages"),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.forum_rounded), label: "Communities"),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.person_rounded), label: "Profile"),
+                ]
+              : const [
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.dashboard_rounded), label: "Dashboard"),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.receipt_long_rounded), label: "Orders"),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.shopping_bag_rounded),
+                      label: "Products"),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.account_balance_wallet_rounded),
+                      label: "Wallet"),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.more_horiz_rounded), label: "More"),
+                ],
         ),
       ),
-
-      // Footer Navigation Bar
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _getBottomNavBarIndex(),
-        onTap: (index) {
-          if (_vendorType == '200') {
-            _setTabFromBottomNav(index);
-          } else {
-            if (index == 4) {
-              // Tapping 'More' opens Left Navigation Drawer
-              _scaffoldKey.currentState?.openDrawer();
-            } else {
-              _setTabFromBottomNav(index);
-            }
-          }
-        },
-        backgroundColor: Colors.white,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: primaryPurple,
-        unselectedItemColor: Colors.grey,
-        showSelectedLabels: true,
-        showUnselectedLabels: true,
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-        unselectedLabelStyle: const TextStyle(fontSize: 11),
-        items: _vendorType == '200'
-            ? const [
-                BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: "Dashboard"),
-                BottomNavigationBarItem(icon: Icon(Icons.people_rounded), label: "Members"),
-                BottomNavigationBarItem(icon: Icon(Icons.card_membership_rounded), label: "Packages"),
-                BottomNavigationBarItem(icon: Icon(Icons.forum_rounded), label: "Communities"),
-                BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: "Profile"),
-              ]
-            : const [
-                BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: "Dashboard"),
-                BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: "Orders"),
-                BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_rounded), label: "Products"),
-                BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_rounded), label: "Wallet"),
-                BottomNavigationBarItem(icon: Icon(Icons.more_horiz_rounded), label: "More"),
-              ],
-      ),
-    ),);
+    );
   }
 
   // Map Drawer views to Bottom Nav indexes
@@ -2136,11 +3007,21 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     if (_vendorType == '200') {
       setState(() {
         switch (bottomIndex) {
-          case 0: _currentIndex = 0; break; // Dashboard
-          case 1: _currentIndex = 15; break; // Members
-          case 2: _currentIndex = 10; break; // Packages
-          case 3: _currentIndex = 19; break; // Communities
-          case 4: _currentIndex = 11; break; // Profile
+          case 0:
+            _currentIndex = 0;
+            break; // Dashboard
+          case 1:
+            _currentIndex = 15;
+            break; // Members
+          case 2:
+            _currentIndex = 10;
+            break; // Packages
+          case 3:
+            _currentIndex = 19;
+            break; // Communities
+          case 4:
+            _currentIndex = 11;
+            break; // Profile
         }
       });
       return;
@@ -2150,19 +3031,27 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     } else {
       setState(() {
         switch (bottomIndex) {
-          case 0: _currentIndex = 0; break; // Admin Dashboard
-          case 1: _currentIndex = 3; break; // Orders
-          case 2: _currentIndex = 2; break; // Products
+          case 0:
+            _currentIndex = 0;
+            break; // Admin Dashboard
+          case 1:
+            _currentIndex = 3;
+            break; // Orders
+          case 2:
+            _currentIndex = 2;
+            break; // Products
         }
       });
     }
   }
 
   // Drawer list items builder helper
-  Widget _buildDrawerItem(int index, IconData icon, String title, {bool isSubItem = false}) {
+  Widget _buildDrawerItem(int index, IconData icon, String title,
+      {bool isSubItem = false}) {
     final bool isSelected = _currentIndex == index;
     return Container(
-      margin: EdgeInsets.only(left: isSubItem ? 16 : 8, right: 8, top: 4, bottom: 4),
+      margin: EdgeInsets.only(
+          left: isSubItem ? 16 : 8, right: 8, top: 4, bottom: 4),
       decoration: BoxDecoration(
         color: isSelected ? primaryPurple : Colors.transparent,
         borderRadius: BorderRadius.circular(10),
@@ -2181,7 +3070,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         visualDensity: VisualDensity.compact,
         contentPadding: const EdgeInsets.symmetric(horizontal: 12),
         horizontalTitleGap: 8,
-        leading: Icon(icon, color: isSelected ? Colors.white : const Color(0xFF3E4949), size: isSubItem ? 20 : 24),
+        leading: Icon(icon,
+            color: isSelected ? Colors.white : const Color(0xFF3E4949),
+            size: isSubItem ? 20 : 24),
         title: Text(
           title,
           overflow: TextOverflow.ellipsis,
@@ -2220,166 +3111,251 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     if (_vendorType == '200') {
       switch (_currentIndex) {
         case 0:
-        case 12: return "Community Intelligence";
-        case 50: return "Community Intelligence";
-        case 19: return "Manage Communities";
-        case 51: return "Explore Communities";
-        case 15: return "Manage Members";
-        case 20: return "Manage Posts";
-        case 10: return "Community Monetization";
-        case 52: return "Membership Plans";
-        case 7: return "Wallet";
-        case 9: return "Bank Details";
-        case 11: return "Profile";
-        case 3: return "Orders";
-        case 27: return "Schedule Campaigns";
-        case 6: return "Settings";
-        default: return "Serene Commerce";
+        case 12:
+          return "Community Intelligence";
+        case 50:
+          return "Community Intelligence";
+        case 19:
+          return "Manage Communities";
+        case 51:
+          return "Explore Communities";
+        case 15:
+          return "Manage Members";
+        case 20:
+          return "Manage Posts";
+        case 10:
+          return "Community Monetization";
+        case 52:
+          return "Membership Plans";
+        case 7:
+          return "Wallet";
+        case 9:
+          return "Bank Details";
+        case 11:
+          return "Profile";
+        case 3:
+          return "Orders";
+        case 27:
+          return "Schedule Campaigns";
+        case 6:
+          return "Settings";
+        default:
+          return "Serene Commerce";
       }
     }
     switch (_currentIndex) {
-      case 50: return "Community Intelligence";
-      case 4: return "Category Management";
-      case 5: return "List Items";
-      case 7: return "Wallet";
-      case 10: return "Membership Plans";
-      case 14: return "Membership Builder";
-      case 16: return "Module Marketplace";
-      case 17: return "Module Integration";
-      case 18: return "Marketplace Opportunities";
-      case 19: return "My Listings";
-      case 20: return "My Submissions";
-      case 23: return "Explore Opportunities";
-      case 24: return "My Selected Items";
-      case 25: return "Affiliate Orders";
-      case 26: return "Manage Team";
-      case 27: return "Manage Task";
-      case 28: return "Explore Partners";
-      case 29: return "Explore Talent";
-      case 30: return "Rewards & Recognition";
-      case 32: return "Module Manager";
-      case 33: return "Inbox";
-      case 40: return "Logistics Dashboard";
-      case 41: return "Packaging Inventory";
-      case 42: return "Promotions & Discounts";
-      case 43: return "Local Delivery Logistics";
-      case 44: return "Combo Packages";
-      case 45: return "Explore Charity Projects";
-      case 46: return "Charity Marketplace";
-      case 47: return "Event Marketplace";
-      case 48: return "My Events";
-      case 49: return "Event Opportunities";
-      case 60: return "Marketplace Promotions";
-      default: return "Serene Commerce";
+      case 50:
+        return "Community Intelligence";
+      case 4:
+        return "Category Management";
+      case 5:
+        return "List Items";
+      case 7:
+        return "Wallet";
+      case 10:
+        return "Membership Plans";
+      case 14:
+        return "Membership Builder";
+      case 16:
+        return "Module Marketplace";
+      case 17:
+        return "Module Integration";
+      case 18:
+        return "Marketplace Opportunities";
+      case 19:
+        return "My Listings";
+      case 20:
+        return "My Submissions";
+      case 23:
+        return "Explore Opportunities";
+      case 24:
+        return "My Selected Items";
+      case 25:
+        return "Affiliate Orders";
+      case 26:
+        return "Manage Team";
+      case 27:
+        return "Manage Task";
+      case 28:
+        return "Explore Partners";
+      case 29:
+        return "Explore Talent";
+      case 30:
+        return "Rewards & Recognition";
+      case 32:
+        return "Module Manager";
+      case 33:
+        return "Inbox";
+      case 40:
+        return "Logistics Dashboard";
+      case 41:
+        return "Packaging Inventory";
+      case 42:
+        return "Promotions & Discounts";
+      case 43:
+        return "Local Delivery Logistics";
+      case 44:
+        return "Combo Packages";
+      case 45:
+        return "Explore Charity Projects";
+      case 46:
+        return "Charity Marketplace";
+      case 47:
+        return "Event Marketplace";
+      case 48:
+        return "My Events";
+      case 49:
+        return "Event Opportunities";
+      case 60:
+        return "Marketplace Promotions";
+      default:
+        return "Serene Commerce";
     }
   }
 
   // Render Body based on index
   Widget _buildBodyContent() {
     switch (_currentIndex) {
-      case 0: return _buildDashboardView(); // Render main Community dashboard statistics view
-      case 12: return const SellerDashboardScreen(isEmbedded: true); // Render main Seller dashboard statistics view
-      case 60: return const PromotionalPackagesScreen(isEmbedded: true);
-      case 50: return _buildHomeFeedView();
-      case 51: return const ExploreCommunitiesScreen(isEmbedded: true);
-      case 52: return const MembershipPlansScreen(isEmbedded: true);
-      case 11: return const ProfileScreen();
-      case 1: return _buildTextUsersView(); // renamed custom users view helper below
-      case 2: return const ProductManagementScreen(isEmbedded: true);
-      case 31: return const LowStockInventoryScreen(isEmbedded: true);
-      case 3: return _vendorType == '200'
-          ? const PromotionalPackageOrdersScreen(isEmbedded: true)
-          : const SellerOrderScreen(isEmbedded: true);
-      case 4: return const TaxonomyManagerScreen(isEmbedded: true);
-      case 5: return const ManageItemsScreen(isEmbedded: true);
-      case 6: return const PersonalizeFeedDialog(isEmbedded: true);
-      case 7: return const WalletAdminScreen(isEmbedded: true);
-      case 8: return _buildWithdrawalRequestsView();
-      case 9: return _buildBankDetailsView();
-      case 10: return _vendorType == '200'
-          ? const ManagePromotionalPackagesScreen(isEmbedded: true)
-          : const MembershipPlansScreen(isEmbedded: true);
-      case 11: return _buildProfileView();
-      case 13: return const SellerManagementScreen(isEmbedded: true);
-      case 14: return const MembershipBuilderScreen(isEmbedded: true);
-      case 15: return _buildCommunityApprovalsView();
-      case 16: return const MarketplaceModulesScreen(isEmbedded: true);
-      case 17: return const ModuleIntegrationScreen(isEmbedded: true);
-      case 18: return _buildMarketplaceOpportunitiesView();
-      case 19: return const ManageOpportunitiesScreen(isTab: true);
-      case 20: return _buildMySubmissionsView();
-      case 23: return const TradingMarketplaceScreen(isEmbedded: true);
-      case 24: return const SelectedItemsScreen(isEmbedded: true);
-      case 25: return const AffiliateOrdersScreen(isEmbedded: true);
-      case 26: return const ManageTeamScreen(isEmbedded: true);
-      case 27: return _vendorType == '200'
-          ? const ScheduleCampaignScreen(isEmbedded: true)
-          : const ManageTasksScreen(isEmbedded: true);
-      case 28: return const ExplorePartnersScreen(isEmbedded: true);
-      case 29: return const ExploreTalentScreen(isEmbedded: true);
-      case 30: return const RewardsRecognitionScreen(isEmbedded: true);
-      case 32: return const ModuleManagerScreen();
-      case 33: return const CommunityInboxScreen(isStandalone: false);
-      case 40: return const LogisticsScreen(isEmbedded: true);
-      case 41: return const PackagingScreen(isEmbedded: true);
-      case 42: return const PromotionsScreen(isEmbedded: true);
-      case 43: return const LocalDeliveryScreen(isEmbedded: true);
-      case 44: return const ComboPackagesScreen(isEmbedded: true);
-      case 45: return const ExploreCharityProjectsScreen(isEmbedded: true);
-      case 46: return const CharityMarketplaceScreen(isEmbedded: true);
-      case 47: return const EventMarketplaceScreen(isEmbedded: true);
-      case 48: return const MyEventsScreen(isEmbedded: true);
-      case 49: return const EventOpportunitiesScreen(isEmbedded: true);
-      default: return _buildDashboardView();
+      case 0:
+        return _buildDashboardView(); // Render main Community dashboard statistics view
+      case 12:
+        return const SellerDashboardScreen(
+            isEmbedded: true); // Render main Seller dashboard statistics view
+      case 60:
+        return const PromotionalPackagesScreen(isEmbedded: true);
+      case 50:
+        return _buildHomeFeedView();
+      case 51:
+        return const ExploreCommunitiesScreen(isEmbedded: true);
+      case 52:
+        return const MembershipPlansScreen(isEmbedded: true);
+      case 11:
+        return const ProfileScreen();
+      case 1:
+        return _buildTextUsersView(); // renamed custom users view helper below
+      case 2:
+        return const ProductManagementScreen(isEmbedded: true);
+      case 31:
+        return const LowStockInventoryScreen(isEmbedded: true);
+      case 3:
+        return _vendorType == '200'
+            ? _buildCommunityOrdersView()
+            : const SellerOrderScreen(isEmbedded: true);
+      case 4:
+        return const TaxonomyManagerScreen(isEmbedded: true);
+      case 5:
+        return const ManageItemsScreen(isEmbedded: true);
+      case 6:
+        return const PersonalizeFeedDialog(isEmbedded: true);
+      case 7:
+        return const WalletAdminScreen(isEmbedded: true);
+      case 8:
+        return _buildWithdrawalRequestsView();
+      case 9:
+        return _buildBankDetailsView();
+      case 10:
+        return _vendorType == '200'
+            ? const ManagePromotionalPackagesScreen(isEmbedded: true)
+            : const MembershipPlansScreen(isEmbedded: true);
+      case 11:
+        return _buildProfileView();
+      case 13:
+        return const SellerManagementScreen(isEmbedded: true);
+      case 14:
+        return const MembershipBuilderScreen(isEmbedded: true);
+      case 15:
+        return _buildCommunityApprovalsView();
+      case 16:
+        return const MarketplaceModulesScreen(isEmbedded: true);
+      case 17:
+        return const ModuleIntegrationScreen(isEmbedded: true);
+      case 18:
+        return _buildMarketplaceOpportunitiesView();
+      case 19:
+        return _vendorType == '200'
+            ? const CommunityManagerScreen(isEmbedded: true)
+            : const ManageOpportunitiesScreen(isTab: true);
+      case 20:
+        return _buildMySubmissionsView();
+      case 23:
+        return const TradingMarketplaceScreen(isEmbedded: true);
+      case 24:
+        return const SelectedItemsScreen(isEmbedded: true);
+      case 25:
+        return const AffiliateOrdersScreen(isEmbedded: true);
+      case 26:
+        return const ManageTeamScreen(isEmbedded: true);
+      case 27:
+        return _vendorType == '200'
+            ? const ScheduleCampaignScreen(isEmbedded: true)
+            : const ManageTasksScreen(isEmbedded: true);
+      case 28:
+        return const ExplorePartnersScreen(isEmbedded: true);
+      case 29:
+        return const ExploreTalentScreen(isEmbedded: true);
+      case 30:
+        return const RewardsRecognitionScreen(isEmbedded: true);
+      case 32:
+        return const ModuleManagerScreen();
+      case 33:
+        return const CommunityInboxScreen(isStandalone: false);
+      case 40:
+        return const LogisticsScreen(isEmbedded: true);
+      case 41:
+        return const PackagingScreen(isEmbedded: true);
+      case 42:
+        return const PromotionsScreen(isEmbedded: true);
+      case 43:
+        return const LocalDeliveryScreen(isEmbedded: true);
+      case 44:
+        return const ComboPackagesScreen(isEmbedded: true);
+      case 45:
+        return const ExploreCharityProjectsScreen(isEmbedded: true);
+      case 46:
+        return const CharityMarketplaceScreen(isEmbedded: true);
+      case 47:
+        return const EventMarketplaceScreen(isEmbedded: true);
+      case 48:
+        return const MyEventsScreen(isEmbedded: true);
+      case 49:
+        return const EventOpportunitiesScreen(isEmbedded: true);
+      default:
+        return _buildDashboardView();
     }
   }
 
   PreferredSizeWidget _buildSellerHeader() {
     return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      scrolledUnderElevation: 1.0,
-      shadowColor: Colors.black.withOpacity(0.08),
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1),
-        child: Container(
-          color: Colors.black.withOpacity(0.04),
-          height: 1,
-        ),
-      ),
+      backgroundColor: Colors.teal,
       leading: Builder(
         builder: (context) => IconButton(
-          icon: const Icon(Icons.menu, color: Color(0xff006565)),
+          icon: const Icon(Icons.menu, color: Colors.white),
           onPressed: () => Scaffold.of(context).openDrawer(),
+          padding: const EdgeInsets.symmetric(horizontal: 8), // Reduce padding
+          constraints: const BoxConstraints(minWidth: 40), // Reduce min width
         ),
       ),
+      leadingWidth: 40, // Reduce leading width
       title: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: const Color(0xff006565).withOpacity(0.08),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              (_currentIndex == 0 || _currentIndex == 50)
-                  ? (_vendorType == '200' ? Icons.forum_rounded : Icons.group_work)
-                  : Icons.storefront,
-              color: const Color(0xff006565),
-              size: 22,
-            ),
+            width: 0, // Empty container - you might want to remove this
+            height: 0,
           ),
-          const SizedBox(width: 12),
           Flexible(
             child: Text(
               (_currentIndex == 0 || _currentIndex == 50)
-                  ? (_vendorType == '200' ? "Community Intelligence" : "Community Admin")
-                  : "Seller Central",
+                  ? (_vendorType == '200' ? "Community Dashboard" : "Community Admin")
+                  : "Seller Dashboard",
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
               style: const TextStyle(
-                color: Color(0xff006565),
+                color: Colors.white,
                 fontWeight: FontWeight.w700,
                 fontSize: 18,
                 letterSpacing: 0.2,
@@ -2389,128 +3365,81 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         ],
       ),
       actions: [
-        if (_vendorType == '200')
-          IconButton(
-            icon: Icon(
-              Icons.home_rounded,
-              color: _currentIndex == 50 ? const Color(0xff008080) : const Color(0xff006565),
-            ),
-            onPressed: () {
-              setState(() {
-                _currentIndex = 50; // Navigate to Home Feed
-              });
-            },
-            tooltip: "Home Feed",
-          ),
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.02),
-            shape: BoxShape.circle,
-          ),
-          child: IconButton(
-            icon: const Icon(
-              Icons.chat_bubble_outline_rounded,
-              color: Colors.black87,
-            ),
-            onPressed: () {
-              Navigator.of(context, rootNavigator: true).push(
-                MaterialPageRoute(
-                  builder: (context) => const ChatListScreen(),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_vendorType == '200')
+              SizedBox(
+                width: 40,
+                height: 55,
+                child: IconButton(
+                  icon: const Icon(Icons.party_mode, color: Colors.white, size: 22),
+                  onPressed: () {
+                    setState(() {
+                      _currentIndex = 50;
+                    });
+                  },
+                  tooltip: "Home Feed",
+                  padding: EdgeInsets.zero,
                 ),
-              );
-            },
-            tooltip: "Chat Messages",
-          ),
-        ),
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.02),
-            shape: BoxShape.circle,
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
+              ),
+            SizedBox(
+              width: 40,
+              height: 55,
+              child: IconButton(
+                icon: const Icon(Icons.chat, color: Colors.white, size: 22),
                 onPressed: () {
                   Navigator.of(context, rootNavigator: true).push(
                     MaterialPageRoute(
-                      builder: (context) => const NotificationsScreen(),
+                      builder: (context) => const ChatListScreen(),
                     ),
                   );
                 },
-                icon: const Icon(
-                  Icons.notifications_none_rounded,
-                  color: Colors.black87,
-                ),
+                tooltip: "Chat Messages",
+                padding: EdgeInsets.zero,
               ),
-              Positioned(
-                right: 12,
-                top: 12,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: Colors.redAccent,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.5),
+            ),
+            SizedBox(
+              width: 40,
+              height: 50,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      Navigator.of(context, rootNavigator: true).push(
+                        MaterialPageRoute(
+                          builder: (context) => const LocalNotificationsScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.notifications_none_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                    padding: EdgeInsets.zero,
                   ),
-                ),
-              )
-            ],
-          ),
-        ),
-        if (MediaQuery.of(context).size.width >= 600) ...[
-          const SizedBox(width: 4),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              const Text(
-                "Store Owner",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: Colors.black87,
-                ),
-              ),
-              Text(
-                "Premier Seller",
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.teal.shade700,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ],
-        const SizedBox(width: 12),
-        InkWell(
-          borderRadius: BorderRadius.circular(22),
-          onTap: () {
-            Navigator.of(context, rootNavigator: true).pushNamed('/user/profile');
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: const Color(0xff006565).withOpacity(0.2),
-                width: 2,
+                  Positioned(
+                    right: 7,
+                    top: 7,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                    ),
+                  )
+                ],
               ),
             ),
-            child: const CircleAvatar(
-              radius: 18,
-              backgroundColor: Color(0xffe5f7f7),
-              backgroundImage: NetworkImage(
-                "https://i.pravatar.cc/150?img=33",
-              ),
-            ),
-          ),
+          ],
         ),
-        const SizedBox(width: 16),
       ],
+      titleSpacing: 0, // Remove default title spacing
     );
   }
 
@@ -2578,7 +3507,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 ),
                 onPressed: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const LocalNotificationsScreen()),
+                  MaterialPageRoute(
+                      builder: (_) => const LocalNotificationsScreen()),
                 ),
               ),
               Positioned(
@@ -2607,7 +3537,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           ),
           child: InkWell(
             onTap: () {
-              Navigator.of(context, rootNavigator: true).pushNamed('/user/profile');
+              Navigator.of(context, rootNavigator: true)
+                  .pushNamed('/user/profile');
             },
             child: const CircleAvatar(
               radius: 16,
@@ -2639,13 +3570,24 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<int>(
-                  value: _activeCommunityId,
-                  items: _myCommunities.map((c) {
+                  value: _myCommunities.any((c) =>
+                          int.tryParse(c['community_id']?.toString() ?? '') ==
+                          _activeCommunityId)
+                      ? _activeCommunityId
+                      : null,
+                  items: _myCommunities
+                      .where((c) =>
+                          int.tryParse(c['community_id']?.toString() ?? '') !=
+                          null)
+                      .map<DropdownMenuItem<int>>((c) {
+                    final cId =
+                        int.tryParse(c['community_id']?.toString() ?? '')!;
                     return DropdownMenuItem<int>(
-                      value: int.tryParse(c['community_id']?.toString() ?? ''),
+                      value: cId,
                       child: Text(
                         c['community_title']?.toString() ?? 'Community',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: primaryPurple),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, color: primaryPurple),
                       ),
                     );
                   }).toList(),
@@ -2653,11 +3595,16 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     if (val != null) {
                       setState(() {
                         _activeCommunityId = val;
-                        final selected = _myCommunities.firstWhere((c) => int.tryParse(c['community_id']?.toString() ?? '') == val);
-                        _activeCommunityTitle = selected['community_title']?.toString() ?? 'Community';
+                        final selected = _myCommunities.firstWhere((c) =>
+                            int.tryParse(c['community_id']?.toString() ?? '') ==
+                            val);
+                        _activeCommunityTitle =
+                            selected['community_title']?.toString() ??
+                                'Community';
                       });
                       _fetchCommunityStats(val);
                       _fetchCommunityMembers(val);
+                      _fetchCommunityOrders();
                     }
                   },
                 ),
@@ -2681,13 +3628,20 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
-                _buildDossierStatCard("Total Members", _totalMembers.toString(), trend: "", hasAccent: true),
+                _buildDossierStatCard("Total Members", _totalMembers.toString(),
+                    trend: "", hasAccent: true),
                 const SizedBox(width: 12),
-                _buildDossierActiveCard("Paid Members", _totalPaidMembers.toString(), progress: 1.0),
+                _buildDossierActiveCard(
+                    "Paid Members", _totalPaidMembers.toString(),
+                    progress: 1.0),
                 const SizedBox(width: 12),
-                _buildDossierTextCard("Pending", _pendingApprovalsCount.toString(), "Review required", valColor: const Color(0xFFB45309)),
+                _buildDossierTextCard("Pending",
+                    _pendingApprovalsCount.toString(), "Review required",
+                    valColor: const Color(0xFFB45309)),
                 const SizedBox(width: 12),
-                _buildDossierTextCard("Net Revenue", "₹${_totalRevenue.toStringAsFixed(1)}", "Lifetime Earnings", valColor: const Color(0xFF1C1B1B)),
+                _buildDossierTextCard("Net Revenue",
+                    "₹${_totalRevenue.toStringAsFixed(1)}", "Lifetime Earnings",
+                    valColor: const Color(0xFF1C1B1B)),
               ],
             ),
           ),
@@ -2714,7 +3668,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.more_vert, color: Color(0xFF3E4949)),
+                        icon: const Icon(Icons.more_vert,
+                            color: Color(0xFF3E4949)),
                         onPressed: () {},
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
@@ -2729,11 +3684,10 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: const Color(0xFFEEEEED),
-                          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(4)),
+                          borderRadius: const BorderRadius.vertical(
+                              bottom: Radius.circular(4)),
                           image: const DecorationImage(
-                            image: NetworkImage(
-                              "https://lh3.googleusercontent.com/aida-public/AB6AXuBKyWKzKAApID2AoWsIhWnAdfXvmMVtpWXIcqleHqvNo5cVgsYfMKwaR8OjzmTSQh-A_-umlsOzY6ZFOdKfVwlzfZ4_nLk6p4mE-cUL1rBMU8l0V9jBMVcB0P8K8OD4HHvn2LNkkfg28qMK2tDSlMwHOZc3DUNqzqkVsva3Oa1SByDJysgb8IDUP-YT-ro7Z_ZEGfwzhJMfESS19CE_F8qyj7CaxU8JFUC8VCT4pZlUed0CU6JY_Kxh",
-                            ),
+                            image: AssetImage("assets/images/world_map_premium.png"),
                             fit: BoxFit.cover,
                             opacity: 0.6,
                           ),
@@ -2760,7 +3714,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       bottom: 12,
                       left: 12,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.9),
                           borderRadius: BorderRadius.circular(6),
@@ -2827,13 +3782,15 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 _buildMemberApprovalCard(
                   name: "Jordan Smith",
                   role: "Senior Architect",
-                  avatarUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuBU6C9nJEUf6OeahCGdO0Dq54LFMAAkDfJyyTT5HnNdMFh1U5Tk5gEw5x5Ybn9hjaWDQcVfz1GHfGI7OD_EyBLaN-5IDaVI5ERFYP6clT6jyYUcjQAPX3E5cRTW5nPlzVb2nq8RXOc7Lm6n7izg_ataQFkHt-B2Uti1tJPSkPXOFTDDTnqXG_UHVlxKgtm5xQ0LeT6phH-NhxUAORGrTxFlwtm9ROcnvYTdB7Y9O6uLgp4fQP0Z1xeN",
+                  avatarUrl:
+                      "https://lh3.googleusercontent.com/aida-public/AB6AXuBU6C9nJEUf6OeahCGdO0Dq54LFMAAkDfJyyTT5HnNdMFh1U5Tk5gEw5x5Ybn9hjaWDQcVfz1GHfGI7OD_EyBLaN-5IDaVI5ERFYP6clT6jyYUcjQAPX3E5cRTW5nPlzVb2nq8RXOc7Lm6n7izg_ataQFkHt-B2Uti1tJPSkPXOFTDDTnqXG_UHVlxKgtm5xQ0LeT6phH-NhxUAORGrTxFlwtm9ROcnvYTdB7Y9O6uLgp4fQP0Z1xeN",
                 ),
                 const SizedBox(width: 12),
                 _buildMemberApprovalCard(
                   name: "Sarah Chen",
                   role: "Product Lead",
-                  avatarUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuAJTrFHxrrETppbTZT7wfYief4z063tC9ynwUDfY0Zauhsm4wzu-QMoLFzssELj8jhQ3elurvFmovcp4WBvUcXFJ7Y9Holeb1zEbvI3rRg_HNJWs11jfqFO9hV6StzNUXjwAP-2olmk8iCp8D33m5WkLjR_osII-lgrvrlGu2xvlPMGmhEgXjW_4oum1mc40hjY8ah6M2V3QstbrVI4AnrPRq_PlQvfJoM6y302jZ8A_Tc42w1nnvKP",
+                  avatarUrl:
+                      "https://lh3.googleusercontent.com/aida-public/AB6AXuAJTrFHxrrETppbTZT7wfYief4z063tC9ynwUDfY0Zauhsm4wzu-QMoLFzssELj8jhQ3elurvFmovcp4WBvUcXFJ7Y9Holeb1zEbvI3rRg_HNJWs11jfqFO9hV6StzNUXjwAP-2olmk8iCp8D33m5WkLjR_osII-lgrvrlGu2xvlPMGmhEgXjW_4oum1mc40hjY8ah6M2V3QstbrVI4AnrPRq_PlQvfJoM6y302jZ8A_Tc42w1nnvKP",
                 ),
               ],
             ),
@@ -2851,9 +3808,34 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
             ),
           ),
           const SizedBox(height: 12),
-          _buildPostApprovalItem("Tech Strategy for Q4", "Mike Donnovan", Icons.article_outlined),
-          const SizedBox(height: 8),
-          _buildPostApprovalItem("Upcoming Meetup FAQ", "Elena Rodriguez", Icons.forum_outlined),
+          () {
+            final pendingPosts = _feedPosts
+                .where((p) => p is Map && p['status']?.toString() == 'pending')
+                .toList();
+            if (pendingPosts.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text("No posts awaiting approval.",
+                    style: TextStyle(color: Colors.grey, fontSize: 13)),
+              );
+            }
+            return Column(
+              children: pendingPosts.map<Widget>((p) {
+                if (p is! Map) return const SizedBox.shrink();
+                final int pId = int.tryParse(p['id']?.toString() ?? '0') ?? 0;
+                final author = p['author_name']?.toString() ?? 'Anonymous';
+                final content = p['label']?.toString() ?? 'Post Content';
+                final displayTitle = content.length > 30
+                    ? "${content.substring(0, 30)}..."
+                    : content;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _buildPostApprovalItem(
+                      displayTitle, author, Icons.article_outlined, pId),
+                );
+              }).toList(),
+            );
+          }(),
 
           const SizedBox(height: 28),
 
@@ -2918,8 +3900,10 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   authorName: "Sarah Chen",
                   views: "1.2k",
                   likes: "84",
-                  imageUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuALNKH8mgdlWgYCTWEeiKzMNRwdndqhgbL_Auuzpkopuk7kKzF53vbfi2ELgFOaXZbIC5OWlPAs0olk5ciM9YAOvVUmcyIhBP1HYFyuyvcUXJbz-8lqE_VE-Upt9vvoI3C_FXXmkmTmxegAW1Ugnab6Ywo6DuZ9GiWXRE_VjxJhFlAKtppocXK3v8uoy6Kl5j-s9yeVaAkSf6KwnB9eOGhixAWX3vw54s0ZA-hbThs9PwFyxnSOoY8N",
-                  authorAvatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAJTrFHxrrETppbTZT7wfYief4z063tC9ynwUDfY0Zauhsm4wzu-QMoLFzssELj8jhQ3elurvFmovcp4WBvUcXFJ7Y9Holeb1zEbvI3rRg_HNJWs11jfqFO9hV6StzNUXjwAP-2olmk8iCp8D33m5WkLjR_osII-lgrvrlGu2xvlPMGmhEgXjW_4oum1mc40hjY8ah6M2V3QstbrVI4AnrPRq_PlQvfJoM6y302jZ8A_Tc42w1nnvKP",
+                  imageUrl:
+                      "https://lh3.googleusercontent.com/aida-public/AB6AXuALNKH8mgdlWgYCTWEeiKzMNRwdndqhgbL_Auuzpkopuk7kKzF53vbfi2ELgFOaXZbIC5OWlPAs0olk5ciM9YAOvVUmcyIhBP1HYFyuyvcUXJbz-8lqE_VE-Upt9vvoI3C_FXXmkmTmxegAW1Ugnab6Ywo6DuZ9GiWXRE_VjxJhFlAKtppocXK3v8uoy6Kl5j-s9yeVaAkSf6KwnB9eOGhixAWX3vw54s0ZA-hbThs9PwFyxnSOoY8N",
+                  authorAvatar:
+                      "https://lh3.googleusercontent.com/aida-public/AB6AXuAJTrFHxrrETppbTZT7wfYief4z063tC9ynwUDfY0Zauhsm4wzu-QMoLFzssELj8jhQ3elurvFmovcp4WBvUcXFJ7Y9Holeb1zEbvI3rRg_HNJWs11jfqFO9hV6StzNUXjwAP-2olmk8iCp8D33m5WkLjR_osII-lgrvrlGu2xvlPMGmhEgXjW_4oum1mc40hjY8ah6M2V3QstbrVI4AnrPRq_PlQvfJoM6y302jZ8A_Tc42w1nnvKP",
                 ),
                 const SizedBox(width: 12),
                 _buildArticleBlogCard(
@@ -2928,8 +3912,10 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   authorName: "Jordan Smith",
                   views: "850",
                   likes: "42",
-                  imageUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuDXGJfZscVmWLX6TJlMlsUcZBvaI-tI25XIIQVdfr-qy83rMuZAXK1WcMdfBZHNVq6hTTXdRFCGVxgZ3VJKsf2B15ZBY5YlaRDbyvZEB_E6KZYJccMf5z0yQMkjlwNsLv7MJJmicBBI4qJ4l9_tuGcy-H3M3amP6LjhEH-kDBT0WVYYb4NK1hjSTLWOrVF-MW23wCepUzXlw3nA6PiY__e5GGpkQbkhz1kLYhE0Of_zdmj4pU3P6U9x",
-                  authorAvatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBU6C9nJEUf6OeahCGdO0Dq54LFMAAkDfJyyTT5HnNdMFh1U5Tk5gEw5x5Ybn9hjaWDQcVfz1GHfGI7OD_EyBLaN-5IDaVI5ERFYP6clT6jyYUcjQAPX3E5cRTW5nPlzVb2nq8RXOc7Lm6n7izg_ataQFkHt-B2Uti1tJPSkPXOFTDDTnqXG_UHVlxKgtm5xQ0LeT6phH-NhxUAORGrTxFlwtm9ROcnvYTdB7Y9O6uLgp4fQP0Z1xeN",
+                  imageUrl:
+                      "https://lh3.googleusercontent.com/aida-public/AB6AXuDXGJfZscVmWLX6TJlMlsUcZBvaI-tI25XIIQVdfr-qy83rMuZAXK1WcMdfBZHNVq6hTTXdRFCGVxgZ3VJKsf2B15ZBY5YlaRDbyvZEB_E6KZYJccMf5z0yQMkjlwNsLv7MJJmicBBI4qJ4l9_tuGcy-H3M3amP6LjhEH-kDBT0WVYYb4NK1hjSTLWOrVF-MW23wCepUzXlw3nA6PiY__e5GGpkQbkhz1kLYhE0Of_zdmj4pU3P6U9x",
+                  authorAvatar:
+                      "https://lh3.googleusercontent.com/aida-public/AB6AXuBU6C9nJEUf6OeahCGdO0Dq54LFMAAkDfJyyTT5HnNdMFh1U5Tk5gEw5x5Ybn9hjaWDQcVfz1GHfGI7OD_EyBLaN-5IDaVI5ERFYP6clT6jyYUcjQAPX3E5cRTW5nPlzVb2nq8RXOc7Lm6n7izg_ataQFkHt-B2Uti1tJPSkPXOFTDDTnqXG_UHVlxKgtm5xQ0LeT6phH-NhxUAORGrTxFlwtm9ROcnvYTdB7Y9O6uLgp4fQP0Z1xeN",
                   isGrowing: true,
                 ),
               ],
@@ -2948,9 +3934,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     Color accentColor = const Color(0xFF008080),
     EdgeInsetsGeometry padding = const EdgeInsets.all(16),
   }) {
-    final EdgeInsetsGeometry childPadding = hasAccent
-        ? padding.add(const EdgeInsets.only(left: 4))
-        : padding;
+    final EdgeInsetsGeometry childPadding =
+        hasAccent ? padding.add(const EdgeInsets.only(left: 4)) : padding;
 
     return Container(
       decoration: BoxDecoration(
@@ -2987,7 +3972,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     );
   }
 
-  Widget _buildDossierStatCard(String label, String value, {required String trend, bool hasAccent = false}) {
+  Widget _buildDossierStatCard(String label, String value,
+      {required String trend, bool hasAccent = false}) {
     return Container(
       width: 160,
       margin: const EdgeInsets.only(bottom: 4),
@@ -3000,7 +3986,10 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           children: [
             Text(
               label.toUpperCase(),
-              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF3E4949)),
+              style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF3E4949)),
             ),
             const SizedBox(height: 4),
             Row(
@@ -3009,18 +3998,25 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
               children: [
                 Text(
                   value,
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A1C1C)),
+                  style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1C1C)),
                 ),
               ],
             ),
             const SizedBox(height: 2),
             Row(
               children: [
-                const Icon(Icons.trending_up, size: 12, color: Color(0xFF15803D)),
+                const Icon(Icons.trending_up,
+                    size: 12, color: Color(0xFF15803D)),
                 const SizedBox(width: 2),
                 Text(
                   trend,
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
+                  style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF15803D)),
                 ),
               ],
             ),
@@ -3030,7 +4026,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     );
   }
 
-  Widget _buildDossierActiveCard(String label, String value, {required double progress}) {
+  Widget _buildDossierActiveCard(String label, String value,
+      {required double progress}) {
     return Container(
       width: 160,
       margin: const EdgeInsets.only(bottom: 4),
@@ -3042,12 +4039,18 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           children: [
             Text(
               label.toUpperCase(),
-              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF3E4949)),
+              style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF3E4949)),
             ),
             const SizedBox(height: 4),
             Text(
               value,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A1C1C)),
+              style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1C1C)),
             ),
             const SizedBox(height: 6),
             ClipRRect(
@@ -3055,7 +4058,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
               child: LinearProgressIndicator(
                 value: progress,
                 backgroundColor: const Color(0xFFEEEEED),
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF008080)),
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(Color(0xFF008080)),
                 minHeight: 4,
               ),
             ),
@@ -3065,7 +4069,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     );
   }
 
-  Widget _buildDossierTextCard(String label, String value, String description, {Color valColor = const Color(0xFF1A1C1C)}) {
+  Widget _buildDossierTextCard(String label, String value, String description,
+      {Color valColor = const Color(0xFF1A1C1C)}) {
     return Container(
       width: 160,
       margin: const EdgeInsets.only(bottom: 4),
@@ -3077,12 +4082,16 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           children: [
             Text(
               label.toUpperCase(),
-              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF3E4949)),
+              style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF3E4949)),
             ),
             const SizedBox(height: 4),
             Text(
               value,
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: valColor),
+              style: TextStyle(
+                  fontSize: 24, fontWeight: FontWeight.bold, color: valColor),
             ),
             const SizedBox(height: 2),
             Text(
@@ -3123,7 +4132,10 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           children: [
             const Text(
               "Community Demographics",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A1C1C)),
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1C1C)),
             ),
             const SizedBox(height: 16),
             Row(
@@ -3143,11 +4155,17 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                         children: const [
                           Text(
                             "42k",
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF006565)),
+                            style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF006565)),
                           ),
                           Text(
                             "TOTAL",
-                            style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)),
+                            style: TextStyle(
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF3E4949)),
                           ),
                         ],
                       ),
@@ -3161,17 +4179,31 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     children: [
                       Row(
                         children: [
-                          Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFF008080), shape: BoxShape.circle)),
+                          Container(
+                              width: 10,
+                              height: 10,
+                              decoration: const BoxDecoration(
+                                  color: Color(0xFF008080),
+                                  shape: BoxShape.circle)),
                           const SizedBox(width: 6),
-                          const Text("18-24 (70%)", style: TextStyle(fontSize: 12, color: Color(0xFF3E4949))),
+                          const Text("18-24 (70%)",
+                              style: TextStyle(
+                                  fontSize: 12, color: Color(0xFF3E4949))),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFF6750A4), shape: BoxShape.circle)),
+                          Container(
+                              width: 10,
+                              height: 10,
+                              decoration: const BoxDecoration(
+                                  color: Color(0xFF6750A4),
+                                  shape: BoxShape.circle)),
                           const SizedBox(width: 6),
-                          const Text("25-34 (30%)", style: TextStyle(fontSize: 12, color: Color(0xFF3E4949))),
+                          const Text("25-34 (30%)",
+                              style: TextStyle(
+                                  fontSize: 12, color: Color(0xFF3E4949))),
                         ],
                       ),
                     ],
@@ -3195,7 +4227,10 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           children: [
             const Text(
               "Sales Trend (30d)",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A1C1C)),
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1C1C)),
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -3223,8 +4258,10 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: const [
-                Text("Day 01", style: TextStyle(fontSize: 8, color: Color(0xFF3E4949))),
-                Text("Day 30", style: TextStyle(fontSize: 8, color: Color(0xFF3E4949))),
+                Text("Day 01",
+                    style: TextStyle(fontSize: 8, color: Color(0xFF3E4949))),
+                Text("Day 30",
+                    style: TextStyle(fontSize: 8, color: Color(0xFF3E4949))),
               ],
             ),
           ],
@@ -3236,14 +4273,17 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   Widget _buildTrendBar(double fraction, {bool isHighlight = false}) {
     return Container(
       decoration: BoxDecoration(
-        color: isHighlight ? const Color(0xFF006565) : const Color(0xFF006565).withOpacity(0.15),
+        color: isHighlight
+            ? const Color(0xFF006565)
+            : const Color(0xFF006565).withOpacity(0.15),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
       ),
       height: 70 * fraction,
     );
   }
 
-  Widget _buildMemberApprovalCard({required String name, required String role, required String avatarUrl}) {
+  Widget _buildMemberApprovalCard(
+      {required String name, required String role, required String avatarUrl}) {
     return Container(
       width: 240,
       margin: const EdgeInsets.only(bottom: 4),
@@ -3256,12 +4296,16 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: const Color(0xFFBDC9C8)),
-                image: DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover),
+                image: DecorationImage(
+                    image: NetworkImage(avatarUrl), fit: BoxFit.cover),
               ),
             ),
             const SizedBox(height: 8),
-            Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            Text(role, style: const TextStyle(fontSize: 12, color: Color(0xFF3E4949))),
+            Text(name,
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            Text(role,
+                style: const TextStyle(fontSize: 12, color: Color(0xFF3E4949))),
             const Spacer(),
             Row(
               children: [
@@ -3272,10 +4316,14 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       foregroundColor: const Color(0xFF1A1C1C),
                       elevation: 0,
                       padding: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4)),
                     ),
-                    onPressed: () => _showActionAlert("Contact User: Hello $name, we've reviewed your request..."),
-                    child: const Text("Contact", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                    onPressed: () => _showActionAlert(
+                        "Contact User: Hello $name, we've reviewed your request..."),
+                    child: const Text("Contact",
+                        style: TextStyle(
+                            fontSize: 10, fontWeight: FontWeight.bold)),
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -3286,10 +4334,14 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       foregroundColor: const Color(0xFF1A1C1C),
                       elevation: 0,
                       padding: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4)),
                     ),
-                    onPressed: () => _showActionAlert("Rejected $name membership"),
-                    child: const Text("Reject", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                    onPressed: () =>
+                        _showActionAlert("Rejected $name membership"),
+                    child: const Text("Reject",
+                        style: TextStyle(
+                            fontSize: 10, fontWeight: FontWeight.bold)),
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -3300,10 +4352,14 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       foregroundColor: Colors.white,
                       elevation: 0,
                       padding: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4)),
                     ),
-                    onPressed: () => _showActionAlert("Approved $name membership successfully!"),
-                    child: const Text("Approve", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                    onPressed: () => _showActionAlert(
+                        "Approved $name membership successfully!"),
+                    child: const Text("Approve",
+                        style: TextStyle(
+                            fontSize: 10, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -3314,7 +4370,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     );
   }
 
-  Widget _buildPostApprovalItem(String title, String author, IconData icon) {
+  Widget _buildPostApprovalItem(
+      String title, String author, IconData icon, int postId) {
     return _buildDossierCard(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -3333,8 +4390,12 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                Text("by $author", style: const TextStyle(fontSize: 12, color: Color(0xFF3E4949))),
+                Text(title,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 14)),
+                Text("by $author",
+                    style: const TextStyle(
+                        fontSize: 12, color: Color(0xFF3E4949))),
               ],
             ),
           ),
@@ -3342,11 +4403,11 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
             children: [
               IconButton(
                 icon: const Icon(Icons.close, color: Colors.red),
-                onPressed: () => _showActionAlert("Post rejected"),
+                onPressed: () => _updatePostStatus(postId, 'hidden'),
               ),
               IconButton(
                 icon: const Icon(Icons.check, color: Color(0xFF006565)),
-                onPressed: () => _showActionAlert("Post approved successfully!"),
+                onPressed: () => _updatePostStatus(postId, 'active'),
               ),
             ],
           ),
@@ -3378,17 +4439,24 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
               children: [
                 Text(
                   isPaid ? "PREMIUM ORDER" : "STANDARD ORDER",
-                  style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: accentColor),
+                  style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                      color: accentColor),
                 ),
                 Text(
                   price,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 13),
                 ),
               ],
             ),
             const SizedBox(height: 4),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            Text("Order ID: $orderId", style: const TextStyle(fontSize: 11, color: Color(0xFF3E4949))),
+            Text(title,
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            Text("Order ID: $orderId",
+                style: const TextStyle(fontSize: 11, color: Color(0xFF3E4949))),
             const SizedBox(height: 8),
             Container(
               decoration: const BoxDecoration(
@@ -3398,8 +4466,12 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Client: $client", style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                  Text("Company: $company", style: const TextStyle(fontSize: 11, color: Color(0xFF3E4949))),
+                  Text("Client: $client",
+                      style: const TextStyle(
+                          fontSize: 11, fontWeight: FontWeight.bold)),
+                  Text("Company: $company",
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF3E4949))),
                   const SizedBox(height: 4),
                   Row(
                     children: [
@@ -3407,7 +4479,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                         width: 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: isPaid ? const Color(0xFF15803D) : const Color(0xFFB45309),
+                          color: isPaid
+                              ? const Color(0xFF15803D)
+                              : const Color(0xFFB45309),
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -3415,9 +4489,11 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       Text(
                         isPaid ? "Paid" : "Pending",
                         style: TextStyle(
-                          fontSize: 9, 
-                          fontWeight: FontWeight.bold, 
-                          color: isPaid ? const Color(0xFF15803D) : const Color(0xFFB45309),
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: isPaid
+                              ? const Color(0xFF15803D)
+                              : const Color(0xFFB45309),
                         ),
                       ),
                     ],
@@ -3432,10 +4508,16 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Color(0xFF006565)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6)),
                     ),
-                    onPressed: () => _showActionAlert("Order summary: $title for $client. Total: $price"),
-                    child: const Text("View Details", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF006565))),
+                    onPressed: () => _showActionAlert(
+                        "Order summary: $title for $client. Total: $price"),
+                    child: const Text("View Details",
+                        style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF006565))),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -3445,10 +4527,14 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       backgroundColor: const Color(0xFF006565),
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6)),
                     ),
-                    onPressed: () => _showActionAlert("Reviewing order $orderId"),
-                    child: const Text("Review", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                    onPressed: () =>
+                        _showActionAlert("Reviewing order $orderId"),
+                    child: const Text("Review",
+                        style: TextStyle(
+                            fontSize: 10, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -3483,21 +4569,28 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   height: 100,
                   decoration: BoxDecoration(
                     color: const Color(0xFFEEEEED),
-                    image: DecorationImage(image: NetworkImage(imageUrl), fit: BoxFit.cover),
+                    image: DecorationImage(
+                        image: NetworkImage(imageUrl), fit: BoxFit.cover),
                   ),
                 ),
                 Positioned(
                   top: 8,
                   left: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: isGrowing ? const Color(0xFF6750A4) : const Color(0xFF006565),
+                      color: isGrowing
+                          ? const Color(0xFF6750A4)
+                          : const Color(0xFF006565),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       category.toUpperCase(),
-                      style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -3512,7 +4605,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                   const SizedBox(height: 6),
                   Row(
@@ -3522,7 +4616,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                         backgroundImage: NetworkImage(authorAvatar),
                       ),
                       const SizedBox(width: 6),
-                      Text(authorName, style: const TextStyle(fontSize: 11, color: Color(0xFF3E4949))),
+                      Text(authorName,
+                          style: const TextStyle(
+                              fontSize: 11, color: Color(0xFF3E4949))),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -3531,13 +4627,19 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.visibility_outlined, size: 12, color: Color(0xFF3E4949)),
+                          const Icon(Icons.visibility_outlined,
+                              size: 12, color: Color(0xFF3E4949)),
                           const SizedBox(width: 2),
-                          Text(views, style: const TextStyle(fontSize: 10, color: Color(0xFF3E4949))),
+                          Text(views,
+                              style: const TextStyle(
+                                  fontSize: 10, color: Color(0xFF3E4949))),
                           const SizedBox(width: 8),
-                          const Icon(Icons.favorite_border, size: 12, color: Color(0xFF3E4949)),
+                          const Icon(Icons.favorite_border,
+                              size: 12, color: Color(0xFF3E4949)),
                           const SizedBox(width: 2),
-                          Text(likes, style: const TextStyle(fontSize: 10, color: Color(0xFF3E4949))),
+                          Text(likes,
+                              style: const TextStyle(
+                                  fontSize: 10, color: Color(0xFF3E4949))),
                         ],
                       ),
                     ],
@@ -3549,16 +4651,22 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: Color(0xFFBDC9C8)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4)),
                             padding: EdgeInsets.zero,
                           ),
                           onPressed: () {},
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: const [
-                              Icon(Icons.share_outlined, size: 12, color: Color(0xFF1A1C1C)),
+                              Icon(Icons.share_outlined,
+                                  size: 12, color: Color(0xFF1A1C1C)),
                               SizedBox(width: 4),
-                              Text("Share", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF1A1C1C))),
+                              Text("Share",
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1A1C1C))),
                             ],
                           ),
                         ),
@@ -3570,11 +4678,14 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                             backgroundColor: const Color(0xFF006565),
                             foregroundColor: Colors.white,
                             elevation: 0,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4)),
                             padding: EdgeInsets.zero,
                           ),
                           onPressed: () {},
-                          child: const Text("Read More", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                          child: const Text("Read More",
+                              style: TextStyle(
+                                  fontSize: 10, fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ],
@@ -3611,7 +4722,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
               child: Wrap(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.group_add_rounded, color: Color(0xFF006565)),
+                    leading: const Icon(Icons.group_add_rounded,
+                        color: Color(0xFF006565)),
                     title: const Text("Create Community"),
                     onTap: () {
                       Navigator.pop(context);
@@ -3619,7 +4731,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.post_add_rounded, color: Color(0xFF006565)),
+                    leading: const Icon(Icons.post_add_rounded,
+                        color: Color(0xFF006565)),
                     title: const Text("Create Post"),
                     onTap: () {
                       Navigator.pop(context);
@@ -3645,14 +4758,15 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       return FloatingActionButton.small(
         backgroundColor: primaryPurple,
         foregroundColor: Colors.white,
-        onPressed: () => Navigator.pushNamed(context, AppRoutes.createCommunity),
+        onPressed: () =>
+            Navigator.pushNamed(context, AppRoutes.createCommunity),
         child: const Icon(Icons.group_add_rounded),
       );
     } else if (_currentIndex == 15) {
       return FloatingActionButton.extended(
         backgroundColor: primaryPurple,
         foregroundColor: Colors.white,
-        onPressed: () => _showActionAlert("Sent member invite successfully!"),
+        onPressed: _showInviteMemberDialog,
         icon: const Icon(Icons.person_add_rounded),
         label: const Text("Invite Member"),
       );
@@ -3696,7 +4810,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           ),
           Expanded(
             child: _isLoadingUsers
-                ? const Center(child: CircularProgressIndicator(color: primaryPurple))
+                ? const Center(
+                    child: CircularProgressIndicator(color: primaryPurple))
                 : TabBarView(
                     children: [
                       _buildUsersList(_generalUsers, "General"),
@@ -3719,12 +4834,13 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           child: Container(
             height: 400,
             alignment: Alignment.center,
-            child: Text("No $role Users found.", style: const TextStyle(color: textLight)),
+            child: Text("No $role Users found.",
+                style: const TextStyle(color: textLight)),
           ),
         ),
       );
     }
-    
+
     return RefreshIndicator(
       onRefresh: _fetchUsersList,
       child: ListView.builder(
@@ -3737,12 +4853,13 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           final String status = user["status"]?.toString() ?? "Active";
           final String id = user["id"]?.toString() ?? "";
           final String pic = user["profile_pic"]?.toString() ?? "";
-          
+
           return Card(
             color: cardColor,
             elevation: 0,
             margin: const EdgeInsets.only(bottom: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -3750,8 +4867,11 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   CircleAvatar(
                     backgroundColor: bgLight,
                     backgroundImage: pic.isNotEmpty ? NetworkImage(pic) : null,
-                    child: pic.isEmpty 
-                        ? Text(name.isNotEmpty ? name[0].toUpperCase() : "?", style: const TextStyle(color: primaryPurple, fontWeight: FontWeight.bold)) 
+                    child: pic.isEmpty
+                        ? Text(name.isNotEmpty ? name[0].toUpperCase() : "?",
+                            style: const TextStyle(
+                                color: primaryPurple,
+                                fontWeight: FontWeight.bold))
                         : null,
                   ),
                   const SizedBox(width: 16),
@@ -3759,28 +4879,45 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                        if (email.isNotEmpty) Text(email, style: const TextStyle(color: textLight, fontSize: 12)),
+                        Text(name,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 15)),
+                        if (email.isNotEmpty)
+                          Text(email,
+                              style: const TextStyle(
+                                  color: textLight, fontSize: 12)),
                         const SizedBox(height: 8),
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(color: accentPurple.withAlpha(25), borderRadius: BorderRadius.circular(6)),
-                              child: Text(role, style: const TextStyle(fontSize: 10, color: primaryPurple, fontWeight: FontWeight.bold)),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                  color: accentPurple.withAlpha(25),
+                                  borderRadius: BorderRadius.circular(6)),
+                              child: Text(role,
+                                  style: const TextStyle(
+                                      fontSize: 10,
+                                      color: primaryPurple,
+                                      fontWeight: FontWeight.bold)),
                             ),
                             const SizedBox(width: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: status == "Active" ? Colors.green.withAlpha(25) : Colors.red.withAlpha(25),
+                                color: status == "Active"
+                                    ? Colors.green.withAlpha(25)
+                                    : Colors.red.withAlpha(25),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                status, 
+                                status,
                                 style: TextStyle(
-                                  fontSize: 10, 
-                                  color: status == "Active" ? Colors.green : Colors.red,
+                                  fontSize: 10,
+                                  color: status == "Active"
+                                      ? Colors.green
+                                      : Colors.red,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -3792,7 +4929,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   ),
                   // Chat button
                   IconButton(
-                    icon: const Icon(Icons.chat_bubble_outline, color: primaryPurple),
+                    icon: const Icon(Icons.chat_bubble_outline,
+                        color: primaryPurple),
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -3842,7 +4980,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10)],
+            boxShadow: [
+              BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10)
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -3851,9 +4991,12 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 child: Container(
                   decoration: const BoxDecoration(
                     color: Color(0xFFEEEFFF),
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(16)),
                   ),
-                  child: const Center(child: Icon(Icons.image_rounded, size: 40, color: primaryPurple)),
+                  child: const Center(
+                      child: Icon(Icons.image_rounded,
+                          size: 40, color: primaryPurple)),
                 ),
               ),
               Padding(
@@ -3861,13 +5004,22 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(product["title"], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(product["title"],
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 4),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(product["price"], style: const TextStyle(color: primaryPurple, fontWeight: FontWeight.bold)),
-                        Text("Stock: ${product['stock']}", style: const TextStyle(color: textLight, fontSize: 11)),
+                        Text(product["price"],
+                            style: const TextStyle(
+                                color: primaryPurple,
+                                fontWeight: FontWeight.bold)),
+                        Text("Stock: ${product['stock']}",
+                            style: const TextStyle(
+                                color: textLight, fontSize: 11)),
                       ],
                     ),
                   ],
@@ -3894,7 +5046,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     hintText: "Add new category",
                     filled: true,
                     fillColor: Colors.white,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none),
                   ),
                 ),
               ),
@@ -3903,9 +5057,11 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryPurple,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   minimumSize: const Size(0, 0),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
                 child: const Icon(Icons.add, color: Colors.white),
               ),
@@ -3922,10 +5078,13 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 elevation: 0,
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
-                  leading: const Icon(Icons.label_outline_rounded, color: primaryPurple),
-                  title: Text(_mockCategories[idx], style: const TextStyle(fontWeight: FontWeight.w600)),
+                  leading: const Icon(Icons.label_outline_rounded,
+                      color: primaryPurple),
+                  title: Text(_mockCategories[idx],
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
                   trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                    icon: const Icon(Icons.delete_outline_rounded,
+                        color: Colors.redAccent),
                     onPressed: () {},
                   ),
                 ),
@@ -3950,7 +5109,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           margin: const EdgeInsets.only(bottom: 10),
           child: ListTile(
             leading: const Icon(Icons.list_alt_rounded, color: primaryPurple),
-            title: Text(item["title"], style: const TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(item["title"],
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text("Price: ${item['price']}"),
             trailing: Text("Qty: ${item['stock']}"),
           ),
@@ -3967,15 +5127,24 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       final response = await Database().getData({
         'action': 'fetch_settings',
       }, endpoint: 'new_apis/platform_setting_API.php');
-      
+
       if (response['success'] == true && response['data'] != null) {
         final site = response['data']['site'];
         if (site != null) {
           setState(() {
-            _isMaintenanceMode = (int.tryParse(site['status']?.toString() ?? '1') ?? 1) == 0;
-            _isAutoApproveVendors = (int.tryParse(site['need_approval']?.toString() ?? '1') ?? 1) == 0;
-            _isEscrowEnabled = (int.tryParse(site['is_commission_split']?.toString() ?? '0') ?? 0) == 1;
-            _isPushNotificationsEnabled = (int.tryParse(site['show_product_review']?.toString() ?? '0') ?? 0) == 1;
+            _isMaintenanceMode =
+                (int.tryParse(site['status']?.toString() ?? '1') ?? 1) == 0;
+            _isAutoApproveVendors =
+                (int.tryParse(site['need_approval']?.toString() ?? '1') ?? 1) ==
+                    0;
+            _isEscrowEnabled =
+                (int.tryParse(site['is_commission_split']?.toString() ?? '0') ??
+                        0) ==
+                    1;
+            _isPushNotificationsEnabled =
+                (int.tryParse(site['show_product_review']?.toString() ?? '0') ??
+                        0) ==
+                    1;
           });
         }
       }
@@ -4011,7 +5180,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response['message']?.toString() ?? "Failed to update setting"),
+            content: Text(
+                response['message']?.toString() ?? "Failed to update setting"),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),
@@ -4025,7 +5195,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   // 7. Platform Settings View
   Widget _buildPlatformSettingsView() {
     if (_isLoadingSettings) {
-      return const Center(child: CircularProgressIndicator(color: primaryPurple));
+      return const Center(
+          child: CircularProgressIndicator(color: primaryPurple));
     }
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -4073,7 +5244,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     );
   }
 
-  Widget _buildSettingsSwitchTile(String title, String subtitle, bool isEnabled, ValueChanged<bool> onChanged) {
+  Widget _buildSettingsSwitchTile(String title, String subtitle, bool isEnabled,
+      ValueChanged<bool> onChanged) {
     return Card(
       color: cardColor,
       elevation: 0,
@@ -4083,8 +5255,10 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         activeThumbColor: primaryPurple,
         value: isEnabled,
         onChanged: onChanged,
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-        subtitle: Text(subtitle, style: const TextStyle(color: textLight, fontSize: 12)),
+        title: Text(title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+        subtitle: Text(subtitle,
+            style: const TextStyle(color: textLight, fontSize: 12)),
       ),
     );
   }
@@ -4106,27 +5280,40 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("PLATFORM ESCROW BALANCE", style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1.5)),
+                const Text("PLATFORM ESCROW BALANCE",
+                    style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        letterSpacing: 1.5)),
                 const SizedBox(height: 8),
-                const Text("₹184,350.00", style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+                const Text("₹184,350.00",
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold)),
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: const [
-                    Text("Commission Earned: ₹18,435.00", style: TextStyle(color: Colors.white70, fontSize: 13)),
-                    Text("Payouts Pending: ₹4,200", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    Text("Commission Earned: ₹18,435.00",
+                        style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    Text("Payouts Pending: ₹4,200",
+                        style: TextStyle(color: Colors.white70, fontSize: 13)),
                   ],
                 ),
               ],
             ),
           ),
           const SizedBox(height: 24),
-          const Text("Platform Bank Accounts", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
+          const Text("Platform Bank Accounts",
+              style: TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
           const SizedBox(height: 12),
           const Card(
             color: cardColor,
             child: ListTile(
-              leading: Icon(Icons.account_balance_rounded, color: primaryPurple),
+              leading:
+                  Icon(Icons.account_balance_rounded, color: primaryPurple),
               title: Text("Escrow Holding - HDFC Bank"),
               subtitle: Text("Account: ******1092 | IFSC: HDFC0001202"),
             ),
@@ -4148,7 +5335,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   child: Container(
                     height: 400,
                     alignment: Alignment.center,
-                    child: const Text("No withdrawal requests found.", style: TextStyle(color: textLight)),
+                    child: const Text("No withdrawal requests found.",
+                        style: TextStyle(color: textLight)),
                   ),
                 ),
               )
@@ -4159,10 +5347,13 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   itemCount: _withdrawalRequests.length,
                   itemBuilder: (context, idx) {
                     final req = _withdrawalRequests[idx];
-                    final String description = req["description"]?.toString() ?? "Withdrawal";
-                    final String amount = req["requestedAmount"]?.toString() ?? "0";
-                    final String status = req["status"]?.toString() ?? "Pending";
-                    
+                    final String description =
+                        req["description"]?.toString() ?? "Withdrawal";
+                    final String amount =
+                        req["requestedAmount"]?.toString() ?? "0";
+                    final String status =
+                        req["status"]?.toString() ?? "Pending";
+
                     return Card(
                       color: cardColor,
                       elevation: 0,
@@ -4171,16 +5362,35 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                         padding: const EdgeInsets.all(16),
                         child: Row(
                           children: [
-                            const CircleAvatar(backgroundColor: bgLight, child: Icon(Icons.monetization_on_rounded, color: Colors.green)),
+                            const CircleAvatar(
+                                backgroundColor: bgLight,
+                                child: Icon(Icons.monetization_on_rounded,
+                                    color: Colors.green)),
                             const SizedBox(width: 16),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(description, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                                  Text("Amount Requested: ₹$amount", style: const TextStyle(color: textLight, fontSize: 12)),
+                                  Text(description,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15)),
+                                  Text("Amount Requested: ₹$amount",
+                                      style: const TextStyle(
+                                          color: textLight, fontSize: 12)),
                                   const SizedBox(height: 4),
-                                  Text("Status: $status", style: TextStyle(fontWeight: FontWeight.bold, color: status == 'Pending' || status == 'pending' ? Colors.amber : (status == 'Approved' || status == 'approved' || status == 'success' ? Colors.green : Colors.red), fontSize: 11)),
+                                  Text("Status: $status",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: status == 'Pending' ||
+                                                  status == 'pending'
+                                              ? Colors.amber
+                                              : (status == 'Approved' ||
+                                                      status == 'approved' ||
+                                                      status == 'success'
+                                                  ? Colors.green
+                                                  : Colors.red),
+                                          fontSize: 11)),
                                 ],
                               ),
                             ),
@@ -4188,7 +5398,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                               ElevatedButton(
                                 onPressed: () {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text("Withdrawal Request approved!")),
+                                    const SnackBar(
+                                        content: Text(
+                                            "Withdrawal Request approved!")),
                                   );
                                   setState(() {
                                     req['status'] = 'Approved';
@@ -4196,10 +5408,13 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.green,
-                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12),
                                   minimumSize: const Size(0, 0),
                                 ),
-                                child: const Text("Approve", style: TextStyle(color: Colors.white, fontSize: 12)),
+                                child: const Text("Approve",
+                                    style: TextStyle(
+                                        color: Colors.white, fontSize: 12)),
                               ),
                             ],
                           ],
@@ -4247,7 +5462,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: const Color(0xFFBDC9C8)),
-                        image: DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover),
+                        image: DecorationImage(
+                            image: NetworkImage(avatarUrl), fit: BoxFit.cover),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -4255,8 +5471,14 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF1C1B1B))),
-                          Text(role, style: const TextStyle(fontSize: 12, color: Color(0xFF3E4949))),
+                          Text(name,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  color: Color(0xFF1C1B1B))),
+                          Text(role,
+                              style: const TextStyle(
+                                  fontSize: 12, color: Color(0xFF3E4949))),
                         ],
                       ),
                     ),
@@ -4272,12 +5494,15 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                           foregroundColor: const Color(0xFF1C1B1B),
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
                         ),
-                        onPressed: () => _showActionAlert("Inquiry dossier sent to $name"),
+                        onPressed: () =>
+                            _showActionAlert("Inquiry dossier sent to $name"),
                         child: const Text(
                           "Contact",
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -4289,12 +5514,15 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                           foregroundColor: const Color(0xFF1C1B1B),
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
                         ),
-                        onPressed: () => _updateMemberStatus(memberId, 'rejected'),
+                        onPressed: () =>
+                            _updateMemberStatus(memberId, 'rejected'),
                         child: const Text(
                           "Reject",
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -4306,12 +5534,15 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                           foregroundColor: Colors.white,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
                         ),
-                        onPressed: () => _updateMemberStatus(memberId, 'approved'),
+                        onPressed: () =>
+                            _updateMemberStatus(memberId, 'approved'),
                         child: const Text(
                           "Approve",
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -4363,19 +5594,25 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         if (_pendingApprovals.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 20),
-            child: Text("No pending approval requests.", style: TextStyle(color: textLight)),
+            child: Text("No pending approval requests.",
+                style: TextStyle(color: textLight)),
           )
         else
           ..._pendingApprovals.map((item) {
             final details = item['vendor_details'] ?? {};
             final name = details['name']?.toString() ?? 'No Name';
-            final designation = details['designation']?.toString() ?? 'Applicant';
-            final avatar = details['profile_pic']?.toString() ?? "https://i.pravatar.cc/150";
-            final memberId = int.tryParse(item['member_id']?.toString() ?? '0') ?? 0;
+            final designation =
+                details['designation']?.toString() ?? 'Applicant';
+            final avatar = details['profile_pic']?.toString() ??
+                "https://i.pravatar.cc/150";
+            final memberId =
+                int.tryParse(item['member_id']?.toString() ?? '0') ?? 0;
             return _buildPendingCard(
               name: name,
               role: designation,
-              avatarUrl: avatar.startsWith('http') ? avatar : "https://i.pravatar.cc/150",
+              avatarUrl: avatar.startsWith('http')
+                  ? avatar
+                  : "https://i.pravatar.cc/150",
               memberId: memberId,
             );
           }).toList(),
@@ -4384,7 +5621,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
 
     // Active Members List Table
     final String query = _memberSearchController.text.toLowerCase();
-    final List<Map<String, dynamic>> filteredMembers = _activeMembers.where((m) {
+    final List<Map<String, dynamic>> filteredMembers =
+        _activeMembers.where((m) {
       final String name = m["name"].toString().toLowerCase();
       final String role = m["role"].toString().toLowerCase();
       return name.contains(query) || role.contains(query);
@@ -4413,10 +5651,13 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 onChanged: (val) => setState(() {}),
                 style: const TextStyle(fontSize: 12),
                 decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.search, size: 16, color: Color(0xFF3E4949)),
+                  prefixIcon: const Icon(Icons.search,
+                      size: 16, color: Color(0xFF3E4949)),
                   hintText: "Filter members...",
-                  hintStyle: const TextStyle(fontSize: 11, color: Color(0xFF757575)),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
+                  hintStyle:
+                      const TextStyle(fontSize: 11, color: Color(0xFF757575)),
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
                   filled: true,
                   fillColor: const Color(0xFFF4F3F3),
                   border: OutlineInputBorder(
@@ -4452,26 +5693,47 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   // Table Header
                   Container(
                     color: const Color(0xFFF4F3F3),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 12),
                     child: Row(
                       children: const [
                         Expanded(
                           flex: 4,
-                          child: Text("MEMBER", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949), letterSpacing: 0.5)),
+                          child: Text("MEMBER",
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF3E4949),
+                                  letterSpacing: 0.5)),
                         ),
                         Expanded(
                           flex: 2,
-                          child: Text("STATUS", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949), letterSpacing: 0.5)),
+                          child: Text("STATUS",
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF3E4949),
+                                  letterSpacing: 0.5)),
                         ),
                         Expanded(
                           flex: 3,
-                          child: Text("ENGAGEMENT", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949), letterSpacing: 0.5)),
+                          child: Text("ENGAGEMENT",
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF3E4949),
+                                  letterSpacing: 0.5)),
                         ),
                         Expanded(
                           flex: 2,
                           child: Align(
                             alignment: Alignment.centerRight,
-                            child: Text("ACTIONS", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949), letterSpacing: 0.5)),
+                            child: Text("ACTIONS",
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF3E4949),
+                                    letterSpacing: 0.5)),
                           ),
                         ),
                       ],
@@ -4482,7 +5744,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     Container(
                       padding: const EdgeInsets.all(32),
                       child: const Center(
-                        child: Text("No members match filter query", style: TextStyle(color: Color(0xFF757575), fontSize: 13)),
+                        child: Text("No members match filter query",
+                            style: TextStyle(
+                                color: Color(0xFF757575), fontSize: 13)),
                       ),
                     )
                   else
@@ -4490,7 +5754,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       return Column(
                         children: [
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 10),
                             child: Row(
                               children: [
                                 // Member Initials/Avatar
@@ -4503,8 +5768,10 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                                         height: 32,
                                         decoration: BoxDecoration(
                                           color: const Color(0xFFF4F3F3),
-                                          borderRadius: BorderRadius.circular(6),
-                                          border: Border.all(color: const Color(0xFFBDC9C8)),
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                          border: Border.all(
+                                              color: const Color(0xFFBDC9C8)),
                                         ),
                                         child: Center(
                                           child: Text(
@@ -4520,10 +5787,22 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
-                                            Text(m["name"], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1C1B1B)), overflow: TextOverflow.ellipsis),
-                                            Text(m["role"], style: const TextStyle(fontSize: 10, color: Color(0xFF3E4949)), overflow: TextOverflow.ellipsis),
+                                            Text(m["name"],
+                                                style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                    color: Color(0xFF1C1B1B)),
+                                                overflow:
+                                                    TextOverflow.ellipsis),
+                                            Text(m["role"],
+                                                style: const TextStyle(
+                                                    fontSize: 10,
+                                                    color: Color(0xFF3E4949)),
+                                                overflow:
+                                                    TextOverflow.ellipsis),
                                           ],
                                         ),
                                       ),
@@ -4536,9 +5815,11 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                                   child: Align(
                                     alignment: Alignment.centerLeft,
                                     child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 4, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: (m["statusColor"] as Color).withOpacity(0.1),
+                                        color: (m["statusColor"] as Color)
+                                            .withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
@@ -4562,8 +5843,11 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                                       child: LinearProgressIndicator(
                                         value: m["progress"],
                                         minHeight: 6,
-                                        backgroundColor: const Color(0xFFF4F3F3),
-                                        valueColor: AlwaysStoppedAnimation<Color>(m["statusColor"]),
+                                        backgroundColor:
+                                            const Color(0xFFF4F3F3),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                m["statusColor"]),
                                       ),
                                     ),
                                   ),
@@ -4575,14 +5859,19 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
                                       IconButton(
-                                        icon: const Icon(Icons.mail_outline_rounded, size: 16, color: Color(0xFF006565)),
-                                        onPressed: () => _showActionAlert("Opened mail box for ${m['name']}"),
+                                        icon: const Icon(
+                                            Icons.mail_outline_rounded,
+                                            size: 16,
+                                            color: Color(0xFF006565)),
+                                        onPressed: () => _showActionAlert(
+                                            "Opened mail box for ${m['name']}"),
                                         padding: EdgeInsets.zero,
                                         constraints: const BoxConstraints(),
                                       ),
                                       const SizedBox(width: 6),
                                       GestureDetector(
-                                        onTap: () => _showActionAlert("Details page for ${m['name']}"),
+                                        onTap: () => _showActionAlert(
+                                            "Details page for ${m['name']}"),
                                         child: const Text(
                                           "VIEW",
                                           style: TextStyle(
@@ -4610,6 +5899,153 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       ],
     );
 
+    final activeComm = _myCommunities.firstWhere(
+      (c) =>
+          int.tryParse(c['community_id']?.toString() ?? '') ==
+          _activeCommunityId,
+      orElse: () => null,
+    );
+    final List<dynamic> activeInvites =
+        activeComm != null ? (activeComm['invites'] ?? []) : [];
+
+    final Widget communitySelector = _myCommunities.isEmpty
+        ? const SizedBox.shrink()
+        : Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFBDC9C8)),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<int>(
+                value: _myCommunities.any((c) =>
+                        int.tryParse(c['community_id']?.toString() ?? '') ==
+                        _activeCommunityId)
+                    ? _activeCommunityId
+                    : null,
+                items: _myCommunities
+                    .where((c) =>
+                        int.tryParse(c['community_id']?.toString() ?? '') !=
+                        null)
+                    .map<DropdownMenuItem<int>>((c) {
+                  final cId =
+                      int.tryParse(c['community_id']?.toString() ?? '')!;
+                  return DropdownMenuItem<int>(
+                    value: cId,
+                    child: Text(
+                      c['community_title']?.toString() ?? 'Community',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, color: primaryPurple),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      _activeCommunityId = val;
+                      final selected = _myCommunities.firstWhere((c) =>
+                          int.tryParse(c['community_id']?.toString() ?? '') ==
+                          val);
+                      _activeCommunityTitle =
+                          selected['community_title']?.toString() ??
+                              'Community';
+                    });
+                    _fetchCommunityStats(val);
+                    _fetchCommunityMembers(val);
+                    _fetchCommunityOrders();
+                  }
+                },
+              ),
+            ),
+          );
+
+    final Widget sharedInvitesSection = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Generated Invite Links",
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1A1C1C),
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (activeInvites.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Text("No invite links generated yet.",
+                style: TextStyle(color: textLight)),
+          )
+        else
+          ...activeInvites.map<Widget>((invite) {
+            if (invite is! Map) return const SizedBox.shrink();
+            final link = invite['invite_link']?.toString() ?? '';
+            final vendorName = invite['vendor_name']?.toString() ?? '';
+            final status = invite['status']?.toString() ?? 'Invited';
+            final remaining =
+                invite['remaining_human']?.toString() ?? 'Expired';
+
+            return Card(
+              color: Colors.white,
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: Color(0xFFBDC9C8)),
+              ),
+              elevation: 0,
+              child: ListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                title: Text(
+                  vendorName.isNotEmpty
+                      ? "Invited: $vendorName"
+                      : "Generic Link",
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 4),
+                    Text(link,
+                        style:
+                            const TextStyle(color: primaryPurple, fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Text("Status: $status",
+                            style: const TextStyle(
+                                fontSize: 11, fontWeight: FontWeight.w600)),
+                        const SizedBox(width: 12),
+                        Text("Expires: $remaining",
+                            style: const TextStyle(
+                                fontSize: 11, color: Colors.grey)),
+                      ],
+                    ),
+                  ],
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.copy_rounded, color: primaryPurple),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: link));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text("Invite link copied to clipboard!"),
+                          backgroundColor: primaryPurple),
+                    );
+                  },
+                ),
+              ),
+            );
+          }).toList(),
+      ],
+    );
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -4633,19 +6069,25 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
             ),
           ),
           const SizedBox(height: 24),
+          communitySelector,
+          const SizedBox(height: 12),
           // Statistics Slider
           SizedBox(
             height: 110,
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
-                _buildDossierTextCard("TOTAL MEMBERS", "12,482", "4% up", valColor: const Color(0xFF1C1B1B)),
+                _buildDossierTextCard("TOTAL MEMBERS", "12,482", "4% up",
+                    valColor: const Color(0xFF1C1B1B)),
                 const SizedBox(width: 12),
-                _buildDossierTextCard("NEW REQUESTS", "48", "URGENT", valColor: const Color(0xFFB45309)),
+                _buildDossierTextCard("NEW REQUESTS", "48", "URGENT",
+                    valColor: const Color(0xFFB45309)),
                 const SizedBox(width: 12),
-                _buildDossierTextCard("ACTIVE TODAY", "3,891", "12% up", valColor: const Color(0xFF008080)),
+                _buildDossierTextCard("ACTIVE TODAY", "3,891", "12% up",
+                    valColor: const Color(0xFF008080)),
                 const SizedBox(width: 12),
-                _buildDossierTextCard("MONTHLY GROWTH", "+842", "Growing", valColor: const Color(0xFF6750A4)),
+                _buildDossierTextCard("MONTHLY GROWTH", "+842", "Growing",
+                    valColor: const Color(0xFF6750A4)),
               ],
             ),
           ),
@@ -4661,7 +6103,13 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 const SizedBox(width: 24),
                 Expanded(
                   flex: 8,
-                  child: activeMembersSection,
+                  child: Column(
+                    children: [
+                      activeMembersSection,
+                      const SizedBox(height: 28),
+                      sharedInvitesSection,
+                    ],
+                  ),
                 ),
               ],
             )
@@ -4669,6 +6117,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
             pendingSection,
             const SizedBox(height: 28),
             activeMembersSection,
+            const SizedBox(height: 28),
+            sharedInvitesSection,
           ],
         ],
       ),
@@ -4687,10 +6137,13 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           elevation: 0,
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
-            leading: const Icon(Icons.account_balance_rounded, color: primaryPurple, size: 28),
-            title: Text(bank["vendor"], style: const TextStyle(fontWeight: FontWeight.bold)),
+            leading: const Icon(Icons.account_balance_rounded,
+                color: primaryPurple, size: 28),
+            title: Text(bank["vendor"],
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text("Bank: ${bank['bank']} | Acc: ${bank['account']}"),
-            trailing: Text("IFSC: ${bank['ifsc']}", style: const TextStyle(fontSize: 12, color: textLight)),
+            trailing: Text("IFSC: ${bank['ifsc']}",
+                style: const TextStyle(fontSize: 12, color: textLight)),
           ),
         );
       },
@@ -4716,14 +6169,24 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(plan["tier"], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: primaryPurple)),
-                    Text(plan["price"], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: textDark)),
+                    Text(plan["tier"],
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: primaryPurple)),
+                    Text(plan["price"],
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: textDark)),
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text("Billing Cycle: ${plan['duration']}", style: const TextStyle(color: textLight, fontSize: 13)),
+                Text("Billing Cycle: ${plan['duration']}",
+                    style: const TextStyle(color: textLight, fontSize: 13)),
                 const Divider(),
-                Text("Features: ${plan['features']}", style: const TextStyle(color: textDark, fontSize: 13)),
+                Text("Features: ${plan['features']}",
+                    style: const TextStyle(color: textDark, fontSize: 13)),
               ],
             ),
           ),
@@ -4743,10 +6206,13 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           const CircleAvatar(
             radius: 50,
             backgroundColor: bgDark,
-            child: Icon(Icons.admin_panel_settings_rounded, size: 60, color: Colors.white),
+            child: Icon(Icons.admin_panel_settings_rounded,
+                size: 60, color: Colors.white),
           ),
           const SizedBox(height: 16),
-          const Text("Luxe System Admin", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textDark)),
+          const Text("Luxe System Admin",
+              style: TextStyle(
+                  fontSize: 20, fontWeight: FontWeight.bold, color: textDark)),
           const Text("admin@luxe.com", style: TextStyle(color: textLight)),
           const SizedBox(height: 32),
           const Card(
@@ -4760,7 +6226,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 ),
                 Divider(height: 1),
                 ListTile(
-                  leading: Icon(Icons.notifications_active_outlined, color: primaryPurple),
+                  leading: Icon(Icons.notifications_active_outlined,
+                      color: primaryPurple),
                   title: Text("System Logs Alerting"),
                   subtitle: Text("Enabled via Slack & Email"),
                 ),
@@ -4783,24 +6250,28 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("List New Opportunity", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text("List New Opportunity",
+            style: TextStyle(fontWeight: FontWeight.bold)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: titleController,
-                decoration: const InputDecoration(labelText: "Opportunity Title"),
+                decoration:
+                    const InputDecoration(labelText: "Opportunity Title"),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: companyController,
-                decoration: const InputDecoration(labelText: "Company/Organization"),
+                decoration:
+                    const InputDecoration(labelText: "Company/Organization"),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: budgetController,
-                decoration: const InputDecoration(labelText: "Budget (e.g. ₹50k-80k)"),
+                decoration:
+                    const InputDecoration(labelText: "Budget (e.g. ₹50k-80k)"),
               ),
             ],
           ),
@@ -4817,23 +6288,30 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 final response = await Database().getData({
                   "action": "create_opportunity",
                   "title": titleController.text,
-                  "organization": companyController.text.isNotEmpty ? companyController.text : "Luxe Partner",
-                  "payout_amount": budgetController.text.isNotEmpty ? budgetController.text : "Flexible",
+                  "organization": companyController.text.isNotEmpty
+                      ? companyController.text
+                      : "Luxe Partner",
+                  "payout_amount": budgetController.text.isNotEmpty
+                      ? budgetController.text
+                      : "Flexible",
                 }, endpoint: "new_apis/marketplace_opportunity_api.php");
-                
+
                 if (response['success'] == true) {
                   _fetchOpportunities();
                   _fetchMyListings();
                   Navigator.pop(ctx);
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Opportunity listed successfully!")),
+                      const SnackBar(
+                          content: Text("Opportunity listed successfully!")),
                     );
                   }
                 } else {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Failed to post: ${response['message'] ?? 'Error'}")),
+                      SnackBar(
+                          content: Text(
+                              "Failed to post: ${response['message'] ?? 'Error'}")),
                     );
                   }
                 }
@@ -4848,7 +6326,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
 
   Widget _buildMarketplaceOpportunitiesView() {
     if (_isLoadingOpportunities) {
-      return const Center(child: CircularProgressIndicator(color: primaryPurple));
+      return const Center(
+          child: CircularProgressIndicator(color: primaryPurple));
     }
     if (_realOpportunities.isEmpty) {
       return const Center(
@@ -4868,16 +6347,17 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         final comp = item["compensation"] as Map<String, dynamic>?;
 
         final title = opp["title"] ?? "Untitled Opportunity";
-        final companyName = vendor != null ? (vendor["company_name"] ?? vendor["name"]) : (opp["organization"] ?? "Luxe Partner");
+        final companyName = vendor != null
+            ? (vendor["company_name"] ?? vendor["name"])
+            : (opp["organization"] ?? "Luxe Partner");
         final match = opp["label_name"] ?? "Premium";
-        final payoutAmount = comp != null ? (comp["payout_amount"] ?? "Flexible") : "Flexible";
+        final payoutAmount =
+            comp != null ? (comp["payout_amount"] ?? "Flexible") : "Flexible";
         final applicantsCount = item["total_applications"] ?? 0;
 
-        final tags = [
-          opp["type"],
-          opp["location"],
-          opp["opportunity_for"]
-        ].where((t) => t != null && t.toString().isNotEmpty).toList();
+        final tags = [opp["type"], opp["location"], opp["opportunity_for"]]
+            .where((t) => t != null && t.toString().isNotEmpty)
+            .toList();
 
         return Card(
           color: cardColor,
@@ -4901,7 +6381,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
               onTap: () {
-                Navigator.pushNamed(context, '/opportunity_detail', arguments: item);
+                Navigator.pushNamed(context, '/opportunity_detail',
+                    arguments: item);
               },
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -4916,7 +6397,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                             color: primaryPurple.withOpacity(0.08),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.business_center_rounded, color: primaryPurple, size: 24),
+                          child: const Icon(Icons.business_center_rounded,
+                              color: primaryPurple, size: 24),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -4945,7 +6427,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
                             color: primaryPurple.withOpacity(0.08),
                             borderRadius: BorderRadius.circular(20),
@@ -4966,22 +6449,26 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: tags.map((t) => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xfff0f7f7),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: primaryPurple.withOpacity(0.05)),
-                          ),
-                          child: Text(
-                            t.toString(),
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xff004d4d),
-                            ),
-                          ),
-                        )).toList(),
+                        children: tags
+                            .map((t) => Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xfff0f7f7),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                        color: primaryPurple.withOpacity(0.05)),
+                                  ),
+                                  child: Text(
+                                    t.toString(),
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xff004d4d),
+                                    ),
+                                  ),
+                                ))
+                            .toList(),
                       ),
                     const SizedBox(height: 16),
                     Divider(color: Colors.black.withOpacity(0.05)),
@@ -5020,7 +6507,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   // ignore: unused_element
   Widget _buildMyListingsView() {
     if (_isLoadingListings) {
-      return const Center(child: CircularProgressIndicator(color: primaryPurple));
+      return const Center(
+          child: CircularProgressIndicator(color: primaryPurple));
     }
     if (_myListings.isEmpty) {
       return const Center(
@@ -5046,27 +6534,33 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           color: cardColor,
           elevation: 0,
           margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: ListTile(
             contentPadding: const EdgeInsets.all(16),
             leading: const CircleAvatar(
               backgroundColor: bgLight,
               child: Icon(Icons.list_alt_rounded, color: primaryPurple),
             ),
-            title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(title,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
-                Text("Category: $catTitle • $appCount Applicants", style: const TextStyle(fontSize: 12)),
+                Text("Category: $catTitle • $appCount Applicants",
+                    style: const TextStyle(fontSize: 12)),
                 const SizedBox(height: 4),
-                Text(date, style: const TextStyle(fontSize: 12, color: textLight)),
+                Text(date,
+                    style: const TextStyle(fontSize: 12, color: textLight)),
               ],
             ),
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: isActive ? Colors.green.withAlpha(20) : Colors.grey.withAlpha(20),
+                color: isActive
+                    ? Colors.green.withAlpha(20)
+                    : Colors.grey.withAlpha(20),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -5086,7 +6580,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
 
   Widget _buildMySubmissionsView() {
     if (_isLoadingSubmissions) {
-      return const Center(child: CircularProgressIndicator(color: primaryPurple));
+      return const Center(
+          child: CircularProgressIndicator(color: primaryPurple));
     }
     if (_mySubmissions.isEmpty) {
       return const Center(
@@ -5102,41 +6597,51 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       itemBuilder: (context, index) {
         final item = _mySubmissions[index];
         final title = item["opportunity_title"] ?? "Opportunity";
-        final company = item["vendor_company"] ?? item["vendor_name"] ?? "Luxe Partner";
+        final company =
+            item["vendor_company"] ?? item["vendor_name"] ?? "Luxe Partner";
         final date = item["created_date"] ?? "Applied recently";
-        final statusText = (item["status"].toString() == "1") ? "Interviewing" : "Pending";
+        final statusText =
+            (item["status"].toString() == "1") ? "Interviewing" : "Pending";
         final isInterviewing = statusText == "Interviewing";
 
         return Card(
           color: cardColor,
           elevation: 0,
           margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: ListTile(
             contentPadding: const EdgeInsets.all(16),
             leading: const CircleAvatar(
               backgroundColor: bgLight,
-              child: Icon(Icons.assignment_turned_in_rounded, color: primaryPurple),
+              child: Icon(Icons.assignment_turned_in_rounded,
+                  color: primaryPurple),
             ),
-            title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(title,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(company, style: const TextStyle(fontSize: 13)),
                 const SizedBox(height: 4),
-                Text(date, style: const TextStyle(fontSize: 12, color: textLight)),
+                Text(date,
+                    style: const TextStyle(fontSize: 12, color: textLight)),
               ],
             ),
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: isInterviewing ? Colors.blue.withAlpha(20) : Colors.orange.withAlpha(20),
+                color: isInterviewing
+                    ? Colors.blue.withAlpha(20)
+                    : Colors.orange.withAlpha(20),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 statusText,
                 style: TextStyle(
-                  color: isInterviewing ? Colors.blue.shade700 : Colors.orange.shade800,
+                  color: isInterviewing
+                      ? Colors.blue.shade700
+                      : Colors.orange.shade800,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -5158,7 +6663,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     });
 
     final bool isDesktop = MediaQuery.of(context).size.width >= 768;
-    
+
     final Widget mainFeed = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -5181,7 +6686,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           Center(
             child: Card(
               margin: const EdgeInsets.symmetric(vertical: 20),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               color: Colors.white,
               child: const Padding(
                 padding: EdgeInsets.all(32.0),
@@ -5256,7 +6762,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 color: Colors.white.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.tune_rounded, color: Colors.white, size: 20),
+              child:
+                  const Icon(Icons.tune_rounded, color: Colors.white, size: 20),
             ),
             const SizedBox(width: 12),
             const Expanded(
@@ -5289,7 +6796,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 foregroundColor: const Color(0xFF006565),
                 elevation: 0,
                 minimumSize: const Size(0, 0),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -5345,7 +6853,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
               TextSpan(
                 style: const TextStyle(fontSize: 13, color: Color(0xFF3E4949)),
                 children: [
-                  const TextSpan(text: "Strategic community health is currently "),
+                  const TextSpan(
+                      text: "Strategic community health is currently "),
                   TextSpan(
                     text: "Optimal",
                     style: TextStyle(
@@ -5432,7 +6941,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
           children: [
-            const Icon(Icons.description_outlined, size: 16, color: Color(0xFF006565)),
+            const Icon(Icons.description_outlined,
+                size: 16, color: Color(0xFF006565)),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -5491,7 +7001,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 },
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF4F3F3),
                     borderRadius: BorderRadius.circular(8),
@@ -5509,7 +7020,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF006565),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 minimumSize: const Size(0, 0),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -5540,22 +7052,26 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
 
   Widget _buildDynamicPostCard(dynamic post) {
     final int postId = int.tryParse(post['id']?.toString() ?? '0') ?? 0;
-    final String authorName = post['author_name']?.toString() ?? 'Anonymous User';
+    final String authorName =
+        post['author_name']?.toString() ?? 'Anonymous User';
     final String authorAvatar = post['author_avatar']?.toString() ?? '';
     final String postText = post['label']?.toString() ?? '';
     final String postImage = post['image_url']?.toString() ?? '';
     final String? youtubeId = _extractYoutubeId(postText);
-    final String? twitterUrl = youtubeId == null ? _extractTwitterVideoUrl(postText) : null;
-    final String createdDate = post['created_date']?.toString()?.split(' ')?.first ?? 'Just now';
-    final int likesCount = int.tryParse(post['likes_count']?.toString() ?? '0') ?? 0;
+    final String? twitterUrl =
+        youtubeId == null ? _extractTwitterVideoUrl(postText) : null;
+    final String createdDate =
+        post['created_date']?.toString()?.split(' ')?.first ?? 'Just now';
+    final int likesCount =
+        int.tryParse(post['likes_count']?.toString() ?? '0') ?? 0;
     final bool isLiked = int.tryParse(post['is_liked']?.toString() ?? '0') == 1;
     final List<dynamic> comments = post['comments_list'] ?? [];
     final bool commentsExpanded = _expandedPostComments.contains(postId);
-    
+
     if (!_commentControllers.containsKey(postId)) {
       _commentControllers[postId] = TextEditingController();
     }
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 24),
       elevation: 1,
@@ -5574,11 +7090,18 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
               children: [
                 CircleAvatar(
                   backgroundColor: bgLight,
-                  backgroundImage: authorAvatar.isNotEmpty ? NetworkImage(authorAvatar) : null,
+                  backgroundImage: authorAvatar.isNotEmpty
+                      ? NetworkImage(authorAvatar)
+                      : null,
                   radius: 24,
                   child: authorAvatar.isEmpty
-                      ? Text(authorName.isNotEmpty ? authorName[0].toUpperCase() : "?", 
-                          style: const TextStyle(color: primaryPurple, fontWeight: FontWeight.bold))
+                      ? Text(
+                          authorName.isNotEmpty
+                              ? authorName[0].toUpperCase()
+                              : "?",
+                          style: const TextStyle(
+                              color: primaryPurple,
+                              fontWeight: FontWeight.bold))
                       : null,
                 ),
                 const SizedBox(width: 12),
@@ -5604,6 +7127,28 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     ),
                   ],
                 ),
+                const Spacer(),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: Color(0xFF3E4949)),
+                  onSelected: (value) {
+                    _updatePostStatus(postId, value);
+                  },
+                  itemBuilder: (BuildContext context) =>
+                      <PopupMenuEntry<String>>[
+                    const PopupMenuItem<String>(
+                      value: 'active',
+                      child: Text('Approve / Make Active'),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'hidden',
+                      child: Text('Hide Post'),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'pending',
+                      child: Text('Mark Pending'),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -5619,10 +7164,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 ),
               ),
             ),
-          if (youtubeId != null)
-            _buildYoutubePreview(youtubeId),
-          if (twitterUrl != null)
-            _buildTwitterPreview(twitterUrl),
+          if (youtubeId != null) _buildYoutubePreview(youtubeId),
+          if (twitterUrl != null) _buildTwitterPreview(twitterUrl),
           if (postImage.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -5650,9 +7193,13 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       child: Row(
                         children: [
                           Icon(
-                            isLiked ? Icons.thumb_up_rounded : Icons.thumb_up_outlined,
+                            isLiked
+                                ? Icons.thumb_up_rounded
+                                : Icons.thumb_up_outlined,
                             size: 18,
-                            color: isLiked ? const Color(0xFF006565) : const Color(0xFF3E4949),
+                            color: isLiked
+                                ? const Color(0xFF006565)
+                                : const Color(0xFF3E4949),
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -5660,7 +7207,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: isLiked ? const Color(0xFF006565) : const Color(0xFF3E4949),
+                              color: isLiked
+                                  ? const Color(0xFF006565)
+                                  : const Color(0xFF3E4949),
                             ),
                           ),
                         ],
@@ -5742,9 +7291,12 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       itemCount: comments.length,
                       itemBuilder: (context, index) {
                         final comment = comments[index];
-                        final String cUser = comment['user_name']?.toString() ?? 'Anonymous';
-                        final String cAvatar = comment['user_avatar']?.toString() ?? '';
-                        final String cText = comment['message']?.toString() ?? '';
+                        final String cUser =
+                            comment['user_name']?.toString() ?? 'Anonymous';
+                        final String cAvatar =
+                            comment['user_avatar']?.toString() ?? '';
+                        final String cText =
+                            comment['message']?.toString() ?? '';
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: Row(
@@ -5752,11 +7304,19 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                             children: [
                               CircleAvatar(
                                 backgroundColor: bgLight,
-                                backgroundImage: cAvatar.isNotEmpty ? NetworkImage(cAvatar) : null,
+                                backgroundImage: cAvatar.isNotEmpty
+                                    ? NetworkImage(cAvatar)
+                                    : null,
                                 radius: 16,
                                 child: cAvatar.isEmpty
-                                    ? Text(cUser.isNotEmpty ? cUser[0].toUpperCase() : "?", 
-                                        style: const TextStyle(color: primaryPurple, fontSize: 10, fontWeight: FontWeight.bold))
+                                    ? Text(
+                                        cUser.isNotEmpty
+                                            ? cUser[0].toUpperCase()
+                                            : "?",
+                                        style: const TextStyle(
+                                            color: primaryPurple,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold))
                                     : null,
                               ),
                               const SizedBox(width: 8),
@@ -5768,16 +7328,21 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         cUser,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12),
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
                                         cText,
-                                        style: const TextStyle(fontSize: 13, color: Color(0xFF1C1B1B)),
+                                        style: const TextStyle(
+                                            fontSize: 13,
+                                            color: Color(0xFF1C1B1B)),
                                       ),
                                     ],
                                   ),
@@ -5798,16 +7363,19 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                           decoration: InputDecoration(
                             hintText: "Write a comment...",
                             hintStyle: const TextStyle(fontSize: 12),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
                             filled: true,
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Color(0xFFBDC9C8)),
+                              borderSide:
+                                  const BorderSide(color: Color(0xFFBDC9C8)),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Color(0xFFBDC9C8)),
+                              borderSide:
+                                  const BorderSide(color: Color(0xFFBDC9C8)),
                             ),
                           ),
                         ),
@@ -5817,7 +7385,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF006565),
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
                           minimumSize: const Size(0, 0),
                         ),
                         onPressed: () {
@@ -5825,7 +7394,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                           _addComment(postId, msg);
                           _commentControllers[postId]!.clear();
                         },
-                        child: const Text("Post", style: TextStyle(fontSize: 12)),
+                        child:
+                            const Text("Post", style: TextStyle(fontSize: 12)),
                       ),
                     ],
                   ),
@@ -5885,7 +7455,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                           ),
                         ),
                         Text(
-                          "Director of Community Operations • 2h ago".toUpperCase(),
+                          "Director of Community Operations • 2h ago"
+                              .toUpperCase(),
                           style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
@@ -5897,7 +7468,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFF008080).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -5953,9 +7525,13 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       child: Row(
                         children: [
                           Icon(
-                            _sarahMitchellLiked ? Icons.thumb_up_rounded : Icons.thumb_up_outlined,
+                            _sarahMitchellLiked
+                                ? Icons.thumb_up_rounded
+                                : Icons.thumb_up_outlined,
                             size: 18,
-                            color: _sarahMitchellLiked ? const Color(0xFF006565) : const Color(0xFF3E4949),
+                            color: _sarahMitchellLiked
+                                ? const Color(0xFF006565)
+                                : const Color(0xFF3E4949),
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -5963,7 +7539,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: _sarahMitchellLiked ? const Color(0xFF006565) : const Color(0xFF3E4949),
+                              color: _sarahMitchellLiked
+                                  ? const Color(0xFF006565)
+                                  : const Color(0xFF3E4949),
                             ),
                           ),
                         ],
@@ -6009,7 +7587,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: const Icon(Icons.share_outlined, size: 18, color: Color(0xFF3E4949)),
+                      icon: const Icon(Icons.share_outlined,
+                          size: 18, color: Color(0xFF3E4949)),
                       onPressed: () {},
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -6048,7 +7627,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                                 color: const Color(0xFFE8E8E8),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Icon(Icons.person, size: 16, color: Color(0xFF6E7979)),
+                              child: const Icon(Icons.person,
+                                  size: 16, color: Color(0xFF6E7979)),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -6062,22 +7642,31 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
-                                          index == 0 ? "Marcus Thorne" : "Feedback Contributor",
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                          index == 0
+                                              ? "Marcus Thorne"
+                                              : "Feedback Contributor",
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12),
                                         ),
                                         const Text(
                                           "1h ago",
-                                          style: TextStyle(color: Color(0xFF757575), fontSize: 10),
+                                          style: TextStyle(
+                                              color: Color(0xFF757575),
+                                              fontSize: 10),
                                         ),
                                       ],
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       _sarahComments[index],
-                                      style: const TextStyle(fontSize: 13, color: Color(0xFF1C1B1B)),
+                                      style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Color(0xFF1C1B1B)),
                                     ),
                                   ],
                                 ),
@@ -6095,21 +7684,26 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                           controller: _commentController,
                           decoration: InputDecoration(
                             hintText: "Add a professional comment...",
-                            hintStyle: const TextStyle(color: Color(0xFF757575), fontSize: 13),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            hintStyle: const TextStyle(
+                                color: Color(0xFF757575), fontSize: 13),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
                             filled: true,
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Color(0xFFBDC9C8)),
+                              borderSide:
+                                  const BorderSide(color: Color(0xFFBDC9C8)),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Color(0xFFBDC9C8)),
+                              borderSide:
+                                  const BorderSide(color: Color(0xFFBDC9C8)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Color(0xFF006565), width: 1.5),
+                              borderSide: const BorderSide(
+                                  color: Color(0xFF006565), width: 1.5),
                             ),
                           ),
                         ),
@@ -6119,7 +7713,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF006565),
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
                           minimumSize: const Size(0, 0),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -6129,12 +7724,15 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                         onPressed: () {
                           if (_commentController.text.trim().isNotEmpty) {
                             setState(() {
-                              _sarahComments.add(_commentController.text.trim());
+                              _sarahComments
+                                  .add(_commentController.text.trim());
                               _commentController.clear();
                             });
                           }
                         },
-                        child: const Text("Post", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        child: const Text("Post",
+                            style: TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
@@ -6174,14 +7772,18 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: const Color(0xFFBDC9C8).withOpacity(0.4),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: const Text(
                       "Sponsored",
-                      style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)),
+                      style: TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF3E4949)),
                     ),
                   ),
                 ],
@@ -6204,13 +7806,15 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 _buildProductItemCard(
                   name: "Focus Pro ANC",
                   price: r"₹299.00",
-                  image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCdukG5Bs5MYrKezSVgml7mh082CzrDdiWUG-blbFr_Gen8Cv8vJoLMA3Y6nukYWyRcyYXb9NzEjwXtN1CzRM7TLk2tO4DkAhJNmAQPqNnzCN9CNLVEjbo_fmEAMR37_LtF0aTndX9xRuIA5PTI6XjAV5u36NzPAGo4wWHHoZPE_RrFxMeysFqgZmucUAVmuBxzymBpxMxtRRUpIB3yjYhSUfgrz7PY3Jp8166tWsIFuWuqQPKAm37i",
+                  image:
+                      "https://lh3.googleusercontent.com/aida-public/AB6AXuCdukG5Bs5MYrKezSVgml7mh082CzrDdiWUG-blbFr_Gen8Cv8vJoLMA3Y6nukYWyRcyYXb9NzEjwXtN1CzRM7TLk2tO4DkAhJNmAQPqNnzCN9CNLVEjbo_fmEAMR37_LtF0aTndX9xRuIA5PTI6XjAV5u36NzPAGo4wWHHoZPE_RrFxMeysFqgZmucUAVmuBxzymBpxMxtRRUpIB3yjYhSUfgrz7PY3Jp8166tWsIFuWuqQPKAm37i",
                 ),
                 const SizedBox(width: 12),
                 _buildProductItemCard(
                   name: "Precision MX Mouse",
                   price: r"₹89.00",
-                  image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBOgKANhjHiOPlvSv4sED6CvcyV5KI3tc3FBKGGFrBUWqgq-PQIIjY5cmd8RPSlS2F1QpETUFl_3UqMU8_jrxNC2GmKLUqpSqakpX12wWDvdMVma40HxkGE5fx77c2QPFBEiQ3Fz0BOhPp9UguJUftrIcE-eUgWwRHlEmJ4d6d-BvHy9qNpwA9SFRfZ_OVDb7AInfLCZdel-VsE00_SuKdGeZ1KFkxFya-LE9suk23SIsUN6FLg8qDq",
+                  image:
+                      "https://lh3.googleusercontent.com/aida-public/AB6AXuBOgKANhjHiOPlvSv4sED6CvcyV5KI3tc3FBKGGFrBUWqgq-PQIIjY5cmd8RPSlS2F1QpETUFl_3UqMU8_jrxNC2GmKLUqpSqakpX12wWDvdMVma40HxkGE5fx77c2QPFBEiQ3Fz0BOhPp9UguJUftrIcE-eUgWwRHlEmJ4d6d-BvHy9qNpwA9SFRfZ_OVDb7AInfLCZdel-VsE00_SuKdGeZ1KFkxFya-LE9suk23SIsUN6FLg8qDq",
                 ),
               ],
             ),
@@ -6236,7 +7840,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     );
   }
 
-  Widget _buildProductItemCard({required String name, required String price, required String image}) {
+  Widget _buildProductItemCard(
+      {required String name, required String price, required String image}) {
     return Container(
       width: 180,
       decoration: BoxDecoration(
@@ -6263,12 +7868,18 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           const SizedBox(height: 8),
           Text(
             name,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1C1B1B)),
+            style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: Color(0xFF1C1B1B)),
           ),
           const SizedBox(height: 4),
           Text(
             price,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF006565)),
+            style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: Color(0xFF006565)),
           ),
           const Spacer(),
           SizedBox(
@@ -6284,7 +7895,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 ),
               ),
               onPressed: () {},
-              child: const Text("View Product", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+              child: const Text("View Product",
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -6351,7 +7963,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFF6750A4).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -6415,9 +8028,13 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       child: Row(
                         children: [
                           Icon(
-                            _davidChenLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                            _davidChenLiked
+                                ? Icons.favorite_rounded
+                                : Icons.favorite_border_rounded,
                             size: 18,
-                            color: _davidChenLiked ? Colors.red : const Color(0xFF3E4949),
+                            color: _davidChenLiked
+                                ? Colors.red
+                                : const Color(0xFF3E4949),
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -6425,7 +8042,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: _davidChenLiked ? Colors.red : const Color(0xFF3E4949),
+                              color: _davidChenLiked
+                                  ? Colors.red
+                                  : const Color(0xFF3E4949),
                             ),
                           ),
                         ],
@@ -6434,11 +8053,15 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     const SizedBox(width: 16),
                     Row(
                       children: const [
-                        Icon(Icons.comment_outlined, size: 18, color: Color(0xFF3E4949)),
+                        Icon(Icons.comment_outlined,
+                            size: 18, color: Color(0xFF3E4949)),
                         SizedBox(width: 4),
                         Text(
                           "32",
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF3E4949)),
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF3E4949)),
                         ),
                       ],
                     ),
@@ -6456,7 +8079,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: const Icon(Icons.share_outlined, size: 18, color: Color(0xFF3E4949)),
+                      icon: const Icon(Icons.share_outlined,
+                          size: 18, color: Color(0xFF3E4949)),
                       onPressed: () {},
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -6497,7 +8121,10 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   alignment: Alignment.center,
                   child: const Text(
                     "TM",
-                    style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF008080), fontSize: 16),
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF008080),
+                        fontSize: 16),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -6557,23 +8184,31 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   color: const Color(0xFF006565).withOpacity(0.9),
                   shape: BoxShape.circle,
                   boxShadow: const [
-                    BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4)),
+                    BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 10,
+                        offset: Offset(0, 4)),
                   ],
                 ),
-                child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 40),
+                child: const Icon(Icons.play_arrow_rounded,
+                    color: Colors.white, size: 40),
               ),
               Positioned(
                 bottom: 12,
                 right: 12,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.6),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Text(
                     "12:45",
-                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -6592,11 +8227,15 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
               children: [
                 Row(
                   children: const [
-                    Icon(Icons.analytics_outlined, size: 18, color: Color(0xFF3E4949)),
+                    Icon(Icons.analytics_outlined,
+                        size: 18, color: Color(0xFF3E4949)),
                     SizedBox(width: 4),
                     Text(
                       "98",
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF3E4949)),
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF3E4949)),
                     ),
                   ],
                 ),
@@ -6612,7 +8251,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: const Icon(Icons.share_outlined, size: 18, color: Color(0xFF3E4949)),
+                      icon: const Icon(Icons.share_outlined,
+                          size: 18, color: Color(0xFF3E4949)),
                       onPressed: () {},
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -6654,8 +8294,13 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 onPressed: () {},
                 child: Row(
                   children: const [
-                    Text("View All", style: TextStyle(color: Color(0xFF006565), fontSize: 11, fontWeight: FontWeight.bold)),
-                    Icon(Icons.chevron_right, size: 14, color: Color(0xFF006565)),
+                    Text("View All",
+                        style: TextStyle(
+                            color: Color(0xFF006565),
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold)),
+                    Icon(Icons.chevron_right,
+                        size: 14, color: Color(0xFF006565)),
                   ],
                 ),
               ),
@@ -6671,7 +8316,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   type: "Product Shop",
                   title: "Executive Kit 2.0",
                   action: "View",
-                  image: "https://lh3.googleusercontent.com/aida-public/AB6AXuB2B-fAjGeeGWH0mRI0k7nmwVdw40r-jVPY7yT5xpX6OmJXpZpsPcCweSgoFKozzYa3OM94_6KmiZh2_Z6gJcIqk3EBThKf5XAzf7y9BCgCfF3aM9m9u0Bg6eH0CuFzXK-iFkGdBf3ze7a6cbwaigpgSY0ilFn-5Xra_2tHt_8A3w39GYV1S5USV2UWiW3j7uR-IArW0H1K-y2PJm3QVQY0ds1c5gwMXvsJ0FvMtP8RBAsD9HfRu21G",
+                  image:
+                      "https://lh3.googleusercontent.com/aida-public/AB6AXuB2B-fAjGeeGWH0mRI0k7nmwVdw40r-jVPY7yT5xpX6OmJXpZpsPcCweSgoFKozzYa3OM94_6KmiZh2_Z6gJcIqk3EBThKf5XAzf7y9BCgCfF3aM9m9u0Bg6eH0CuFzXK-iFkGdBf3ze7a6cbwaigpgSY0ilFn-5Xra_2tHt_8A3w39GYV1S5USV2UWiW3j7uR-IArW0H1K-y2PJm3QVQY0ds1c5gwMXvsJ0FvMtP8RBAsD9HfRu21G",
                 ),
                 const SizedBox(width: 12),
                 _buildDiscoverJobCard(),
@@ -6682,7 +8328,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   type: "Training",
                   title: "Data Ethics 101",
                   action: "Start",
-                  image: "https://lh3.googleusercontent.com/aida-public/AB6AXuABEQMxUVpkCYVMhdOe0VnC8R47eoH8ZAR8jTF41HjkqfDtBtspsQLld-ZP95760gSUL4sQG7iliF3I3MRaqY6EBCKUSG7p8kcf4Av8Geec26VzMijTr7vXSuHX3p9DTGTi7JmxsjegUw1s9doRV2eRjbmg0dPPUTq0YTRwbk9fDLRFAQu20H9R3HBsoPwFR_huxdT0g59AO0VelF7wG7jpbsH42GdcHA_pgafJd7TOwck9j-UMdQqI",
+                  image:
+                      "https://lh3.googleusercontent.com/aida-public/AB6AXuABEQMxUVpkCYVMhdOe0VnC8R47eoH8ZAR8jTF41HjkqfDtBtspsQLld-ZP95760gSUL4sQG7iliF3I3MRaqY6EBCKUSG7p8kcf4Av8Geec26VzMijTr7vXSuHX3p9DTGTi7JmxsjegUw1s9doRV2eRjbmg0dPPUTq0YTRwbk9fDLRFAQu20H9R3HBsoPwFR_huxdT0g59AO0VelF7wG7jpbsH42GdcHA_pgafJd7TOwck9j-UMdQqI",
                 ),
                 const SizedBox(width: 12),
                 _buildDiscoverCharityCard(),
@@ -6694,7 +8341,11 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     );
   }
 
-  Widget _buildDiscoverCard({required String type, required String title, required String action, required String image}) {
+  Widget _buildDiscoverCard(
+      {required String type,
+      required String title,
+      required String action,
+      required String image}) {
     return Container(
       width: 160,
       decoration: BoxDecoration(
@@ -6721,14 +8372,20 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           const SizedBox(height: 6),
           Text(
             type.toUpperCase(),
-            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFF006565)),
+            style: const TextStyle(
+                fontSize: 8,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF006565)),
           ),
           const SizedBox(height: 2),
           Text(
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF1C1B1B)),
+            style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+                color: Color(0xFF1C1B1B)),
           ),
           const Spacer(),
           SizedBox(
@@ -6744,7 +8401,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 ),
               ),
               onPressed: () {},
-              child: Text(action, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+              child: Text(action,
+                  style: const TextStyle(
+                      fontSize: 10, fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -6783,14 +8442,18 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                           color: const Color(0xFF6750A4).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Icon(Icons.work_outline, size: 14, color: Color(0xFF6750A4)),
+                        child: const Icon(Icons.work_outline,
+                            size: 14, color: Color(0xFF6750A4)),
                       ),
                       const SizedBox(width: 6),
                       const Expanded(
                         child: Text(
                           "Senior Analyst",
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF1C1B1B)),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                              color: Color(0xFF1C1B1B)),
                         ),
                       ),
                     ],
@@ -6798,7 +8461,10 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   const SizedBox(height: 6),
                   const Text(
                     "Regional HQ",
-                    style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)),
+                    style: TextStyle(
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF3E4949)),
                   ),
                   const SizedBox(height: 4),
                   const Expanded(
@@ -6821,7 +8487,11 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                         ),
                       ),
                       onPressed: () {},
-                      child: const Text("Apply", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF006565))),
+                      child: const Text("Apply",
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF006565))),
                     ),
                   ),
                 ],
@@ -6864,8 +8534,16 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: const [
-                        Text("14", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFFB45309))),
-                        Text("NOV", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Color(0xFFB45309))),
+                        Text("14",
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: Color(0xFFB45309))),
+                        Text("NOV",
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10,
+                                color: Color(0xFFB45309))),
                       ],
                     ),
                   ),
@@ -6874,7 +8552,10 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     "Annual Summit",
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF1C1B1B)),
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                        color: Color(0xFF1C1B1B)),
                   ),
                   const SizedBox(height: 2),
                   const Expanded(
@@ -6899,7 +8580,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                         ),
                       ),
                       onPressed: () {},
-                      child: const Text("Register", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                      child: const Text("Register",
+                          style: TextStyle(
+                              fontSize: 10, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -6925,12 +8608,16 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         children: [
           const Align(
             alignment: Alignment.center,
-            child: Icon(Icons.handshake_outlined, size: 24, color: Color(0xFF008080)),
+            child: Icon(Icons.handshake_outlined,
+                size: 24, color: Color(0xFF008080)),
           ),
           const SizedBox(height: 4),
           const Text(
             "Tech for All",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF1C1B1B)),
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+                color: Color(0xFF1C1B1B)),
           ),
           const SizedBox(height: 2),
           const Text(
@@ -6962,7 +8649,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 ),
               ),
               onPressed: () {},
-              child: const Text("Donate", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+              child: const Text("Donate",
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -7088,7 +8776,10 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                                 alignment: Alignment.center,
                                 child: const Text(
                                   "+5 More",
-                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16),
                                 ),
                               ),
                             ],
@@ -7114,11 +8805,15 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
               children: [
                 Row(
                   children: const [
-                    Icon(Icons.star_outline_rounded, size: 18, color: Color(0xFF3E4949)),
+                    Icon(Icons.star_outline_rounded,
+                        size: 18, color: Color(0xFF3E4949)),
                     SizedBox(width: 4),
                     Text(
                       "56",
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF3E4949)),
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF3E4949)),
                     ),
                   ],
                 ),
@@ -7134,7 +8829,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: const Icon(Icons.share_outlined, size: 18, color: Color(0xFF3E4949)),
+                      icon: const Icon(Icons.share_outlined,
+                          size: 18, color: Color(0xFF3E4949)),
                       onPressed: () {},
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -7148,16 +8844,15 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       ),
     );
   }
-
 }
-
 
 // Local Standalone Notifications Mock Screen
 class LocalNotificationsScreen extends StatefulWidget {
   const LocalNotificationsScreen({super.key});
 
   @override
-  State<LocalNotificationsScreen> createState() => _LocalNotificationsScreenState();
+  State<LocalNotificationsScreen> createState() =>
+      _LocalNotificationsScreenState();
 }
 
 class _NotificationItem {
@@ -7191,76 +8886,147 @@ class _NotificationItem {
 class _LocalNotificationsScreenState extends State<LocalNotificationsScreen> {
   String _selectedFilter = 'All';
 
-  final List<String> _filters = ['All', 'Orders', 'Payments', 'System', 'Support'];
+  final List<String> _filters = [
+    'All',
+    'Orders',
+    'Payments',
+    'System',
+    'Support'
+  ];
 
-  late List<_NotificationItem> _notifications;
+  late List<_NotificationItem> _notifications = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _notifications = [
-      _NotificationItem(
-        id: '1',
-        title: 'New Order Received',
-        subtitle: 'Global Fintech Partners has ordered the Q4 Growth Accelerator dossier package.',
-        category: 'Orders',
-        time: '2m ago',
-        icon: Icons.shopping_cart_rounded,
-        iconColor: const Color(0xFF006565),
-        iconBgColor: const Color(0xFF006565).withOpacity(0.1),
-        isUnread: true,
-        dateGroup: 'Today',
-      ),
-      _NotificationItem(
-        id: '2',
-        title: 'Membership Approved',
-        subtitle: 'The strategic partnership application for Elite Venture Group has been verified.',
-        category: 'Support',
-        time: '1h ago',
-        icon: Icons.person_add_rounded,
-        iconColor: const Color(0xFF6750A4),
-        iconBgColor: const Color(0xFF6750A4).withOpacity(0.1),
-        isUnread: true,
-        dateGroup: 'Today',
-      ),
-      _NotificationItem(
-        id: '3',
-        title: 'Withdrawal Successful',
-        subtitle: 'Funds (\$12,450.00) have been successfully transferred to your verified corporate account.',
-        category: 'Payments',
-        time: 'Oct 24, 14:30',
-        icon: Icons.payments_rounded,
-        iconColor: const Color(0xFFB45309),
-        iconBgColor: const Color(0xFFB45309).withOpacity(0.1),
-        isUnread: false,
-        dateGroup: 'Yesterday',
-        statusLabel: 'Completed',
-      ),
-      _NotificationItem(
-        id: '4',
-        title: 'System Maintenance',
-        subtitle: 'Scheduled optimization complete. All community management modules are at 100% efficiency.',
-        category: 'System',
-        time: 'Oct 24, 08:15',
-        icon: Icons.settings_rounded,
-        iconColor: const Color(0xFF657675),
-        iconBgColor: const Color(0xFF657675).withOpacity(0.1),
-        isUnread: false,
-        dateGroup: 'Yesterday',
-      ),
-      _NotificationItem(
-        id: '5',
-        title: 'Support Ticket Closed',
-        subtitle: 'Ticket #8821 regarding data export latency has been resolved by our strategic tech team.',
-        category: 'Support',
-        time: 'Oct 22, 11:05',
-        icon: Icons.support_agent_rounded,
-        iconColor: const Color(0xFF006565),
-        iconBgColor: const Color(0xFF006565).withOpacity(0.1),
-        isUnread: false,
-        dateGroup: 'Earlier',
-      ),
-    ];
+    _fetchLiveNotifications();
+  }
+
+  Future<void> _fetchLiveNotifications() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      final response = await Database().getData({
+        'action': 'get_notifications',
+      }, endpoint: 'new_apis/notification_api 1.php');
+      if (response != null && response['success'] == true) {
+        final data = response['data'] ?? {};
+        final List<dynamic> list = data['notifications'] ?? [];
+        
+        final List<_NotificationItem> parsed = [];
+        for (var n in list) {
+          if (n is! Map) continue;
+          final String id = n['notification_id']?.toString() ?? '';
+          final String type = n['notification_type']?.toString() ?? '';
+          final String text = n['notification_text']?.toString() ?? '';
+          final String sender = n['sender_name']?.toString() ?? 'System';
+          final int status = int.tryParse(n['status']?.toString() ?? '0') ?? 0;
+          final String dateStr = n['created_date']?.toString() ?? '';
+          
+          // Map category
+          String category = 'System';
+          if (type == 'order' || type == 'order_status') {
+            category = 'Orders';
+          } else if (type == 'promotion_purchase' || type == 'promotion_package') {
+            category = 'Payments';
+          } else if (type == 'comment' || type == 'like' || type == 'share' || type == 'follow' || type == 'opportunity' || type == 'opportunity_apply') {
+            category = 'Support';
+          }
+          
+          // Map icon
+          IconData icon = Icons.notifications_rounded;
+          Color color = const Color(0xFF006565);
+          if (type == 'comment') {
+            icon = Icons.comment_rounded;
+            color = const Color(0xFF0284C7);
+          } else if (type == 'like') {
+            icon = Icons.favorite_rounded;
+            color = const Color(0xFFE11D48);
+          } else if (type == 'share') {
+            icon = Icons.share_rounded;
+            color = const Color(0xFF16A34A);
+          } else if (type == 'follow') {
+            icon = Icons.person_add_rounded;
+            color = const Color(0xFF4F46E5);
+          } else if (type == 'promotion_package') {
+            icon = Icons.card_membership_rounded;
+            color = const Color(0xFF9333EA);
+          } else if (type == 'promotion_purchase') {
+            icon = Icons.payment_rounded;
+            color = const Color(0xFFEA580C);
+          } else if (type == 'opportunity' || type == 'opportunity_apply') {
+            icon = Icons.business_center_rounded;
+            color = const Color(0xFFD97706);
+          } else if (type == 'order' || type == 'order_status') {
+            icon = Icons.shopping_bag_rounded;
+            color = const Color(0xFF0891B2);
+          }
+          
+          // Map dateGroup
+          String dateGroup = 'Earlier';
+          try {
+            final date = DateTime.parse(dateStr);
+            final now = DateTime.now();
+            final today = DateTime(now.year, now.month, now.day);
+            final yesterday = today.subtract(const Duration(days: 1));
+            final compareDate = DateTime(date.year, date.month, date.day);
+            if (compareDate == today) {
+              dateGroup = 'Today';
+            } else if (compareDate == yesterday) {
+              dateGroup = 'Yesterday';
+            }
+          } catch (_) {}
+          
+          // Time ago human readable
+          String timeHuman = '';
+          try {
+            final date = DateTime.parse(dateStr);
+            final now = DateTime.now();
+            final diff = now.difference(date).inSeconds;
+            if (diff < 60) {
+              timeHuman = "${diff}s ago";
+            } else if (diff < 3600) {
+              timeHuman = "${diff ~/ 60}m ago";
+            } else if (diff < 86400) {
+              timeHuman = "${diff ~/ 3600}h ago";
+            } else {
+              timeHuman = "${diff ~/ 86400}d ago";
+            }
+          } catch (_) {
+            timeHuman = 'recent';
+          }
+          
+          parsed.add(_NotificationItem(
+            id: id,
+            title: sender,
+            subtitle: text,
+            category: category,
+            time: timeHuman,
+            icon: icon,
+            iconColor: color,
+            iconBgColor: color.withOpacity(0.1),
+            isUnread: status == 0,
+            dateGroup: dateGroup,
+          ));
+        }
+        if (mounted) {
+          setState(() {
+            _notifications = parsed;
+          });
+        }
+      }
+    } catch (e) {
+      print("Error fetching live notifications: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _markAsRead(String id) {
@@ -7268,7 +9034,7 @@ class _LocalNotificationsScreenState extends State<LocalNotificationsScreen> {
       final index = _notifications.indexWhere((n) => n.id == id);
       if (index != -1 && _notifications[index].isUnread) {
         _notifications[index].isUnread = false;
-        
+
         // Show Toast
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -7278,12 +9044,14 @@ class _LocalNotificationsScreenState extends State<LocalNotificationsScreen> {
               children: const [
                 Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
                 SizedBox(width: 8),
-                Text("Marked as read", style: TextStyle(fontWeight: FontWeight.w600)),
+                Text("Marked as read",
+                    style: TextStyle(fontWeight: FontWeight.w600)),
               ],
             ),
             behavior: SnackBarBehavior.floating,
             backgroundColor: const Color(0xFF006565),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
             duration: const Duration(seconds: 2),
             margin: const EdgeInsets.only(bottom: 24, left: 60, right: 60),
           ),
@@ -7306,7 +9074,8 @@ class _LocalNotificationsScreenState extends State<LocalNotificationsScreen> {
       groups.putIfAbsent(item.dateGroup, () => []).add(item);
     }
 
-    final sortedGroups = ['Today', 'Yesterday', 'Earlier'].where((g) => groups.containsKey(g));
+    final sortedGroups =
+        ['Today', 'Yesterday', 'Earlier'].where((g) => groups.containsKey(g));
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
@@ -7324,7 +9093,8 @@ class _LocalNotificationsScreenState extends State<LocalNotificationsScreen> {
               child: Image.network(
                 "https://lh3.googleusercontent.com/aida-public/AB6AXuCvVD94n48_rKSlmLsyFDJAz292MXPm_TKHAZ9mbL7nd0WjKqPIbj8RkE7XkXGRyBzLNTdHDAJ8uCkkC-XPQ_5Xx0ojSo0UVDn6XDz34s1hjlXuS7ePS8u-dCaPRvtSPinuj109IZORatQrDt6gaUeN4oW-9Xk_-cVL6zL8H6cgQgFUxcwREywoIoXcJVp5c75nNTqb9-l8FWVuTuistoXEcqwtF6a9gR7l6NsG3kULzKTUJFKuiHxu",
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, color: Colors.grey),
+                errorBuilder: (context, error, stackTrace) =>
+                    const Icon(Icons.person, color: Colors.grey),
               ),
             ),
           ),
@@ -7366,7 +9136,9 @@ class _LocalNotificationsScreenState extends State<LocalNotificationsScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: isSelected ? Colors.white : const Color(0xFF3E4949),
+                            color: isSelected
+                                ? Colors.white
+                                : const Color(0xFF3E4949),
                           ),
                         ),
                         selected: isSelected,
@@ -7394,17 +9166,25 @@ class _LocalNotificationsScreenState extends State<LocalNotificationsScreen> {
           ),
         ),
       ),
-      body: filteredNotifications.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.notifications_off_outlined, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text("No notifications found", style: TextStyle(color: Colors.grey, fontSize: 16)),
-                ],
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF006565),
               ),
             )
+          : filteredNotifications.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.notifications_off_outlined,
+                          size: 64, color: Colors.grey),
+                      SizedBox(height: 16),
+                      Text("No notifications found",
+                          style: TextStyle(color: Colors.grey, fontSize: 16)),
+                    ],
+                  ),
+                )
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: sortedGroups.length,
@@ -7472,10 +9252,12 @@ class _LocalNotificationsScreenState extends State<LocalNotificationsScreen> {
                                     const SizedBox(width: 16),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
                                             children: [
                                               Expanded(
                                                 child: Text(
@@ -7491,7 +9273,8 @@ class _LocalNotificationsScreenState extends State<LocalNotificationsScreen> {
                                                 Container(
                                                   width: 10,
                                                   height: 10,
-                                                  decoration: const BoxDecoration(
+                                                  decoration:
+                                                      const BoxDecoration(
                                                     color: Color(0xFF008080),
                                                     shape: BoxShape.circle,
                                                   ),
@@ -7521,17 +9304,25 @@ class _LocalNotificationsScreenState extends State<LocalNotificationsScreen> {
                                               if (item.statusLabel != null) ...[
                                                 const SizedBox(width: 8),
                                                 Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 2),
                                                   decoration: BoxDecoration(
-                                                    color: const Color(0xFF008080).withOpacity(0.1),
-                                                    borderRadius: BorderRadius.circular(4),
+                                                    color:
+                                                        const Color(0xFF008080)
+                                                            .withOpacity(0.1),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            4),
                                                   ),
                                                   child: Text(
                                                     item.statusLabel!,
                                                     style: const TextStyle(
                                                       fontSize: 10,
                                                       color: Color(0xFF008080),
-                                                      fontWeight: FontWeight.bold,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                     ),
                                                   ),
                                                 ),
@@ -7575,7 +9366,12 @@ class LocalChatListScreen extends StatelessWidget {
         itemCount: 4,
         separatorBuilder: (context, index) => const Divider(),
         itemBuilder: (context, index) {
-          final names = ["Prince Garg", "Ananya Sharma", "Rahul Verma", "Siddharth Sen"];
+          final names = [
+            "Prince Garg",
+            "Ananya Sharma",
+            "Rahul Verma",
+            "Siddharth Sen"
+          ];
           final messages = [
             "Hi, is my listing approved?",
             "I have updated the bank details.",
@@ -7585,11 +9381,14 @@ class LocalChatListScreen extends StatelessWidget {
           return ListTile(
             leading: CircleAvatar(
               backgroundColor: const Color(0xFFF4F6FC),
-              child: Text(names[index][0], style: const TextStyle(color: Color(0xFF006565))),
+              child: Text(names[index][0],
+                  style: const TextStyle(color: Color(0xFF006565))),
             ),
-            title: Text(names[index], style: const TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(names[index],
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text(messages[index]),
-            trailing: const Text("10m ago", style: TextStyle(color: Colors.grey, fontSize: 12)),
+            trailing: const Text("10m ago",
+                style: TextStyle(color: Colors.grey, fontSize: 12)),
           );
         },
       ),
@@ -7634,7 +9433,8 @@ class _DemographicsPainter extends CustomPainter {
 
     // Draw purple segment (30%) starting from where teal ends
     const double purpleSweep = 2 * 3.14159265 * 0.30;
-    canvas.drawArc(rect, startAngle + tealSweep, purpleSweep, false, purplePaint);
+    canvas.drawArc(
+        rect, startAngle + tealSweep, purpleSweep, false, purplePaint);
   }
 
   @override

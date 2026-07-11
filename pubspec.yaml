@@ -80,6 +80,7 @@ dependencies:
   syncfusion_flutter_maps: ^26.2.2
   flutter_quill: ^11.5.0
   vsc_quill_delta_to_html: ^1.0.5
+  google_fonts: ^8.1.0
 
 
 dev_dependencies:
@@ -91,5 +92,5 @@ dev_dependencies:
 flutter:
 
   uses-material-design: true
-
-  # assets and fonts removed temporarily - add back when files are ready
+  assets:
+    - assets/images/

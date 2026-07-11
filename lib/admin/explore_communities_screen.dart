@@ -84,8 +84,8 @@ class _ExploreCommunitiesScreenState extends State<ExploreCommunitiesScreen> wit
     });
     try {
       final response = await Database().getData({
-        'action': 'get_my_communities',
-      }, endpoint: 'new_apis/community_dashboard_api.php');
+        'action': 'fetch_own_communities',
+      }, endpoint: 'new_apis/create_community_API.php');
       if (response != null && (response['success'] == true || response.containsKey('data'))) {
         setState(() {
           _myCommunities = response['data'] ?? [];
@@ -265,8 +265,8 @@ class _ExploreCommunitiesScreenState extends State<ExploreCommunitiesScreen> wit
       itemCount: filteredList.length,
       itemBuilder: (context, index) {
         final c = filteredList[index];
-        final String title = c['community_title']?.toString() ?? 'Community';
-        final String desc = c['community_description']?.toString() ?? '';
+        final String title = c['community_title']?.toString() ?? c['title']?.toString() ?? 'Community';
+        final String desc = c['community_description']?.toString() ?? c['description']?.toString() ?? '';
         final String members = c['members_count']?.toString() ?? '0';
 
         return Card(
