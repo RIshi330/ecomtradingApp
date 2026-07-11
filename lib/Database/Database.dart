@@ -53,13 +53,25 @@ class Database {
   // cookie (native PHP session) and falling back to the app's custom
   // SESSION_ID-as-PHPSESSID construction if no raw cookie is cached yet.
   String? _buildCookieHeader(String? rawCookie, String? existingSessionId) {
+    List<String> cookies = [];
+    
     if (rawCookie != null && rawCookie.isNotEmpty) {
-      return rawCookie;
+      // Split rawCookie and filter out any temporary PHPSESSID cookies
+      final parts = rawCookie.split(';');
+      for (var part in parts) {
+        part = part.trim();
+        if (part.isNotEmpty && !part.startsWith('PHPSESSID=')) {
+          cookies.add(part);
+        }
+      }
     }
+    
+    // Always append the correct active logged-in session ID
     if (existingSessionId != null && existingSessionId.isNotEmpty) {
-      return 'PHPSESSID=$existingSessionId';
+      cookies.add('PHPSESSID=$existingSessionId');
     }
-    return null;
+    
+    return cookies.isNotEmpty ? cookies.join('; ') : null;
   }
 
   /// Main API communication method
@@ -91,7 +103,8 @@ class Database {
         body: stringBody,
         headers: {
           'APP_ID': (appIdOverride ?? appId).toString(),
-          'SESSION-ID': existingSessionId?.toString() ?? '',
+          // SESSION-ID is omitted so standard Cookie-based PHPSESSID handles authentication.
+          // This avoids duplicate session_id() calls on the server which corrupts active sessions.
           // CHANGED: use the shared cookie builder instead of only ever
           // constructing "PHPSESSID=$existingSessionId" — this now also
           // replays a captured native PHP session cookie if one exists.
@@ -167,6 +180,7 @@ class Database {
         }
       }
 
+      /*
       if (isUnauthorized) {
         print('Database [getData]: Unauthorized response detected (401 or Unauthorized message). Logging out.');
         _cachedSessionId = null;
@@ -187,6 +201,7 @@ class Database {
           'data': [],
         };
       }
+      */
 
       // Store Razorpay key if present
       if (result.containsKey('RAZORPAY_KEY') &&
