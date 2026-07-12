@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/admin/Admin_Dashboard.dart';
+import 'package:trading_ecommerce_admin/admin/Marketplace_opportunities.dart';
 import 'package:trading_ecommerce_admin/admin/recruiter_dashboard_screen.dart';
 import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
@@ -47,6 +48,7 @@ import 'candidate_manage_hub.dart';
 import 'job_applications_screen.dart';
 import 'job_form.dart';
 import 'joblisting.dart';
+import 'manage_opportunity.dart';
 
 class BusinessUserDashboard extends StatefulWidget {
   const BusinessUserDashboard({super.key});
@@ -99,7 +101,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
 
   // Mock State Data
   bool _isLoading = false;
-  String _businessName = "Premium Business User";
+  String _businessName = "Admin User";
   String _businessEmail = "business@serenecommerce.com";
   String _businessLocation = "London, UK";
   String _businessProfilePic = "";
@@ -956,8 +958,10 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       case 35: titleText = "MOM Trainings"; break;
       case 42: titleText = "Recruiter Dashbord"; break;
       case 41: titleText = "Job Listing"; break;
-      case 42: titleText = "MOM Trainings"; break;
+      // case 42: titleText = "MOM Trainings"; break;
       case 43: titleText = "Candidate Manage"; break;
+      case 45: titleText = "Manage Opp.."; break;
+      case 49: titleText = "Marketplace OPP.."; break;
 
 
     }
@@ -1102,7 +1106,34 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                     ),
                   ),
                 ),
-                _buildDrawerItem(11, Icons.shopping_bag_rounded, "Order Management"),
+
+                  Theme(
+                    data: Theme.of(context).copyWith(
+                      dividerColor: Colors.transparent,
+                      listTileTheme: const ListTileThemeData(
+                        horizontalTitleGap: 8,
+                        dense: true,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                      child: ExpansionTile(
+                        shape: const Border(),
+                        collapsedShape: const Border(),
+                        tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                        leading: const Icon(Icons.task_rounded, color: textLight, size: 24),
+                        title: const Text("Business Opportunities", style: TextStyle(fontSize: 14, color: textDark)),
+                        children: [
+                          _buildDrawerItem(45, Icons.task_outlined, "Manage opportunities", isSubItem: true),
+                          _buildDrawerItem(49, Icons.people_outline_rounded, "Explore Opportunities", isSubItem: true),
+
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  _buildDrawerItem(11, Icons.shopping_bag_rounded, "Order Management"),
                 _buildDrawerItem(12, Icons.diversity_3_rounded, "Manage Communities"),
                   Theme(
                     data: Theme.of(context).copyWith(
@@ -1365,7 +1396,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       case 15: return _buildMarketplaceOpportunitiesView();
       case 16: return const ManageOpportunitiesScreen(isTab: true);
       case 17: return _buildMySubmissionsView();
-      case 18: return const TradingMarketplaceScreen(isEmbedded: true);
+      case 18: return const TradingMarketplaceScreen();//isEmbedded: true /comment
       case 19: return const SelectedItemsScreen(isEmbedded: true);
       case 20: return const AffiliateOrdersScreen(isEmbedded: true);
       case 21: return const PlatformSettingsScreen(isEmbedded: true);
@@ -1386,10 +1417,12 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       case 33: return const MarketplaceTrainingsScreen(isEmbedded: true);
       case 34: return const EnrolledTrainingsScreen(isEmbedded: true);
       case 35: return const MomTrainingsScreen(isEmbedded: true);
-      // case 40: return const JobApplicationsScreen();
+       case 40: return const JobApplicationsScreen(jobId: '4',);
       case 41: return const JobManagementHub();
       case 42: return const RecruiterApp();
       case 43: return const CandidateHubScreen();
+      case 45: return const manageopportunity();
+      case 49: return const MarketplaceScreen();
       default: return AdminDashboard();
     }
   }

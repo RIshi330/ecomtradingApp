@@ -3,6 +3,8 @@ import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:trading_ecommerce_admin/services/auth_service.dart';
 import 'package:trading_ecommerce_admin/index.dart';
 
+import 'otp_varification.dart';
+
 class BusinessUserProfileScreen extends StatefulWidget {
   final VoidCallback? onManagePlanTap;
   final VoidCallback? onAddressUpdateTap;
@@ -30,8 +32,13 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
   static const Color bgLight = Color(0xfff9f9f9);
   static const Color errorColor = Color(0xffba1a1a);
 
+  // Endpoint that hosts all the profile/security actions used below
+  // (send_update_profile_otp, verify_update_profile_otp, update_profile,
+  // send_change_password_otp, verify_change_password_otp, change_password).
+  static const String _profileEndpoint = 'new_apis/admin/community_admin_profile.php';
+
   bool _isLoading = false;
-  
+
   // State profile values
   String _name = "Alex Stratos";
   String _title = "Principal Strategy Director";
@@ -78,33 +85,31 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
 
     try {
       final vendorId = await AuthService.getVendorIdString();
-      if (vendorId != '0') {
-        final response = await Database().getData({
-          'action': 'profile',
-          'vendor_id': vendorId,
-        });
-        if (response['success'] == true && response['data'] != null) {
-          final profile = response['data']['profile'];
-          if (profile != null) {
-            setState(() {
-              _name = profile['name']?.toString() ?? _name;
-              _email = profile['email']?.toString() ?? _email;
-              _mobile = profile['mobile']?.toString() ?? _mobile;
-              _bio = profile['bio']?.toString() ?? _bio;
-              _city = profile['city']?.toString() ?? _city;
-              _state = profile['state']?.toString() ?? _state;
-              _country = profile['country']?.toString() ?? _country;
-              final pic = profile['profile_pic']?.toString() ?? '';
-              if (pic.isNotEmpty) {
-                _profileImage = pic;
-              }
-            });
-            // Update cache
-            await AuthService.saveLoginSession(
-              vendorId: int.parse(vendorId),
-              userData: Map<String, dynamic>.from(profile),
-            );
-          }
+      final response = await Database().getData({
+        'action': 'profile_tab',
+      }, endpoint: 'new_apis/vendor_details_api.php');
+
+      if (response['success'] == true && response['data'] != null) {
+        final profile = response['data']['profile'];
+        if (profile != null) {
+          setState(() {
+            _name = profile['name']?.toString() ?? _name;
+            _email = profile['email']?.toString() ?? _email;
+            _mobile = profile['mobile']?.toString() ?? _mobile;
+            _bio = profile['bio']?.toString() ?? _bio;
+            final workPref = profile['work_preference']?.toString() ?? '';
+            if (workPref.isNotEmpty) {
+              _title = workPref;
+            }
+            final pic = profile['profile_pic']?.toString() ?? '';
+            if (pic.isNotEmpty) {
+              _profileImage = pic;
+            }
+          });
+          await AuthService.saveLoginSession(
+            vendorId: int.parse(vendorId),
+            userData: Map<String, dynamic>.from(profile),
+          );
         }
       }
     } catch (e) {
@@ -145,7 +150,7 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
       final response = await Database().getData({
         'action': 'fetch_all',
         'vendor_id': vendorId,
-      }, endpoint: 'new_apis/bank_details_API 1.php');
+      }, endpoint: 'new_apis/bank_details_API.php');
 
       if ((response['success'] == true || response['status'] == 200) && response['data'] != null) {
         final List data = response['data'];
@@ -154,8 +159,8 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
           setState(() {
             _bankName = defaultAcc['bank_name']?.toString() ?? "Universal Trust Bank";
             final rawAcc = defaultAcc['account_number']?.toString() ?? "8821";
-            _bankAccMasked = rawAcc.length > 4 
-                ? "•••• •••• •••• ${rawAcc.substring(rawAcc.length - 4)}" 
+            _bankAccMasked = rawAcc.length > 4
+                ? "•••• •••• •••• ${rawAcc.substring(rawAcc.length - 4)}"
                 : "•••• •••• •••• $rawAcc";
             _hasBankDetails = true;
           });
@@ -164,10 +169,15 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
     } catch (_) {}
   }
 
-  void _showEditProfileModal() {
-    int currentStep = 1;
-    bool isModalLoading = false;
-    
+  // ---------------------------------------------------------------------
+  // EDIT PROFILE FLOW
+  // Step 1: collect edited fields in a form sheet, then request an OTP.
+  // Step 2: push the OtpVerificationScreen; its onVerify calls
+  //         verify_update_profile_otp then update_profile, matching
+  //         community_admin_profile.php exactly (both require the OTP
+  //         to be verified in-session before update_profile succeeds).
+  // ---------------------------------------------------------------------
+  void _startEditProfileFlow() {
     final nameCtrl = TextEditingController(text: _name);
     final mobileCtrl = TextEditingController(text: _mobile);
     final bioCtrl = TextEditingController(text: _bio);
@@ -176,435 +186,23 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
     final countryCtrl = TextEditingController(text: _country);
     final titleCtrl = TextEditingController(text: _title);
     String selectedDiv = _division;
-    
-    final otpCtrl = TextEditingController();
+    bool isSendingOtp = false;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
+      builder: (sheetContext) {
         return StatefulBuilder(
-          builder: (context, setModalState) {
-            Widget stepContent;
-
-            if (isModalLoading) {
-              stepContent = const SizedBox(
-                height: 200,
-                child: Center(
-                  child: CircularProgressIndicator(color: primaryTeal),
-                ),
-              );
-            } else if (currentStep == 1) {
-              stepContent = Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text("FULL NAME", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textMuted)),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: nameCtrl,
-                    decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text("MOBILE NUMBER", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textMuted)),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: mobileCtrl,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text("BIO", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textMuted)),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: bioCtrl,
-                    maxLines: 2,
-                    decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text("CITY", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textMuted)),
-                            const SizedBox(height: 6),
-                            TextField(
-                              controller: cityCtrl,
-                              decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text("STATE", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textMuted)),
-                            const SizedBox(height: 6),
-                            TextField(
-                              controller: stateCtrl,
-                              decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Text("COUNTRY", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textMuted)),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: countryCtrl,
-                    decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text("PROFESSIONAL TITLE", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textMuted)),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: titleCtrl,
-                    decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text("DIVISION", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textMuted)),
-                  const SizedBox(height: 6),
-                  DropdownButtonFormField<String>(
-                    value: selectedDiv,
-                    decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                    items: const [
-                      DropdownMenuItem(value: "Admin Division", child: Text("Admin Division")),
-                      DropdownMenuItem(value: "Marketing Division", child: Text("Marketing Division")),
-                      DropdownMenuItem(value: "Finance Division", child: Text("Finance Division")),
-                      DropdownMenuItem(value: "Operations Division", child: Text("Operations Division")),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) {
-                        setModalState(() {
-                          selectedDiv = val;
-                        });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: containerTeal.withOpacity(0.5), borderRadius: BorderRadius.circular(8)),
-                    child: Row(
-                      children: const [
-                        Icon(Icons.info_outline, color: primaryTeal, size: 18),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            "An OTP will be sent to your registered email to verify this profile change.",
-                            style: TextStyle(fontSize: 12, color: primaryTeal, fontWeight: FontWeight.w500),
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: accentTeal,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          onPressed: () async {
-                            if (nameCtrl.text.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("Name is required"), backgroundColor: Colors.red),
-                              );
-                              return;
-                            }
-                            setModalState(() {
-                              isModalLoading = true;
-                            });
-                            try {
-                              final vendorId = await AuthService.getVendorIdString();
-                              final response = await Database().getData({
-                                'action': 'send_update_profile_otp',
-                                'vendor_id': vendorId,
-                              }, endpoint: 'new_apis/admin/community_admin_profile.php');
-
-                              if (response['success'] == true) {
-                                setModalState(() {
-                                  currentStep = 2;
-                                });
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(response['message']?.toString() ?? "Failed to send OTP"),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-                              );
-                            } finally {
-                              setModalState(() {
-                                isModalLoading = false;
-                              });
-                            }
-                          },
-                          child: const Text("Send OTP", style: TextStyle(fontWeight: FontWeight.bold)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text("Cancel", style: TextStyle(color: textMuted)),
-                        ),
-                      ),
-                    ],
-                  )
-                ],
-              );
-            } else if (currentStep == 2) {
-              stepContent = Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircleAvatar(
-                    radius: 36,
-                    backgroundColor: containerTeal,
-                    child: const Icon(Icons.mail_outline_rounded, color: primaryTeal, size: 36),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text("Check your inbox", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDark)),
-                  const SizedBox(height: 8),
-                  Text(
-                    "OTP sent to your registered email: $_email",
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 13, color: textMuted),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: accentTeal, foregroundColor: Colors.white),
-                      onPressed: () {
-                        setModalState(() {
-                          currentStep = 3;
-                        });
-                      },
-                      child: const Text("Enter OTP", style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  )
-                ],
-              );
-            } else if (currentStep == 3) {
-              stepContent = Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    "Please enter the 6-digit code sent to your email.",
-                    style: TextStyle(fontSize: 13, color: textMuted),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: otpCtrl,
-                    textAlign: TextAlign.center,
-                    keyboardType: TextInputType.number,
-                    maxLength: 6,
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 16),
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      counterText: "",
-                      hintText: "000000",
-                      hintStyle: TextStyle(color: Colors.grey, letterSpacing: 16),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: TextButton(
-                      onPressed: () async {
-                        setModalState(() {
-                          isModalLoading = true;
-                        });
-                        try {
-                          final vendorId = await AuthService.getVendorIdString();
-                          final response = await Database().getData({
-                            'action': 'send_update_profile_otp',
-                            'vendor_id': vendorId,
-                          }, endpoint: 'new_apis/admin/community_admin_profile.php');
-
-                          if (response['success'] == true) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("OTP resent successfully!"), backgroundColor: Colors.green),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(response['message']?.toString() ?? "Failed to resend OTP"), backgroundColor: Colors.red),
-                            );
-                          }
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-                          );
-                        } finally {
-                          setModalState(() {
-                            isModalLoading = false;
-                          });
-                        }
-                      },
-                      child: const Text("Resend code", style: TextStyle(color: primaryTeal, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: accentTeal, foregroundColor: Colors.white),
-                      onPressed: () async {
-                        if (otpCtrl.text.length < 6) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Please enter a 6-digit OTP"), backgroundColor: Colors.red),
-                          );
-                          return;
-                        }
-                        setModalState(() {
-                          isModalLoading = true;
-                        });
-                        try {
-                          final vendorId = await AuthService.getVendorIdString();
-                          
-                          // 1. Verify OTP
-                          final verifyRes = await Database().getData({
-                            'action': 'verify_update_profile_otp',
-                            'otp': otpCtrl.text,
-                            'vendor_id': vendorId,
-                          }, endpoint: 'new_apis/admin/community_admin_profile.php');
-
-                          if (verifyRes['success'] != true) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(verifyRes['message']?.toString() ?? "Invalid or expired OTP"),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-
-                          // 2. Update Profile
-                          final updateRes = await Database().getData({
-                            'action': 'update_profile',
-                            'name': nameCtrl.text,
-                            'mobile': mobileCtrl.text,
-                            'bio': bioCtrl.text,
-                            'city': cityCtrl.text,
-                            'state': stateCtrl.text,
-                            'country': countryCtrl.text,
-                            'vendor_id': vendorId,
-                          }, endpoint: 'new_apis/admin/community_admin_profile.php');
-
-                          if (updateRes['success'] == true) {
-                            setState(() {
-                              _name = nameCtrl.text;
-                              _mobile = mobileCtrl.text;
-                              _bio = bioCtrl.text;
-                              _city = cityCtrl.text;
-                              _state = stateCtrl.text;
-                              _country = countryCtrl.text;
-                              _title = titleCtrl.text;
-                              _division = selectedDiv;
-                            });
-
-                            // Update Cache
-                            final cached = await AuthService.getCachedUserData();
-                            if (cached != null) {
-                              cached['name'] = nameCtrl.text;
-                              cached['mobile'] = mobileCtrl.text;
-                              cached['bio'] = bioCtrl.text;
-                              cached['city'] = cityCtrl.text;
-                              cached['state'] = stateCtrl.text;
-                              cached['country'] = countryCtrl.text;
-                              await AuthService.saveLoginSession(
-                                vendorId: int.parse(vendorId),
-                                userData: cached,
-                              );
-                            }
-
-                            setModalState(() {
-                              currentStep = 4;
-                            });
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(updateRes['message']?.toString() ?? "Failed to update profile"),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-                          );
-                        } finally {
-                          setModalState(() {
-                            isModalLoading = false;
-                          });
-                        }
-                      },
-                      child: const Text("Verify & Update", style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  )
-                ],
-              );
-            } else {
-              stepContent = Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircleAvatar(
-                    radius: 36,
-                    backgroundColor: Color(0xffe8f5e9),
-                    child: Icon(Icons.check_circle_rounded, color: Colors.green, size: 40),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text("Profile Updated", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDark)),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "Your profile details have been successfully updated.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 13, color: textMuted),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: accentTeal, foregroundColor: Colors.white),
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text("Back to Profile", style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  )
-                ],
-              );
-            }
-
+          builder: (sheetContext, setModalState) {
             return Container(
-              height: MediaQuery.of(context).size.height * 0.85,
+              height: MediaQuery.of(sheetContext).size.height * 0.85,
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
               padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
                 top: 20,
                 left: 20,
                 right: 20,
@@ -615,15 +213,13 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        currentStep == 1
-                            ? "Edit Profile"
-                            : (currentStep == 2 ? "Verify Identity" : (currentStep == 3 ? "Enter Code" : "Success")),
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryTeal, fontFamily: 'Manrope'),
+                      const Text(
+                        "Edit Profile",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryTeal, fontFamily: 'Manrope'),
                       ),
                       IconButton(
                         icon: const Icon(Icons.close, color: textMuted),
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => Navigator.pop(sheetContext),
                       )
                     ],
                   ),
@@ -631,7 +227,193 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                   const SizedBox(height: 12),
                   Expanded(
                     child: SingleChildScrollView(
-                      child: stepContent,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text("FULL NAME", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textMuted)),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: nameCtrl,
+                            decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text("MOBILE NUMBER", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textMuted)),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: mobileCtrl,
+                            keyboardType: TextInputType.phone,
+                            decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text("BIO", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textMuted)),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: bioCtrl,
+                            maxLines: 2,
+                            decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text("CITY", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textMuted)),
+                                    const SizedBox(height: 6),
+                                    TextField(
+                                      controller: cityCtrl,
+                                      decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text("STATE", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textMuted)),
+                                    const SizedBox(height: 6),
+                                    TextField(
+                                      controller: stateCtrl,
+                                      decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          const Text("COUNTRY", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textMuted)),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: countryCtrl,
+                            decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text("PROFESSIONAL TITLE", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textMuted)),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: titleCtrl,
+                            decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text("DIVISION", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textMuted)),
+                          const SizedBox(height: 6),
+                          DropdownButtonFormField<String>(
+                            value: selectedDiv,
+                            decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                            items: const [
+                              DropdownMenuItem(value: "Admin Division", child: Text("Admin Division")),
+                              DropdownMenuItem(value: "Marketing Division", child: Text("Marketing Division")),
+                              DropdownMenuItem(value: "Finance Division", child: Text("Finance Division")),
+                              DropdownMenuItem(value: "Operations Division", child: Text("Operations Division")),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) {
+                                setModalState(() => selectedDiv = val);
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(color: containerTeal.withOpacity(0.5), borderRadius: BorderRadius.circular(8)),
+                            child: Row(
+                              children: const [
+                                Icon(Icons.info_outline, color: primaryTeal, size: 18),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    "An OTP will be sent to your registered email to verify this profile change.",
+                                    style: TextStyle(fontSize: 12, color: primaryTeal, fontWeight: FontWeight.w500),
+                                  ),
+                                )
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: accentTeal,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  ),
+                                  onPressed: isSendingOtp
+                                      ? null
+                                      : () async {
+                                    if (nameCtrl.text.isEmpty) {
+                                      ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                        const SnackBar(content: Text("Name is required"), backgroundColor: Colors.red),
+                                      );
+                                      return;
+                                    }
+                                    setModalState(() => isSendingOtp = true);
+                                    try {
+                                      final response = await Database().getData({
+                                        'action': 'send_update_profile_otp',
+                                      }, endpoint: _profileEndpoint);
+
+                                      if (response['success'] == true) {
+                                        Navigator.pop(sheetContext); // close the form
+                                        _openOtpVerification(
+                                          nameCtrl: nameCtrl,
+                                          mobileCtrl: mobileCtrl,
+                                          bioCtrl: bioCtrl,
+                                          cityCtrl: cityCtrl,
+                                          stateCtrl: stateCtrl,
+                                          countryCtrl: countryCtrl,
+                                          titleCtrl: titleCtrl,
+                                          selectedDiv: selectedDiv,
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                          SnackBar(
+                                            content: Text(response['message']?.toString() ?? "Failed to send OTP"),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+                                      );
+                                    } finally {
+                                      if (sheetContext.mounted) {
+                                        setModalState(() => isSendingOtp = false);
+                                      }
+                                    }
+                                  },
+                                  child: isSendingOtp
+                                      ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                  )
+                                      : const Text("Send OTP", style: TextStyle(fontWeight: FontWeight.bold)),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  ),
+                                  onPressed: () => Navigator.pop(sheetContext),
+                                  child: const Text("Cancel", style: TextStyle(color: textMuted)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -643,6 +425,102 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
     );
   }
 
+  /// Pushes the OTP screen and wires its verify/resend callbacks straight
+  /// to community_admin_profile.php. `onVerify` runs BOTH API calls in
+  /// sequence — verify_update_profile_otp, then update_profile — because
+  /// the PHP's update_profile action rejects the request unless
+  /// `$_SESSION['update_profile_verified']` was just set to true by the
+  /// verify step. Throwing inside `onVerify` is caught by the OTP screen
+  /// itself and shown as a red snackbar; returning normally auto-pops the
+  /// screen with `true`.
+  Future<void> _openOtpVerification({
+    required TextEditingController nameCtrl,
+    required TextEditingController mobileCtrl,
+    required TextEditingController bioCtrl,
+    required TextEditingController cityCtrl,
+    required TextEditingController stateCtrl,
+    required TextEditingController countryCtrl,
+    required TextEditingController titleCtrl,
+    required String selectedDiv,
+  }) async {
+    final verified = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OtpVerificationScreen(
+          email: _email,
+          onVerify: (otp) async {
+            final verifyRes = await Database().getData({
+              'action': 'verify_update_profile_otp',
+              'otp': otp,
+            }, endpoint: _profileEndpoint);
+
+            if (verifyRes['success'] != true) {
+              throw Exception(verifyRes['message']?.toString() ?? "Invalid or expired OTP");
+            }
+
+            final updateRes = await Database().getData({
+              'action': 'update_profile',
+              'name': nameCtrl.text,
+              'mobile': mobileCtrl.text,
+              'bio': bioCtrl.text,
+              'city': cityCtrl.text,
+              'state': stateCtrl.text,
+              'country': countryCtrl.text,
+            }, endpoint: _profileEndpoint);
+
+            if (updateRes['success'] != true) {
+              throw Exception(updateRes['message']?.toString() ?? "Failed to update profile");
+            }
+
+            // Reflect the change locally + in cache only after the API confirms it.
+            if (mounted) {
+              setState(() {
+                _name = nameCtrl.text;
+                _mobile = mobileCtrl.text;
+                _bio = bioCtrl.text;
+                _city = cityCtrl.text;
+                _state = stateCtrl.text;
+                _country = countryCtrl.text;
+                _title = titleCtrl.text;
+                _division = selectedDiv;
+              });
+            }
+
+            final vendorId = await AuthService.getVendorIdString();
+            final cached = await AuthService.getCachedUserData() ?? <String, dynamic>{};
+            cached['name'] = nameCtrl.text;
+            cached['mobile'] = mobileCtrl.text;
+            cached['bio'] = bioCtrl.text;
+            cached['city'] = cityCtrl.text;
+            cached['state'] = stateCtrl.text;
+            cached['country'] = countryCtrl.text;
+            await AuthService.saveLoginSession(
+              vendorId: int.tryParse(vendorId) ?? 0,
+              userData: cached,
+            );
+          },
+          onResend: () async {
+            final res = await Database().getData({
+              'action': 'send_update_profile_otp',
+            }, endpoint: _profileEndpoint);
+            if (res['success'] != true) {
+              throw Exception(res['message']?.toString() ?? "Failed to resend OTP");
+            }
+          },
+        ),
+      ),
+    );
+
+    if (verified == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Profile updated successfully!"), backgroundColor: Colors.green),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // CHANGE PASSWORD FLOW (unchanged from before)
+  // ---------------------------------------------------------------------
   void _showChangePasswordModal() {
     int currentStep = 1;
     bool isModalLoading = false;
@@ -704,11 +582,9 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                           isModalLoading = true;
                         });
                         try {
-                          final vendorId = await AuthService.getVendorIdString();
                           final response = await Database().getData({
                             'action': 'send_change_password_otp',
-                            'vendor_id': vendorId,
-                          }, endpoint: 'new_apis/admin/community_admin_profile.php');
+                          }, endpoint: _profileEndpoint);
 
                           if (response['success'] == true) {
                             setModalState(() {
@@ -801,11 +677,9 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                           isModalLoading = true;
                         });
                         try {
-                          final vendorId = await AuthService.getVendorIdString();
                           final response = await Database().getData({
                             'action': 'send_change_password_otp',
-                            'vendor_id': vendorId,
-                          }, endpoint: 'new_apis/admin/community_admin_profile.php');
+                          }, endpoint: _profileEndpoint);
 
                           if (response['success'] == true) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -846,14 +720,11 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                           isModalLoading = true;
                         });
                         try {
-                          final vendorId = await AuthService.getVendorIdString();
-                          
                           // 1. Verify OTP
                           final verifyRes = await Database().getData({
                             'action': 'verify_change_password_otp',
                             'otp': otpCtrl.text,
-                            'vendor_id': vendorId,
-                          }, endpoint: 'new_apis/admin/community_admin_profile.php');
+                          }, endpoint: _profileEndpoint);
 
                           if (verifyRes['success'] != true) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -869,8 +740,7 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                           final updateRes = await Database().getData({
                             'action': 'change_password',
                             'new_password': newPassCtrl.text,
-                            'vendor_id': vendorId,
-                          }, endpoint: 'new_apis/admin/community_admin_profile.php');
+                          }, endpoint: _profileEndpoint);
 
                           if (updateRes['success'] == true) {
                             setModalState(() {
@@ -1092,8 +962,7 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                         onPressed: () async {
                           final withdrawAmount = double.tryParse(amountCtrl.text) ?? 0.0;
                           if (withdrawAmount <= 0) return;
-                          
-                          // Submit to backend withdrawal request
+
                           try {
                             final res = await Database().getData({
                               'action': 'requestWithdraw',
@@ -1183,7 +1052,6 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Drag Handle
               Center(
                 child: Container(
                   width: 40,
@@ -1195,20 +1063,18 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                   ),
                 ),
               ),
-              
-              // Header Row (Icon + Title & Subtitle)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFEBEE), // Light red background
+                      color: const Color(0xFFFFEBEE),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Icon(
                       Icons.power_settings_new_rounded,
-                      color: Color(0xFFC62828), // Dark red icon
+                      color: Color(0xFFC62828),
                       size: 24,
                     ),
                   ),
@@ -1239,8 +1105,6 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                 ],
               ),
               const SizedBox(height: 20),
-              
-              // Body message
               const Text(
                 "Are you sure you want to sign out of your account?\nYou will need to enter your credentials to log back in.",
                 style: TextStyle(
@@ -1250,8 +1114,6 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              
-              // Action Buttons Row
               Row(
                 children: [
                   Expanded(
@@ -1282,8 +1144,8 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFFEBEE), // Light red background
-                        foregroundColor: const Color(0xFFC62828), // Red text
+                        backgroundColor: const Color(0xFFFFEBEE),
+                        foregroundColor: const Color(0xFFC62828),
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -1371,7 +1233,7 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                               ),
                               icon: const Icon(Icons.edit, size: 14),
                               label: const Text("Edit Profile", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                              onPressed: _showEditProfileModal,
+                              onPressed: _startEditProfileFlow,
                             ),
                           ],
                         )
@@ -1505,8 +1367,6 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                 children: [
                   const Text("Financial Suite", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textDark)),
                   const SizedBox(height: 16),
-                  
-                  // Balance Card
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
@@ -1550,7 +1410,6 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -1568,8 +1427,6 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-
-                  // Bank details display
                   Container(
                     decoration: BoxDecoration(
                       color: bgLight,

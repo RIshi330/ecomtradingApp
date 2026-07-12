@@ -57,6 +57,8 @@ import 'package:trading_ecommerce_admin/screens/combo_packages_screen.dart';
 import 'package:trading_ecommerce_admin/screens/explore_charity_projects_screen.dart';
 import 'package:trading_ecommerce_admin/screens/charity_marketplace_screen.dart';
 
+import 'my_Activity.dart';
+
 class CommunityAdminDashboard extends StatefulWidget {
   const CommunityAdminDashboard({super.key});
 
@@ -66,7 +68,7 @@ class CommunityAdminDashboard extends StatefulWidget {
 
 class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  
+
   // Navigation Index State
   // 0: Dashboard, 1: Users, 2: Products, 3: Orders,
   // 4: Category Management, 5: List Items, 6: Platform Settings,
@@ -507,7 +509,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                                 child: Text("No matching membership plans available"),
                               );
                             }
-                            
+
                             bool isWide = constraints.maxWidth > 850;
                             final cards = _matchingMemberships.map<Widget>((plan) {
                               final title = plan['title']?.toString() ?? 'Plan';
@@ -810,7 +812,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       final response = await database.getData({
         'action': 'get_users_list',
       }, endpoint: 'new_apis/manage_user_api.php');
-      
+
       if (response['success'] == true || response['status'] == 200 || response.containsKey('general_users')) {
         setState(() {
           _generalUsers = response['general_users'] ?? [];
@@ -833,7 +835,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       final response = await Database().getData({
         'action': 'fetch_shared_invites_admin',
       }, endpoint: 'new_apis/community_dashboard_api.php');
-      
+
       if (response['success'] == true && response['data'] != null) {
         final List<dynamic> data = response['data'] ?? [];
         setState(() {
@@ -862,7 +864,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         'action': 'getCommunityStats',
         'community_id': communityId.toString(),
       }, endpoint: 'new_apis/community_dashboard_api.php');
-      
+
       if (response['success'] == true && response['data'] != null) {
         final data = response['data'];
         setState(() {
@@ -889,15 +891,15 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         'action': 'fetch_community_members',
         'community_id': communityId.toString(),
       }, endpoint: 'new_apis/community_dashboard_api.php');
-      
+
       if (response['success'] == true && response['data'] != null) {
         final data = response['data'];
         final List<dynamic> members = data['members'] ?? [];
-        
+
         setState(() {
           _pendingApprovals = members.where((m) => m['join_status']?.toString() == 'pending').toList();
           _pendingApprovalsCount = _pendingApprovals.length;
-          
+
           final approved = members.where((m) => m['join_status']?.toString() == 'approved').toList();
           _activeMembers.clear();
           for (var m in approved) {
@@ -933,7 +935,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         'member_id': memberId.toString(),
         'status': status,
       }, endpoint: 'new_apis/community_dashboard_api.php');
-      
+
       if (response['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -969,7 +971,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       final response = await Database().getData({
         'action': 'get_feed',
       }, endpoint: 'new_apis/social_feed_api.php');
-      
+
       if (response['success'] == true && response['data'] != null) {
         setState(() {
           _feedPosts = response['data'] ?? [];
@@ -1049,7 +1051,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         'visibility': 'public',
         'label': content,
       }, endpoint: 'new_apis/social_feed_api.php');
-      
+
       if (response['success'] == true) {
         _postController.clear();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1076,7 +1078,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       final response = await database.getData({
         'action': 'getWithdrawRequests',
       }, endpoint: 'new_apis/withdrawl_request_api.php');
-      
+
       if (response['success'] == true || response['status'] == 200 || response.containsKey('data')) {
         setState(() {
           _withdrawalRequests = response['data'] ?? [];
@@ -1130,7 +1132,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     if (joined is List) {
       communities = joined;
     }
-    
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -1311,7 +1313,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   ),
                 ),
               ),
-              
+
               // Header Row (Icon + Title & Subtitle)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -1355,7 +1357,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 ],
               ),
               const SizedBox(height: 20),
-              
+
               // Body message
               const Text(
                 "Are you sure you want to sign out of your account?\nYou will need to enter your credentials to log back in.",
@@ -1366,7 +1368,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Action Buttons Row
               Row(
                 children: [
@@ -1669,12 +1671,44 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       _buildDrawerItem(12, Icons.storefront_rounded, "Seller Dashboard"),
                     _buildDrawerItem(33, Icons.chat_bubble_outline_rounded, "Inbox"),
                     _buildDrawerItem(60, Icons.campaign_rounded, "Marketplace Promotions"),
-                    // _buildDrawerItem(13, Icons.supervised_user_circle_rounded, "Seller Management"),
+                      _buildDrawerItem(70, Icons.assignment_ind_rounded, "My Activity", isSubItem: true),
+
+                      // _buildDrawerItem(13, Icons.supervised_user_circle_rounded, "Seller Management"),
                     // _buildDrawerItem(1, Icons.people_rounded, "Users"),
                     // _buildDrawerItem(15, Icons.group_add_rounded, "Community Approvals"),
-                    
+
                     // Collapsible Products (aligned and borderless)
-                    Theme(
+                      Theme(
+                        data: Theme.of(context).copyWith(
+                          dividerColor: Colors.transparent,
+                          listTileTheme: const ListTileThemeData(
+                            horizontalTitleGap: 8,
+                            dense: true,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                        child: Container(
+                          margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                          child: ExpansionTile(
+                            shape: const Border(),
+                            collapsedShape: const Border(),
+                            tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                            leading: const Icon(Icons.task_rounded, color: textLight, size: 24),
+                            title: const Text("My Activity Screen", style: TextStyle(fontSize: 14, color: textDark)),
+                            children: [
+                              _buildDrawerItem(7, Icons.task_outlined, "Job Applications", isSubItem: true),
+                              _buildDrawerItem(27, Icons.people_outline_rounded, "Enrolled Trainings", isSubItem: true),
+                              _buildDrawerItem(28, Icons.handshake_outlined, "Track Orders", isSubItem: true),
+                              _buildDrawerItem(29, Icons.work_outline_rounded, "Track Digital product Orders", isSubItem: true),
+                              _buildDrawerItem(30, Icons.emoji_events_outlined, "Support & Donations", isSubItem: true),
+                              _buildDrawerItem(30, Icons.emoji_events_outlined, "Applied Opportunities", isSubItem: true),
+                              _buildDrawerItem(30, Icons.emoji_events_outlined, "Upcoming Events", isSubItem: true),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      Theme(
                       data: Theme.of(context).copyWith(
                         dividerColor: Colors.transparent,
                         listTileTheme: const ListTileThemeData(
@@ -1740,7 +1774,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                         ),
                       ),
                     ),
-                    
+
                     // Collapsible Memberships (aligned and borderless)
                     Theme(
                       data: Theme.of(context).copyWith(
@@ -2026,7 +2060,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                         ),
                       ),
                     ),
-                    
+
                       _buildDrawerItem(6, Icons.settings_input_component_rounded, "Platform Settings"),
                       // _buildDrawerItem(11, Icons.person_rounded, "Profile"),
                     ],
@@ -2079,14 +2113,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           if (_vendorType == '200') {
             _setTabFromBottomNav(index);
           } else {
-            if (index == 4) {
-              // Tapping 'More' opens Left Navigation Drawer
-              _scaffoldKey.currentState?.openDrawer();
-            } else {
               _setTabFromBottomNav(index);
             }
-          }
-        },
+          },
         backgroundColor: Colors.white,
         type: BottomNavigationBarType.fixed,
         selectedItemColor: primaryPurple,
@@ -2108,7 +2137,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: "Orders"),
                 BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_rounded), label: "Products"),
                 BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_rounded), label: "Wallet"),
-                BottomNavigationBarItem(icon: Icon(Icons.more_horiz_rounded), label: "More"),
+                BottomNavigationBarItem(icon: Icon(Icons.track_changes), label: "Activity"),
+
+              //  BottomNavigationBarItem(icon: Icon(Icons.more_horiz_rounded), label: "More"),
               ],
       ),
     ),);
@@ -2128,10 +2159,13 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     if (_currentIndex == 3) return 1; // Orders
     if (_currentIndex == 2) return 2; // Products
     if (_currentIndex == 7) return 3; // Wallet
-    return 4; // fallback for others
+    if (_currentIndex == 70) return 4; // Wallet
+    return 5; // fallback for others
   }
 
   // Navigate from bottom bar tabs
+// Navigate from bottom bar tabs
+// Navigate from bottom bar tabs
   void _setTabFromBottomNav(int bottomIndex) {
     if (_vendorType == '200') {
       setState(() {
@@ -2141,12 +2175,23 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           case 2: _currentIndex = 10; break; // Packages
           case 3: _currentIndex = 19; break; // Communities
           case 4: _currentIndex = 11; break; // Profile
+          case 70:_currentIndex=70;break;
         }
       });
       return;
     }
+
+    // For non-community admin (seller)
     if (bottomIndex == 3) {
       Navigator.pushNamed(context, '/wallet', arguments: 'admin');
+    } else if (bottomIndex == 4) {
+      // Navigate directly to My Activity screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const MyActivity(),
+        ),
+      );
     } else {
       setState(() {
         switch (bottomIndex) {
@@ -2156,9 +2201,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         }
       });
     }
-  }
-
-  // Drawer list items builder helper
+  }  // Drawer list items builder helper
   Widget _buildDrawerItem(int index, IconData icon, String title, {bool isSubItem = false}) {
     final bool isSelected = _currentIndex == index;
     return Container(
@@ -2270,6 +2313,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       case 48: return "My Events";
       case 49: return "Event Opportunities";
       case 60: return "Marketplace Promotions";
+      case 70: return "My Activity";
       default: return "Serene Commerce";
     }
   }
@@ -2308,7 +2352,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       case 18: return _buildMarketplaceOpportunitiesView();
       case 19: return const ManageOpportunitiesScreen(isTab: true);
       case 20: return _buildMySubmissionsView();
-      case 23: return const TradingMarketplaceScreen(isEmbedded: true);
+      case 23: return const TradingMarketplaceScreen();//isEmbedded: true //comment
       case 24: return const SelectedItemsScreen(isEmbedded: true);
       case 25: return const AffiliateOrdersScreen(isEmbedded: true);
       case 26: return const ManageTeamScreen(isEmbedded: true);
@@ -2330,56 +2374,43 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       case 47: return const EventMarketplaceScreen(isEmbedded: true);
       case 48: return const MyEventsScreen(isEmbedded: true);
       case 49: return const EventOpportunitiesScreen(isEmbedded: true);
+      case 70: return const MyActivity(isEmbedded: false,);
       default: return _buildDashboardView();
     }
   }
 
   PreferredSizeWidget _buildSellerHeader() {
     return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      scrolledUnderElevation: 1.0,
-      shadowColor: Colors.black.withOpacity(0.08),
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1),
-        child: Container(
-          color: Colors.black.withOpacity(0.04),
-          height: 1,
-        ),
-      ),
+      backgroundColor: Colors.teal,
       leading: Builder(
         builder: (context) => IconButton(
-          icon: const Icon(Icons.menu, color: Color(0xff006565)),
+          icon: const Icon(Icons.menu, color: Colors.white),
           onPressed: () => Scaffold.of(context).openDrawer(),
+          padding: const EdgeInsets.symmetric(horizontal: 8), // Reduce padding
+          constraints: const BoxConstraints(minWidth: 40), // Reduce min width
         ),
       ),
+      leadingWidth: 40, // Reduce leading width
       title: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: const Color(0xff006565).withOpacity(0.08),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              (_currentIndex == 0 || _currentIndex == 50)
-                  ? (_vendorType == '200' ? Icons.forum_rounded : Icons.group_work)
-                  : Icons.storefront,
-              color: const Color(0xff006565),
-              size: 22,
-            ),
+            width: 0, // Empty container - you might want to remove this
+            height: 0,
           ),
-          const SizedBox(width: 12),
           Flexible(
             child: Text(
               (_currentIndex == 0 || _currentIndex == 50)
-                  ? (_vendorType == '200' ? "Community Intelligence" : "Community Admin")
-                  : "Seller Central",
+                  ? (_vendorType == '200' ? "Community Dashboard" : "Community Admin")
+                  : "Seller Dashboard",
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
               style: const TextStyle(
-                color: Color(0xff006565),
+                color: Colors.white,
                 fontWeight: FontWeight.w700,
                 fontSize: 18,
                 letterSpacing: 0.2,
@@ -2389,240 +2420,84 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         ],
       ),
       actions: [
-        if (_vendorType == '200')
-          IconButton(
-            icon: Icon(
-              Icons.home_rounded,
-              color: _currentIndex == 50 ? const Color(0xff008080) : const Color(0xff006565),
-            ),
-            onPressed: () {
-              setState(() {
-                _currentIndex = 50; // Navigate to Home Feed
-              });
-            },
-            tooltip: "Home Feed",
-          ),
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.02),
-            shape: BoxShape.circle,
-          ),
-          child: IconButton(
-            icon: const Icon(
-              Icons.chat_bubble_outline_rounded,
-              color: Colors.black87,
-            ),
-            onPressed: () {
-              Navigator.of(context, rootNavigator: true).push(
-                MaterialPageRoute(
-                  builder: (context) => const ChatListScreen(),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_vendorType == '200')
+              SizedBox(
+                width: 40,
+                height: 55,
+                child: IconButton(
+                  icon: const Icon(Icons.party_mode, color: Colors.white, size: 22),
+                  onPressed: () {
+                    setState(() {
+                      _currentIndex = 50;
+                    });
+                  },
+                  tooltip: "Home Feed",
+                  padding: EdgeInsets.zero,
                 ),
-              );
-            },
-            tooltip: "Chat Messages",
-          ),
-        ),
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.02),
-            shape: BoxShape.circle,
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
+              ),
+            SizedBox(
+              width: 40,
+              height: 55,
+              child: IconButton(
+                icon: const Icon(Icons.chat, color: Colors.white, size: 22),
                 onPressed: () {
                   Navigator.of(context, rootNavigator: true).push(
                     MaterialPageRoute(
-                      builder: (context) => const NotificationsScreen(),
+                      builder: (context) => const ChatListScreen(),
                     ),
                   );
                 },
-                icon: const Icon(
-                  Icons.notifications_none_rounded,
-                  color: Colors.black87,
-                ),
+                tooltip: "Chat Messages",
+                padding: EdgeInsets.zero,
               ),
-              Positioned(
-                right: 12,
-                top: 12,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: Colors.redAccent,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.5),
+            ),
+            SizedBox(
+              width: 40,
+              height: 50,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      Navigator.of(context, rootNavigator: true).push(
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationsScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.notifications_none_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                    padding: EdgeInsets.zero,
                   ),
-                ),
-              )
-            ],
-          ),
-        ),
-        if (MediaQuery.of(context).size.width >= 600) ...[
-          const SizedBox(width: 4),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              const Text(
-                "Store Owner",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: Colors.black87,
-                ),
-              ),
-              Text(
-                "Premier Seller",
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.teal.shade700,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ],
-        const SizedBox(width: 12),
-        InkWell(
-          borderRadius: BorderRadius.circular(22),
-          onTap: () {
-            Navigator.of(context, rootNavigator: true).pushNamed('/user/profile');
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: const Color(0xff006565).withOpacity(0.2),
-                width: 2,
+                  Positioned(
+                    right: 7,
+                    top: 7,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                    ),
+                  )
+                ],
               ),
             ),
-            child: const CircleAvatar(
-              radius: 18,
-              backgroundColor: Color(0xffe5f7f7),
-              backgroundImage: NetworkImage(
-                "https://i.pravatar.cc/150?img=33",
-              ),
-            ),
-          ),
+          ],
         ),
-        const SizedBox(width: 16),
-      ],
+      ],      titleSpacing: 0, // Remove default title spacing
     );
   }
 
-  PreferredSizeWidget _buildCleanDashboardHeader() {
-    return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      scrolledUnderElevation: 1.0,
-      shadowColor: Colors.black.withOpacity(0.08),
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1),
-        child: Container(
-          color: Colors.black.withOpacity(0.04),
-          height: 1,
-        ),
-      ),
-      leading: Builder(
-        builder: (context) => IconButton(
-          icon: const Icon(Icons.menu, color: Color(0xff006565)),
-          onPressed: () => Scaffold.of(context).openDrawer(),
-        ),
-      ),
-      title: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xff006565).withOpacity(0.08),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.dashboard_outlined,
-              color: Color(0xff006565),
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 12),
-          const Flexible(
-            child: Text(
-              "Serene Commerce",
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-              style: TextStyle(
-                color: Color(0xff006565),
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
-                letterSpacing: 0.2,
-              ),
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(
-                  Icons.notifications_none_rounded,
-                  color: Color(0xff3e4949),
-                  size: 24,
-                ),
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LocalNotificationsScreen()),
-                ),
-              ),
-              Positioned(
-                right: 12,
-                top: 12,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          margin: const EdgeInsets.only(right: 16),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: const Color(0xff006565).withOpacity(0.2),
-              width: 2,
-            ),
-          ),
-          child: InkWell(
-            onTap: () {
-              Navigator.of(context, rootNavigator: true).pushNamed('/user/profile');
-            },
-            child: const CircleAvatar(
-              radius: 16,
-              backgroundColor: Color(0xffe5f7f7),
-              backgroundImage: NetworkImage(
-                "https://i.pravatar.cc/150?img=33",
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // 1. Dashboard View
+  //1. Dashboard View
   Widget _buildDashboardView() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
@@ -3415,8 +3290,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                       Text(
                         isPaid ? "Paid" : "Pending",
                         style: TextStyle(
-                          fontSize: 9, 
-                          fontWeight: FontWeight.bold, 
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
                           color: isPaid ? const Color(0xFF15803D) : const Color(0xFFB45309),
                         ),
                       ),
@@ -3724,7 +3599,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
         ),
       );
     }
-    
+
     return RefreshIndicator(
       onRefresh: _fetchUsersList,
       child: ListView.builder(
@@ -3737,7 +3612,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           final String status = user["status"]?.toString() ?? "Active";
           final String id = user["id"]?.toString() ?? "";
           final String pic = user["profile_pic"]?.toString() ?? "";
-          
+
           return Card(
             color: cardColor,
             elevation: 0,
@@ -3750,8 +3625,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   CircleAvatar(
                     backgroundColor: bgLight,
                     backgroundImage: pic.isNotEmpty ? NetworkImage(pic) : null,
-                    child: pic.isEmpty 
-                        ? Text(name.isNotEmpty ? name[0].toUpperCase() : "?", style: const TextStyle(color: primaryPurple, fontWeight: FontWeight.bold)) 
+                    child: pic.isEmpty
+                        ? Text(name.isNotEmpty ? name[0].toUpperCase() : "?", style: const TextStyle(color: primaryPurple, fontWeight: FontWeight.bold))
                         : null,
                   ),
                   const SizedBox(width: 16),
@@ -3777,9 +3652,9 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                status, 
+                                status,
                                 style: TextStyle(
-                                  fontSize: 10, 
+                                  fontSize: 10,
                                   color: status == "Active" ? Colors.green : Colors.red,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -3967,7 +3842,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       final response = await Database().getData({
         'action': 'fetch_settings',
       }, endpoint: 'new_apis/platform_setting_API.php');
-      
+
       if (response['success'] == true && response['data'] != null) {
         final site = response['data']['site'];
         if (site != null) {
@@ -4162,7 +4037,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                     final String description = req["description"]?.toString() ?? "Withdrawal";
                     final String amount = req["requestedAmount"]?.toString() ?? "0";
                     final String status = req["status"]?.toString() ?? "Pending";
-                    
+
                     return Card(
                       color: cardColor,
                       elevation: 0,
@@ -4820,7 +4695,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   "organization": companyController.text.isNotEmpty ? companyController.text : "Luxe Partner",
                   "payout_amount": budgetController.text.isNotEmpty ? budgetController.text : "Flexible",
                 }, endpoint: "new_apis/marketplace_opportunity_api.php");
-                
+
                 if (response['success'] == true) {
                   _fetchOpportunities();
                   _fetchMyListings();
@@ -5158,7 +5033,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     });
 
     final bool isDesktop = MediaQuery.of(context).size.width >= 768;
-    
+
     final Widget mainFeed = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -5551,11 +5426,11 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     final bool isLiked = int.tryParse(post['is_liked']?.toString() ?? '0') == 1;
     final List<dynamic> comments = post['comments_list'] ?? [];
     final bool commentsExpanded = _expandedPostComments.contains(postId);
-    
+
     if (!_commentControllers.containsKey(postId)) {
       _commentControllers[postId] = TextEditingController();
     }
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 24),
       elevation: 1,
@@ -5577,7 +5452,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                   backgroundImage: authorAvatar.isNotEmpty ? NetworkImage(authorAvatar) : null,
                   radius: 24,
                   child: authorAvatar.isEmpty
-                      ? Text(authorName.isNotEmpty ? authorName[0].toUpperCase() : "?", 
+                      ? Text(authorName.isNotEmpty ? authorName[0].toUpperCase() : "?",
                           style: const TextStyle(color: primaryPurple, fontWeight: FontWeight.bold))
                       : null,
                 ),
@@ -5755,7 +5630,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                                 backgroundImage: cAvatar.isNotEmpty ? NetworkImage(cAvatar) : null,
                                 radius: 16,
                                 child: cAvatar.isEmpty
-                                    ? Text(cUser.isNotEmpty ? cUser[0].toUpperCase() : "?", 
+                                    ? Text(cUser.isNotEmpty ? cUser[0].toUpperCase() : "?",
                                         style: const TextStyle(color: primaryPurple, fontSize: 10, fontWeight: FontWeight.bold))
                                     : null,
                               ),
@@ -7268,7 +7143,7 @@ class _LocalNotificationsScreenState extends State<LocalNotificationsScreen> {
       final index = _notifications.indexWhere((n) => n.id == id);
       if (index != -1 && _notifications[index].isUnread) {
         _notifications[index].isUnread = false;
-        
+
         // Show Toast
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(

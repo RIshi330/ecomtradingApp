@@ -46,7 +46,7 @@ class _ManageOpportunitiesScreenState extends State<ManageOpportunitiesScreen> {
         'search': searchQuery,
         'type': filterType == 'All' ? '' : filterType,
         'status': filterStatus == 'All' ? '' : (filterStatus == 'Active' ? '1' : (filterStatus == 'Pending' ? '0' : '-1')),
-      }, endpoint: 'new_apis/manage_opportunities_api 1.php');
+      }, endpoint: 'new_apis/manage_opportunities_api.php');
 
       if (response['success'] == true && response['data'] != null) {
         final data = response['data'];

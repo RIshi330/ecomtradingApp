@@ -205,7 +205,7 @@ class AppRoutes {
         createOpportunity: (context) => const OpportunityFormScreen(),
         productManagement: (context) => const ProductManagementScreen(),
         manageInventory: (context) => const LowStockInventoryScreen(),
-        tradingMarketplace: (context) => const TradingMarketplaceScreen(),
+        // tradingMarketplace: (context) => const TradingMarketplaceScreen(),
         selectedItems: (context) => const SelectedItemsScreen(),
         affiliateOrders: (context) => const AffiliateOrdersScreen(),
         payment: (context) => const PaymentScreen(),

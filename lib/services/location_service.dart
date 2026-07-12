@@ -118,7 +118,7 @@ class LocationService {
     try {
       final vendorId = await AuthService.getVendorIdString();
       final database = Database();
-      
+
       final response = await database.getData({
         'action': 'update_location',
         'vendor_id': vendorId,
@@ -128,7 +128,9 @@ class LocationService {
         'city': locationData['city'].toString(),
         'state': locationData['state'].toString(),
         'country': locationData['country'].toString(),
-      });
+      },
+      endpoint: 'new_apis/checkout_address_API.php',
+      );
 
       print('📍 Location sent to server: $response');
     } catch (e) {

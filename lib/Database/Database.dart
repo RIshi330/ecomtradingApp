@@ -54,7 +54,7 @@ class Database {
   // SESSION_ID-as-PHPSESSID construction if no raw cookie is cached yet.
   String? _buildCookieHeader(String? rawCookie, String? existingSessionId) {
     List<String> cookies = [];
-    
+
     if (rawCookie != null && rawCookie.isNotEmpty) {
       // Split rawCookie and filter out any temporary PHPSESSID cookies
       final parts = rawCookie.split(';');
@@ -65,12 +65,12 @@ class Database {
         }
       }
     }
-    
+
     // Always append the correct active logged-in session ID
     if (existingSessionId != null && existingSessionId.isNotEmpty) {
       cookies.add('PHPSESSID=$existingSessionId');
     }
-    
+
     return cookies.isNotEmpty ? cookies.join('; ') : null;
   }
 
