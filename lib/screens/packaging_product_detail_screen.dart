@@ -1486,7 +1486,7 @@ class _PackagingProductDetailPageState
 
     try {
       final sessionId = await Database().getSessionId();
-      final url = Uri.parse("$baseUrlLegacy" "new_apis/submit_quotation_API.php");
+      final url = Uri.parse("$baseUrl" "new_apis/submit_quotation_API.php");//biswajit
 
       final request = http.MultipartRequest("POST", url);
       request.headers.addAll({

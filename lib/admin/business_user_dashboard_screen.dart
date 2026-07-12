@@ -177,7 +177,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
     _loadBusinessProfile();
     // Request location permission
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _requestLocationPermission();
+      // _requestLocationPermission();
       
       // Handle route arguments safely after frame is built
       final args = ModalRoute.of(context)?.settings.arguments;
@@ -215,7 +215,6 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       debugPrint("Error requesting location: $e");
     }
   }
-
   Future<void> _showLocationPermissionDialog() async {
     if (!mounted) return;
     await showDialog(

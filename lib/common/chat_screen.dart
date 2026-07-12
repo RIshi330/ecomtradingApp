@@ -9,7 +9,9 @@ class AppColors {
   static const textPrimary   = Color(0xFF1A1A1A);
   static const textSub       = Color(0xFF888888);
   static const divider       = Color(0xFFF0F0F0);
-  static const chatBg        = Color(0xFFFCF9F8); // Theme background
+  static const chatBg        = Color(0xFFFCF9F8);
+
+  static Color? get primary => null; // Theme background
 }
 
 // ─── CHAT USER MODEL ─────────────────────────────────────────────────────────

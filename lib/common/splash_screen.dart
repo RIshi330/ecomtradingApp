@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:trading_ecommerce_admin/admin/test.dart';
 import 'package:trading_ecommerce_admin/index.dart';
 import 'package:trading_ecommerce_admin/services/auth_service.dart';
 import 'package:trading_ecommerce_admin/common/industries_screen.dart';
@@ -9,6 +10,11 @@ import 'package:trading_ecommerce_admin/admin/Community_Admin_Dashboard.dart';
 import 'package:trading_ecommerce_admin/admin/business_user_dashboard_screen.dart';
 import 'package:trading_ecommerce_admin/admin/seller_dashboard_screen.dart';
 import 'package:trading_ecommerce_admin/common/shell.dart';
+
+import '../admin/candidate_manage_hub.dart';
+import '../admin/job_applications_screen.dart';
+import '../admin/joblisting.dart';
+import '../admin/recruiter_dashboard_screen.dart';
 
 void main() {
   runApp(const LuxeWelcomeApp());
@@ -153,12 +159,15 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
     } catch (e) {
       debugPrint("Auto-login session check error: $e");
     }
-
+    //comment
     // Default fallback to login screen
     Navigator.pushReplacementNamed(
       context,
-      AppRoutes.login,
+        AppRoutes.login,
+       // AppRoutes.businessDashboard
+
     );
+    //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => testapp(),));
   }
 
   @override

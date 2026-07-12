@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:trading_ecommerce_admin/admin/test.dart';
 
 // Import Screens from their new locations
 import 'loginscreen.dart';
 import 'signupscreen.dart';
 import 'otp_screen.dart';
-import 'auth_screen.dart';
+import 'auth_screen_not_use.dart';
 import 'admin/Community_Admin_Dashboard.dart';
 import 'admin/admin_loginscreen.dart';
 import 'admin/business_user_dashboard_screen.dart';
@@ -95,6 +96,7 @@ class AppRoutes {
   static const String setting = '/common/setting';
   static const String shell = '/shell';
   static const String businessDashboard = '/business/dashboard';
+  // static const String businessDashboard = '/admin/test';
   static const String createCommunity = '/create_community';
 
   // New Admin Routes
@@ -168,7 +170,7 @@ class AppRoutes {
           );
         },
         auth: (context) => const AuthProduction(),
-        adminDashboard: (context) => const CommunityAdminDashboard(),
+         adminDashboard: (context) => const CommunityAdminDashboard(),
         adminProfile: (context) => const admin.ProfileScreen(),
         userProfile: (context) => const SellerProfileScreen(),
         sellerBankAccounts: (context) => const SellerBankAccountsScreen(),
@@ -179,12 +181,13 @@ class AppRoutes {
         setting: (context) => const SettingsScreen(),
         shell: (context) => const AppShell(),
         businessDashboard: (context) => const BusinessUserDashboard(),
+        // businessDashboard: (context) => const testapp(),
         createCommunity: (context) => const CreateCommunityScreen(),
 
         // New Admin Route Builders
         walletAdmin: (context) => const WalletAdminScreen(),
         sellerDashboard: (context) => const SellerDashboardScreen(),
-        communityAdmin: (context) => const CommunityAdminDashboard(),
+          communityAdmin: (context) => const CommunityAdminDashboard(),
         sellerManagement: (context) => const SellerManagementScreen(),
         taxonomyManager: (context) => const TaxonomyManagerScreen(),
         adminProfileScreen: (context) => const AdminProfileScreen(),
