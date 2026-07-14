@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Font-size tokens copied from the `fontSize` block in the Tailwind config.
 /// Manrope -> display-lg / headline-lg / headline-lg-mobile / title-md

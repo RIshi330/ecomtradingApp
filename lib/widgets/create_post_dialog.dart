@@ -69,7 +69,7 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
         if (vendorId != null) 'vendor_id': vendorId.toString(),
       };
 
-      final response = await Database().getData(body, endpoint: 'new_apis/social_feed_api.php');
+      final response = await Database().getData(body, endpoint: 'new_apis/scoiall_feedd_api.php');
 
       if (response != null && response['success'] == true) {
         widget.onPostCreated();

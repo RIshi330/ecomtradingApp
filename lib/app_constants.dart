@@ -1,5 +1,5 @@
-const String baseUrl = "http://1jammu.in/seller/android/index.php";
-const String baseUrlLegacy = "http://1jammu.in/seller/android/";
+const String baseUrlLegacy = "http://1jammu.in/seller/android/index.php";
+const String baseUrl = "http://1jammu.in/seller/android/";
 //const String baseUrl = "http://192.168.1.7/SetupBackendCCBUL/android/index.php";
 //const String baseUrlLegacy = "http://192.168.1.7/SetupBackendCCBUL/android/";
 const int appId = 1;

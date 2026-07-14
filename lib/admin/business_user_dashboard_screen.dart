@@ -45,6 +45,7 @@ import 'package:trading_ecommerce_admin/screens/enrolled_trainings_screen.dart';
 import 'package:trading_ecommerce_admin/screens/mom_trainings_screen.dart';
 
 import 'candidate_manage_hub.dart';
+import 'feed_Screen.dart';
 import 'job_applications_screen.dart';
 import 'job_form.dart';
 import 'joblisting.dart';
@@ -59,9 +60,9 @@ class BusinessUserDashboard extends StatefulWidget {
 
 class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  
+
   // Navigation State
-  int _currentIndex = 0; 
+  int _currentIndex = 0;
   // 0: Dashboard Overview (Executive View)
   // 1: Manage Vendors
   // 2: Listings -> Products
@@ -105,7 +106,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
   String _businessEmail = "business@serenecommerce.com";
   String _businessLocation = "London, UK";
   String _businessProfilePic = "";
-  
+
   // Dashboard mock data values
   double _salesToday = 14500.0;
   int _activeClients = 124;
@@ -178,7 +179,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
     // Request location permission
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // _requestLocationPermission();
-      
+
       // Handle route arguments safely after frame is built
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is int) {
@@ -784,7 +785,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                   ),
                 ),
               ),
-              
+
               // Header Row (Icon + Title & Subtitle)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -828,7 +829,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                 ],
               ),
               const SizedBox(height: 20),
-              
+
               // Body message
               const Text(
                 "Are you sure you want to sign out of your account?\nYou will need to enter your credentials to log back in.",
@@ -839,7 +840,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Action Buttons Row
               Row(
                 children: [
@@ -978,6 +979,12 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
       ),
       actions: [
+        IconButton(
+          icon: const Icon(Icons.video_collection),
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => CommunityIntelligenceApp(),));
+          },
+        ),
         IconButton(
           icon: const Icon(Icons.notifications_none_rounded),
           onPressed: () {},
@@ -2281,7 +2288,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
   Widget _buildManageUsersView() {
     final generalUsers = _mockUsers.where((u) => u['role'] == 'General').toList();
     final businessUsers = _mockUsers.where((u) => u['role'] == 'Business').toList();
-    
+
     return DefaultTabController(
       length: 2,
       child: Column(
@@ -2966,7 +2973,7 @@ class SparklinePainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     final path = Path();
-    
+
     // Create curve points mirroring: M0,80 Q100,20 200,60 T400,40 T600,70 T800,30 T1000,50
     path.moveTo(0, size.height * 0.8);
     path.quadraticBezierTo(
