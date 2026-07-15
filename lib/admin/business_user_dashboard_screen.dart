@@ -46,11 +46,14 @@ import 'package:trading_ecommerce_admin/screens/mom_trainings_screen.dart';
 
 import 'Explore_communities.dart';
 import 'candidate_manage_hub.dart';
+import 'explore_communities_screen.dart';
 import 'feed_Screen.dart';
+import 'grow-community.dart';
 import 'job_applications_screen.dart';
 import 'job_form.dart';
 import 'joblisting.dart';
 import 'manage_opportunity.dart';
+import 'my-network.dart';
 
 class BusinessUserDashboard extends StatefulWidget {
   const BusinessUserDashboard({super.key});
@@ -1432,7 +1435,10 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       case 43: return const CandidateHubScreen();
       case 45: return const manageopportunity();
       case 49: return const MarketplaceScreen();
-      case 70: return const DossierHQApp();
+       case 70: return const ExploreCommunitiesScreen(isEmbedded: true,);
+      //   case 70: return const mynetwork();
+
+      // case 70: return const growcommunity();
       default: return AdminDashboard();
     }
   }

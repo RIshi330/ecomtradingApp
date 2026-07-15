@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class SereneNetworkApp extends StatelessWidget {
-  const SereneNetworkApp({super.key});
+class mynetwork extends StatelessWidget {
+  const mynetwork({super.key});
 
   @override
   Widget build(BuildContext context) {

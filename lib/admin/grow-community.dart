@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 
-class SereneCorporateApp extends StatelessWidget {
-  const SereneCorporateApp({super.key});
+class growcommunity extends StatelessWidget {
+  const growcommunity({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -162,10 +162,10 @@ class _GrowCommunityScreenState extends State<GrowCommunityScreen> {
                                       height: 1.2,
                                     ),
                                     children: [
-                                      const TextSpan(text: 'Invite your network to join '),
+                                      const TextSpan(text: 'Invite your network to join ',style: TextStyle(fontSize: 20)),
                                       TextSpan(
                                         text: 'Executive Strategy Hub',
-                                        style: TextStyle(color: theme.colorScheme.primary),
+                                        style: TextStyle(color: theme.colorScheme.primary,fontSize: 20),
                                       ),
                                     ],
                                   ),
@@ -321,7 +321,7 @@ class _GrowCommunityScreenState extends State<GrowCommunityScreen> {
                             backgroundColor: theme.colorScheme.primary,
                             foregroundColor: theme.colorScheme.onPrimary,
                             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             elevation: 0,
                           ),
                         ),
@@ -489,7 +489,7 @@ class _GrowCommunityScreenState extends State<GrowCommunityScreen> {
                 backgroundColor: theme.colorScheme.primary,
                 foregroundColor: theme.colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 elevation: 0,
               ),
               child: const Text('SEND INVITE', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5)),
@@ -579,7 +579,7 @@ class _GrowCommunityScreenState extends State<GrowCommunityScreen> {
               disabledForegroundColor: const Color(0xFF3E4949),
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             child: Text(
               isInvited ? 'INVITED' : 'INVITE',
