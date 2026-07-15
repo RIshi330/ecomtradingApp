@@ -44,6 +44,7 @@ import 'package:trading_ecommerce_admin/screens/marketplace_trainings_screen.dar
 import 'package:trading_ecommerce_admin/screens/enrolled_trainings_screen.dart';
 import 'package:trading_ecommerce_admin/screens/mom_trainings_screen.dart';
 
+import 'Explore_communities.dart';
 import 'candidate_manage_hub.dart';
 import 'feed_Screen.dart';
 import 'job_applications_screen.dart';
@@ -962,6 +963,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       case 43: titleText = "Candidate Manage"; break;
       case 45: titleText = "Manage Opp.."; break;
       case 49: titleText = "Marketplace OPP.."; break;
+      case 70: titleText = "Explore Communities"; break;
 
 
     }
@@ -1085,6 +1087,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                 _buildDrawerItem(0, Icons.dashboard_rounded, "Dashboard"),
                 _buildDrawerItem(36, Icons.percent_rounded, "Commission Settings"),
                 _buildDrawerItem(1, Icons.storefront_rounded, "Manage Vendors"),
+                _buildDrawerItem(70, Icons.storefront_rounded, "Explore Communities"),
                 Theme(
                   data: Theme.of(context).copyWith(
                     dividerColor: Colors.transparent,
@@ -1429,6 +1432,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       case 43: return const CandidateHubScreen();
       case 45: return const manageopportunity();
       case 49: return const MarketplaceScreen();
+      case 70: return const DossierHQApp();
       default: return AdminDashboard();
     }
   }

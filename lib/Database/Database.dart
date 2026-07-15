@@ -1506,7 +1506,7 @@ class Database {
   // server (it's passed as `?endpoint=` to baseUrl, same as every other
   // call in this class).
   // ══════════════════════════════════════════════════════════════
-  static const String feedEndpoint = 'scoiall_feedd_api.php';
+  static const String feedEndpoint = 'new_apis/social_feed_api.php';
 
   /// Fetch the combined home feed (admin posts, personalized, following,
   /// community, self posts and sponsored posts, already interleaved by

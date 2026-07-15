@@ -1850,27 +1850,35 @@ class _CommunityIntelligenceAppState extends State<CommunityIntelligenceApp> {
       appBar: AppBar(
         backgroundColor: Colors.teal,
         elevation: 0,
-        scrolledUnderElevation: 2,
-        leading: IconButton(
-          splashRadius: 22,
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
-          onPressed: () => Navigator.maybePop(context),
+        iconTheme: const IconThemeData(
+          color: Colors.white, // Back button & default icons
         ),
-        title: ShaderMask(
-          shaderCallback: (bounds) => FeedTheme.brandGradient.createShader(bounds),
-          child: Text(
-            'Community Feed',
-            style: FeedTheme.heading(19, bold: false).copyWith(color: Colors.black),
+        title: Text(
+          'Community Feed',
+          style: FeedTheme.heading(
+            19,
+            bold: true,
+            color: Colors.white,
           ),
         ),
-        centerTitle: false,
         actions: [
-          _AppBarIconButton(icon: Icons.add_circle_outline_rounded, onPressed: _openCreatePost),
-          _AppBarIconButton(icon: Icons.chat_bubble_outline_rounded, onPressed: () {}, showDot: true),
+          _AppBarIconButton(
+            icon: Icons.add_circle_outline_rounded,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => CreatePostScreen()),
+              );
+            },
+          ),
+          _AppBarIconButton(
+            icon: Icons.chat_bubble_outline_rounded,
+            onPressed: () {},
+            showDot: true,
+          ),
           const SizedBox(width: 6),
         ],
-      ),
-      body: SafeArea(
+      ),      body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.symmetric(
             horizontal: isDesktop ? 40.0 : 16.0,
@@ -1891,7 +1899,7 @@ class _CommunityIntelligenceAppState extends State<CommunityIntelligenceApp> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const StoriesSection(),
+                        // const StoriesSection(),
                         const SizedBox(height: 20),
                         FeedPostsList(key: _feedListKey),
                       ],
