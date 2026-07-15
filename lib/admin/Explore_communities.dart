@@ -229,8 +229,8 @@ class _ManageCommunitiesScreenState extends State<ManageCommunitiesScreen> with 
                         const SizedBox(height: 32),
 
                         // Section 1: My Communities
-                        Container(key: _myCommunitiesKey, child: _buildMyCommunitiesSection(theme)),
-                        const SizedBox(height: 40),
+                        // Container(key: _myCommunitiesKey, child: _buildMyCommunitiesSection(theme)),
+                        // const SizedBox(height: 40),
 
                         // Section 2: Matched Intelligence (For You)
                         Container(key: _forYouKey, child: _buildMatchedIntelligenceSection(theme, constraints)),
@@ -337,34 +337,34 @@ class _ManageCommunitiesScreenState extends State<ManageCommunitiesScreen> with 
     );
   }
 
-  Widget _buildMyCommunitiesSection(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Your Dossiers', style: theme.textTheme.titleMedium?.copyWith(fontSize: 20)),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.secondaryContainer.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                '3 ACTIVE',
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: theme.colorScheme.onSecondaryContainer),
-              ),
-            )
-          ],
-        ),
-        const SizedBox(height: 16),
-        _buildCommunityCard(theme, 'Global Fintech Strategists', '1,240 Members', Icons.corporate_fare),
-        const SizedBox(height: 12),
-        _buildCommunityCard(theme, 'Market Analysis Hub', '856 Members', Icons.insights),
-      ],
-    );
-  }
+  // Widget _buildMyCommunitiesSection(ThemeData theme) {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Row(
+  //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //         children: [
+  //           Text('Your Dossiers', style: theme.textTheme.titleMedium?.copyWith(fontSize: 20)),
+  //           Container(
+  //             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+  //             decoration: BoxDecoration(
+  //               color: theme.colorScheme.secondaryContainer.withOpacity(0.5),
+  //               borderRadius: BorderRadius.circular(4),
+  //             ),
+  //             child: Text(
+  //               '3 ACTIVE',
+  //               style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: theme.colorScheme.onSecondaryContainer),
+  //             ),
+  //           )
+  //         ],
+  //       ),
+  //       const SizedBox(height: 16),
+  //       _buildCommunityCard(theme, 'Global Fintech Strategists', '1,240 Members', Icons.corporate_fare),
+  //       const SizedBox(height: 12),
+  //       _buildCommunityCard(theme, 'Market Analysis Hub', '856 Members', Icons.insights),
+  //     ],
+  //   );
+  // }
 
   Widget _buildCommunityCard(ThemeData theme, String title, String members, IconData icon) {
     return Container(
