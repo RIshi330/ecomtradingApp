@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trading_ecommerce_admin/admin/Admin_Dashboard.dart';
 import 'package:trading_ecommerce_admin/admin/test.dart';
 
 // Import Screens from their new locations
@@ -170,7 +171,7 @@ class AppRoutes {
           );
         },
         auth: (context) => const AuthProduction(),
-         adminDashboard: (context) => const CommunityAdminDashboard(),
+         adminDashboard: (context) => const SuperAdminDashboard(),//super admin for main admin
         adminProfile: (context) => const admin.ProfileScreen(),
         userProfile: (context) => const SellerProfileScreen(),
         sellerBankAccounts: (context) => const SellerBankAccountsScreen(),
@@ -180,7 +181,7 @@ class AppRoutes {
         notification: (context) => const NotificationsScreen(),
         setting: (context) => const SettingsScreen(),
         shell: (context) => const AppShell(),
-        businessDashboard: (context) => const BusinessUserDashboard(),
+        businessDashboard: (context) => const AdminDashboard(),
         // businessDashboard: (context) => const testapp(),
         createCommunity: (context) => const CreateCommunityScreen(),
 

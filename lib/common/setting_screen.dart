@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 
+import '../admin/business_user_dashboard_screen.dart';
+
 void main() {
   runApp(const StreetBuddyApp());
 }
@@ -189,7 +191,7 @@ class SettingsScreen extends StatelessWidget {
       Navigator.push(
         ctx,
         MaterialPageRoute(
-          builder: (_) => TopicSelectionScreen(isEditing: true, vendorId: vid),
+            builder: (_) => SuperAdminDashboard()
         ),
       );
     }

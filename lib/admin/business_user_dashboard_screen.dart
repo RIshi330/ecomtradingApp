@@ -55,14 +55,14 @@ import 'joblisting.dart';
 import 'manage_opportunity.dart';
 import 'my-network.dart';
 
-class BusinessUserDashboard extends StatefulWidget {
-  const BusinessUserDashboard({super.key});
+class SuperAdminDashboard extends StatefulWidget {
+  const SuperAdminDashboard({super.key});
 
   @override
-  State<BusinessUserDashboard> createState() => _BusinessUserDashboardState();
+  State<SuperAdminDashboard> createState() => _BusinessUserDashboardState();
 }
 
-class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
+class _BusinessUserDashboardState extends State<SuperAdminDashboard> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   // Navigation State

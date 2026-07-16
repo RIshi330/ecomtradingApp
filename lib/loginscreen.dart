@@ -102,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
             response['LOGIN_RESPONSE']?['full_data']?['vendor_type']
                 ?.toString();
 
-        if (vendorType == null && vendorId != 0 && selectedRole != 'Admin') {
+        if (vendorType == '1' && vendorId != 0 && selectedRole != 'Admin') {
           try {
             print(
                 'loginscreen: vendor_type missing from login response. Fetching profile for vendor $vendorId...');
@@ -157,27 +157,27 @@ class _LoginScreenState extends State<LoginScreen> {
 
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const BusinessUserDashboard()),
+            MaterialPageRoute(builder: (_) => const SuperAdminDashboard()),
             (route) => false,
           );
           return;
         }
 
-        if (selectedRole == 'Business' &&
-            (vendorType == '500' || vendorType == '1')) {
-          _showError('This account is not registered as a Business User.');
-          await AuthService.clearSession();
-          return;
-        }
+        // if (selectedRole == 'Business' &&
+        //     (vendorType != '500' || vendorType != '1')) {
+        //   _showError('This account is not registered as a Business.');
+        //   await AuthService.clearSession();
+        //   return;
+        // }
         if (selectedRole == 'Normal' &&
-            (vendorType != '500' && vendorType != '1')) {
+            (vendorType == '500' && vendorType != '1')) {
           _showError(
               'This is a Business User account. Please select Business User role.');
           await AuthService.clearSession();
           return;
         }
 
-        if (vendorType != '500' && vendorType != '1') {
+        if (vendorType == '200') {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const CommunityAdminDashboard()),
@@ -198,10 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
-              builder: (_) => TopicSelectionScreen(
-                vendorId: vendorId,
-                isEditing: false,
-              ),
+              builder: (_) => SuperAdminDashboard()
             ),
             (route) => false,
           );
@@ -287,7 +284,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const BusinessUserDashboard()),
+            MaterialPageRoute(builder: (_) => const SuperAdminDashboard()),
             (route) => false,
           );
           return;
@@ -386,10 +383,8 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
-              builder: (_) => TopicSelectionScreen(
-                vendorId: vendorId,
-                isEditing: false,
-              ),
+                builder: (_) => SuperAdminDashboard()
+
             ),
             (route) => false,
           );

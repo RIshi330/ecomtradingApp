@@ -155,10 +155,8 @@ class _OtpScreenState extends State<OtpScreen> {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
-              builder: (_) => TopicSelectionScreen(
-                vendorId: vendorId,
-                isEditing: false,
-              ),
+                builder: (_) => SuperAdminDashboard()
+
             ),
             (route) => false,
           );

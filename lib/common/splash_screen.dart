@@ -104,7 +104,7 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
       if (isAdmin) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const BusinessUserDashboard()),
+          MaterialPageRoute(builder: (_) => const SuperAdminDashboard()),
         );
         return;
       }
