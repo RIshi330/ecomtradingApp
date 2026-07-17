@@ -180,7 +180,6 @@ class Database {
         }
       }
 
-      /*
       if (isUnauthorized) {
         print('Database [getData]: Unauthorized response detected (401 or Unauthorized message). Logging out.');
         _cachedSessionId = null;
@@ -201,7 +200,6 @@ class Database {
           'data': [],
         };
       }
-      */
 
       // Store Razorpay key if present
       if (result.containsKey('RAZORPAY_KEY') &&

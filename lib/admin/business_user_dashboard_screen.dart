@@ -30,7 +30,7 @@ import 'package:trading_ecommerce_admin/common/chat_screen.dart';
 import 'package:trading_ecommerce_admin/screens/manage_team_screen.dart';
 import 'package:trading_ecommerce_admin/screens/explore_partners_screen.dart';
 import 'package:trading_ecommerce_admin/screens/explore_talent_screen.dart';
-import 'package:trading_ecommerce_admin/screens/rewards_recognition_screen.dart';
+import 'package:trading_ecommerce_admin/screens/my_rewards_screen.dart';
 import 'package:trading_ecommerce_admin/screens/charity_marketplace_screen.dart';
 import 'package:trading_ecommerce_admin/admin/membership_builder_screen.dart';
 import 'package:trading_ecommerce_admin/services/location_service.dart';
@@ -935,7 +935,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       case 13: titleText = "Module Marketplace"; break;
       case 14: titleText = "Module Manager"; break;
       case 15: titleText = "Marketplace Opportunities"; break;
-      case 16: titleText = "Opportunity Listings"; break;
+      case 16: titleText = "Manage Opportunities"; break;
       case 17: titleText = "My Applications"; break;
       case 18: titleText = "Trading Marketplace"; break;
       case 19: titleText = "Selected Items"; break;
@@ -1186,7 +1186,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
                       title: const Text("Opportunity Marketplace", style: TextStyle(fontSize: 14, color: textDark)),
                       children: [
                         _buildDrawerItem(15, Icons.storefront_rounded, "Marketplace", isSubItem: true),
-                        _buildDrawerItem(16, Icons.list_alt_rounded, "My Listings", isSubItem: true),
+                        _buildDrawerItem(16, Icons.list_alt_rounded, "Manage Opportunities", isSubItem: true),
                         _buildDrawerItem(17, Icons.assignment_turned_in_rounded, "My Submissions", isSubItem: true),
                       ],
                     ),
@@ -1380,7 +1380,7 @@ class _BusinessUserDashboardState extends State<BusinessUserDashboard> {
       case 27: return const ManageTeamScreen(isEmbedded: true);
       case 28: return const ExplorePartnersScreen(isEmbedded: true);
       case 29: return const ExploreTalentScreen(isEmbedded: true);
-      case 30: return const RewardsRecognitionScreen(isEmbedded: true);
+      case 30: return const MyRewardsScreen(isEmbedded: true);
       case 31: return const CharityMarketplaceScreen(isEmbedded: true);
       case 32: return const MembershipBuilderScreen(isEmbedded: true);
       case 33: return const MarketplaceTrainingsScreen(isEmbedded: true);

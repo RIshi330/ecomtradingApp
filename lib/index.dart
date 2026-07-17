@@ -72,6 +72,15 @@ import 'screens/marketplace_trainings_screen.dart';
 import 'screens/enrolled_trainings_screen.dart';
 import 'screens/training_details_screen.dart';
 import 'screens/enroll_payment_screen.dart';
+import 'screens/my_activity_screen.dart';
+import 'screens/applied_jobs_screen.dart';
+import 'screens/enrolled_trainings_custom_screen.dart';
+import 'screens/track_orders_screen.dart';
+import 'screens/track_digital_orders_screen.dart';
+import 'screens/support_donations_screen.dart';
+import 'screens/applied_opportunities_screen.dart';
+import 'screens/upcoming_events_screen.dart';
+import 'screens/my_rewards_screen.dart';
 
 /// AppRoutes provides route names and route builders for the application.
 class AppRoutes {
@@ -256,5 +265,14 @@ class AppRoutes {
         },
         enrollPayment: (context) => const EnrollPaymentScreen(),
         campaignScheduler: (context) => const CampaignSchedulerScreen(),
+        '/my_activity': (context) => const MyActivityScreen(),
+        '/applied_jobs': (context) => const AppliedJobsScreen(),
+        '/enrolled_trainings_custom': (context) => const EnrolledTrainingsCustomScreen(),
+        '/track_orders': (context) => const TrackOrdersScreen(),
+        '/track_digital_orders': (context) => const TrackDigitalOrdersScreen(),
+        '/support_donations': (context) => const SupportDonationsScreen(),
+        '/applied_opportunities': (context) => const AppliedOpportunitiesScreen(),
+        '/upcoming_events': (context) => const UpcomingEventsScreen(),
+        '/my_rewards': (context) => const MyRewardsScreen(),
       };
 }

@@ -17,6 +17,7 @@ import 'package:trading_ecommerce_admin/admin/seller_orders_screen.dart';
 import 'package:trading_ecommerce_admin/screens/event_marketplace_screen.dart';
 import 'package:trading_ecommerce_admin/screens/my_events_screen.dart';
 import 'package:trading_ecommerce_admin/screens/event_opportunities_screen.dart';
+import 'package:trading_ecommerce_admin/screens/my_activity_screen.dart';
 
 import 'package:trading_ecommerce_admin/admin/taxonomy_manager_screen.dart';
 import 'package:trading_ecommerce_admin/admin/manage_items_screen.dart';
@@ -1169,7 +1170,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  AccountActions.showLogoutSheet(context);
+                  _handleLogout();
                 },
               ),
             ],
@@ -1198,12 +1199,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _getBottomNavBarIndex(),
         onTap: (index) {
-          if (index == 4) {
-            // Tapping 'More' opens Left Navigation Drawer
-            _scaffoldKey.currentState?.openDrawer();
-          } else {
-            _setTabFromBottomNav(index);
-          }
+          _setTabFromBottomNav(index);
         },
         backgroundColor: Colors.white,
         type: BottomNavigationBarType.fixed,
@@ -1218,7 +1214,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: "Orders"),
           BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_rounded), label: "Products"),
           BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_rounded), label: "Wallet"),
-          BottomNavigationBarItem(icon: Icon(Icons.more_horiz_rounded), label: "More"),
+          BottomNavigationBarItem(icon: Icon(Icons.history_toggle_off_rounded), label: "Activity"),
         ],
       ),
     ),);
@@ -1230,7 +1226,8 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     if (_currentIndex == 3) return 1; // Orders
     if (_currentIndex == 2) return 2; // Products
     if (_currentIndex == 7) return 3; // Wallet
-    return 4; // fallback for others
+    if (_currentIndex == 50) return 4; // Activity
+    return 0; // fallback for others
   }
 
   // Navigate from bottom bar tabs
@@ -1243,6 +1240,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
           case 0: _currentIndex = 0; break; // Admin Dashboard
           case 1: _currentIndex = 3; break; // Orders
           case 2: _currentIndex = 2; break; // Products
+          case 4: _currentIndex = 50; break; // Activity
         }
       });
     }
@@ -1389,6 +1387,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
       case 47: return const EventMarketplaceScreen(isEmbedded: true);
       case 48: return const MyEventsScreen(isEmbedded: true);
       case 49: return const EventOpportunitiesScreen(isEmbedded: true);
+      case 50: return const MyActivityScreen(isEmbedded: true);
       default: return _buildDashboardView();
     }
   }

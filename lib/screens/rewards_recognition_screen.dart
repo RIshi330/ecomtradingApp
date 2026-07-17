@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
+import '../Database/Database.dart'; // To use Database connection if needed
+import '../widgets/stat_card.dart'; // To preserve existing widget imports
 
 class RewardsRecognitionScreen extends StatefulWidget {
   final bool isEmbedded;
@@ -10,311 +11,1030 @@ class RewardsRecognitionScreen extends StatefulWidget {
 }
 
 class _RewardsRecognitionScreenState extends State<RewardsRecognitionScreen> {
-  // Local state for dashboard details
-  double _totalDistributed = 15400.0;
-  double _availablePayout = 5200.0;
-  int _activeContributors = 14;
+  // Screen metrics state
+  double _totalDistributed = 128400.0;
+  int _pendingApprovalsCount = 42;
+  int _activeCampaignsCount = 15;
+  double _budgetUtilization = 64.0; // 64%
 
-  final List<Map<String, dynamic>> _pendingPayouts = [
+  // Toast Notification state
+  bool _showToast = false;
+  String _toastMessage = "";
+
+  // Data lists corresponding to HTML segments
+  final List<Map<String, dynamic>> _pendingRequests = [
     {
       'id': '1',
-      'name': 'Sarah Jenkins',
-      'role': 'Community Moderator',
-      'amount': 1200.0,
-      'date': 'Oct 14, 2025',
-      'avatar': 'https://i.pravatar.cc/100?img=47',
+      'initials': 'JD',
+      'name': 'Jane Doe',
+      'role': 'Product Designer',
+      'points': '500 PTS',
+      'message': '"Amazing work on the Q3 project delivery!"',
+      'recipient': 'Marcus Chen',
     },
     {
       'id': '2',
-      'name': 'Arjun Patel',
-      'role': 'Developer Partner',
-      'amount': 2500.0,
-      'date': 'Oct 12, 2025',
-      'avatar': 'https://i.pravatar.cc/100?img=33',
-    },
-    {
-      'id': '3',
-      'name': 'Riya Mehta',
-      'role': 'Design Head',
-      'amount': 1500.0,
-      'date': 'Oct 15, 2025',
-      'avatar': 'https://i.pravatar.cc/100?img=12',
+      'initials': 'SL',
+      'name': 'Sarah Lee',
+      'role': 'HR Manager',
+      'points': '250 PTS',
+      'message': '"Thanks for helping the new cohorts settle in."',
+      'recipient': 'Alex Rivera',
     },
   ];
 
-  final List<Map<String, dynamic>> _contributors = [
+  final List<Map<String, dynamic>> _nominations = [
     {
-      'rank': 1,
-      'name': 'Sarah Jenkins',
-      'points': 4800,
-      'badge': 'Top Contributor',
-      'badgeColor': Colors.amber,
-      'avatar': 'https://i.pravatar.cc/100?img=47',
+      'initials': 'MS',
+      'name': 'Michael Scott',
+      'role': 'Regional Manager • Completed Q3 Targets',
+      'avatarUrl': 'https://lh3.googleusercontent.com/aida-public/AB6AXuB7mbD5cc1KAqgJ3UGElt3ej7jY55PgVR0Xs22TgRox9vYy3jGgsjL-OyNbLFMzv6NxpTWRc-GksheYn9hwatK7T3cQUh2dMte6X3n1XrzD6mPSYFSP_iC4b135VebW0r-4c70likeDB6C8hUgammqChVIXUdOkjHnBqNnFs-eKnbtduoGsRsjBNjSoGW2nT65EPPz-8CXletCFMwPGXDKbI_xtDTDSI1sm7zr51vG1wpqia6wIFVp9',
     },
     {
-      'rank': 2,
-      'name': 'Arjun Patel',
-      'points': 3950,
-      'badge': 'Code Ninja',
-      'badgeColor': Color(0xFF008080),
-      'avatar': 'https://i.pravatar.cc/100?img=33',
-    },
-    {
-      'rank': 3,
-      'name': 'Riya Mehta',
-      'points': 3200,
-      'badge': 'Pixel Perfect',
-      'badgeColor': Colors.teal,
-      'avatar': 'https://i.pravatar.cc/100?img=12',
-    },
-    {
-      'rank': 4,
-      'name': 'Sneha Kapoor',
-      'points': 2850,
-      'badge': 'Rising Star',
-      'badgeColor': Colors.orange,
-      'avatar': 'https://i.pravatar.cc/100?img=32',
+      'initials': 'DS',
+      'name': 'Dwight Schrute',
+      'role': 'Sales Lead • Project Delta Launch',
+      'avatarUrl': '',
     },
   ];
 
-  final List<Map<String, dynamic>> _activities = [
+  final List<Map<String, dynamic>> _history = [
     {
-      'member': 'Sarah Jenkins',
-      'action': 'was awarded the "Top Contributor" badge by Admin',
-      'time': '2 hours ago',
-      'icon': Icons.stars_rounded,
-      'color': Colors.amber,
+      'date': 'Oct 24, 2023 • 14:20',
+      'recipient': 'Pam Beesly',
+      'type': 'Voucher',
+      'amount': '250 PTS',
+      'status': 'Processed',
     },
     {
-      'member': 'Arjun Patel',
-      'action': 'earned 450 points for completing "Stitch Integration UI"',
-      'time': '1 day ago',
-      'icon': Icons.military_tech_rounded,
-      'color': const Color(0xFF006565),
-    },
-    {
-      'member': 'Riya Mehta',
-      'action': 'requested a payout of ₹1,500',
-      'time': '2 days ago',
-      'icon': Icons.payment_rounded,
-      'color': Colors.green,
+      'date': 'Oct 23, 2023 • 09:15',
+      'recipient': 'Jim Halpert',
+      'type': 'Monetary',
+      'amount': '\$500.00',
+      'status': 'Pending',
     },
   ];
 
-  void _approvePayout(String id, double amount, String name) {
+  final List<Map<String, dynamic>> _teamPerformance = [
+    {
+      'date': 'Oct 24, 2023',
+      'recipient': 'Pam Beesly',
+      'task': 'Q3 Sales Target',
+      'type': 'Voucher',
+      'amount': '250 PTS',
+      'status': 'Distributed',
+    },
+    {
+      'date': 'Oct 23, 2023',
+      'recipient': 'Jim Halpert',
+      'task': 'Client Retention',
+      'type': 'Monetary',
+      'amount': '\$500.00',
+      'status': 'Scheduled',
+    },
+  ];
+
+  // Performance Rules configuration state
+  double _ruleWeightMultiplier = 1.5;
+  int _ruleTasksCompleted = 10;
+  double _ruleRevenueTarget = 5000.0;
+  bool _ruleAutoPayout = true;
+  List<bool> _ruleTriggers = [true, false, true]; // Project Submission, Document Verification, Milestone Achievement
+
+  void _triggerToast(String message) {
     setState(() {
-      _pendingPayouts.removeWhere((item) => item['id'] == id);
-      _availablePayout -= amount;
-      _totalDistributed += amount;
-      _activities.insert(0, {
-        'member': name,
-        'action': 'received payout of ₹${amount.toStringAsFixed(0)} successfully',
-        'time': 'Just now',
-        'icon': Icons.verified_user_rounded,
-        'color': Colors.green,
+      _toastMessage = message;
+      _showToast = true;
+    });
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _showToast = false;
+        });
+      }
+    });
+  }
+
+  void _approveRequest(String id, String name, String points) {
+    setState(() {
+      _pendingRequests.removeWhere((item) => item['id'] == id);
+      _pendingApprovalsCount = _pendingRequests.length;
+      _totalDistributed += 250; // increment mock stats
+      _history.insert(0, {
+        'date': 'Just now',
+        'recipient': name,
+        'type': 'Points',
+        'amount': points,
+        'status': 'Processed',
+      });
+      _teamPerformance.insert(0, {
+        'date': 'Just now',
+        'recipient': name,
+        'task': 'Milestone Achieved',
+        'type': 'Points',
+        'amount': points,
+        'status': 'Distributed',
       });
     });
+    _triggerToast("Reward Request Approved for $name");
+  }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Payout of ₹${amount.toStringAsFixed(0)} to $name approved!"),
-        backgroundColor: Colors.green,
-      ),
+  void _rejectRequest(String id, String name, String reason) {
+    setState(() {
+      _pendingRequests.removeWhere((item) => item['id'] == id);
+      _pendingApprovalsCount = _pendingRequests.length;
+    });
+    _triggerToast("Rejected request for $name: $reason");
+  }
+
+  void _allocatePoints(String recipient, String points, String contextStr, String message) {
+    setState(() {
+      _totalDistributed += double.tryParse(points) ?? 100;
+      _history.insert(0, {
+        'date': 'Just now',
+        'recipient': recipient,
+        'type': 'Points Allocation',
+        'amount': '$points PTS',
+        'status': 'Processed',
+      });
+      _teamPerformance.insert(0, {
+        'date': 'Just now',
+        'recipient': recipient,
+        'task': contextStr,
+        'type': 'Points',
+        'amount': '$points PTS',
+        'status': 'Distributed',
+      });
+    });
+    _triggerToast("Points Allocated Successfully to $recipient");
+  }
+
+  void _sendAward(String name, String type, String amount, String message) {
+    setState(() {
+      _history.insert(0, {
+        'date': 'Just now',
+        'recipient': name,
+        'type': type,
+        'amount': amount,
+        'status': 'Processed',
+      });
+      _teamPerformance.insert(0, {
+        'date': 'Just now',
+        'recipient': name,
+        'task': 'Custom Award: $message',
+        'type': type,
+        'amount': amount,
+        'status': 'Distributed',
+      });
+    });
+    _triggerToast("Award successfully sent to $name!");
+  }
+
+  // Modals builders
+  void _showAllocationModal() {
+    final recipientController = TextEditingController();
+    final amountController = TextEditingController();
+    final messageController = TextEditingController();
+    String selectedContext = 'Project Milestone';
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Allocate Points", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("RECIPIENT", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: recipientController,
+                      decoration: InputDecoration(
+                        hintText: "Search employee or team...",
+                        filled: true,
+                        fillColor: const Color(0xFFF1F4F6),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("AMOUNT (PTS)", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949))),
+                              const SizedBox(height: 6),
+                              TextField(
+                                controller: amountController,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  hintText: "0",
+                                  filled: true,
+                                  fillColor: const Color(0xFFF1F4F6),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("CONTEXT", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949))),
+                              const SizedBox(height: 6),
+                              DropdownButtonFormField<String>(
+                                value: selectedContext,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFFF1F4F6),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                ),
+                                items: const [
+                                  DropdownMenuItem(value: 'Project Milestone', child: Text('Milestone', style: TextStyle(fontSize: 12))),
+                                  DropdownMenuItem(value: 'Client Success', child: Text('Client Success', style: TextStyle(fontSize: 12))),
+                                  DropdownMenuItem(value: 'Peer Mentorship', child: Text('Mentorship', style: TextStyle(fontSize: 12))),
+                                ],
+                                onChanged: (v) {
+                                  if (v != null) {
+                                    setModalState(() {
+                                      selectedContext = v;
+                                    });
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text("MESSAGE", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: messageController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: "Optional congratulatory message...",
+                        filled: true,
+                        fillColor: const Color(0xFFF1F4F6),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF006565),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 44),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () {
+                    final rec = recipientController.text.trim();
+                    final pts = amountController.text.trim();
+                    final msg = messageController.text.trim();
+                    if (rec.isEmpty || pts.isEmpty) {
+                      _triggerToast("Please fill all required fields");
+                      return;
+                    }
+                    Navigator.pop(ctx);
+                    _allocatePoints(rec, pts, selectedContext, msg);
+                  },
+                  child: const Text("Send Points", style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
-  void _rejectPayout(String id, double amount, String name, String reason) {
-    setState(() {
-      _pendingPayouts.removeWhere((item) => item['id'] == id);
-      _activities.insert(0, {
-        'member': name,
-        'action': 'payout request of ₹${amount.toStringAsFixed(0)} rejected: "$reason"',
-        'time': 'Just now',
-        'icon': Icons.cancel_outlined,
-        'color': Colors.red,
-      });
-    });
+  void _showRejectionModal(String requestId, String name) {
+    String selectedReason = 'Incomplete data';
+    final commentsController = TextEditingController();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Payout request of ₹${amount.toStringAsFixed(0)} for $name was rejected."),
-        backgroundColor: Colors.red,
-      ),
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Rejection Details", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("SELECT REASON", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949))),
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<String>(
+                      value: selectedReason,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFFF1F4F6),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'Incomplete data', child: Text('Incomplete data')),
+                        DropdownMenuItem(value: 'Budget cap reached', child: Text('Budget cap reached')),
+                        DropdownMenuItem(value: 'Policy violation', child: Text('Policy violation')),
+                        DropdownMenuItem(value: 'Duplicate request', child: Text('Duplicate request')),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) {
+                          setModalState(() {
+                            selectedReason = v;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    const Text("ADDITIONAL COMMENTS", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: commentsController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: "Briefly explain the reason...",
+                        filled: true,
+                        fillColor: const Color(0xFFF1F4F6),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFBA1A1A),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 44),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () {
+                    final comments = commentsController.text.trim();
+                    final reasonText = comments.isNotEmpty ? "$selectedReason ($comments)" : selectedReason;
+                    Navigator.pop(ctx);
+                    _rejectRequest(requestId, name, reasonText);
+                  },
+                  child: const Text("Confirm Rejection", style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
-  void _sendPayout(String name, double amount, String method) {
-    setState(() {
-      _availablePayout -= amount;
-      _totalDistributed += amount;
-      _activities.insert(0, {
-        'member': name,
-        'action': 'was sent ₹${amount.toStringAsFixed(0)} via $method',
-        'time': 'Just now',
-        'icon': Icons.send_rounded,
-        'color': Colors.blue,
-      });
-    });
+  void _showConfigModal() {
+    double tempWeight = _ruleWeightMultiplier;
+    int tempTasks = _ruleTasksCompleted;
+    double tempRevenue = _ruleRevenueTarget;
+    bool tempAutoPay = _ruleAutoPayout;
+    List<bool> tempTriggers = List.from(_ruleTriggers);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Sent payout of ₹${amount.toStringAsFixed(0)} via $method!"),
-        backgroundColor: Colors.teal,
-      ),
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Rule Configuration", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("PERFORMANCE TARGETS", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949))),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Tasks Completed", style: TextStyle(fontSize: 9, color: Color(0xFF6E7979))),
+                              const SizedBox(height: 4),
+                              TextFormField(
+                                initialValue: tempTasks.toString(),
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFFF1F4F6),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                ),
+                                onChanged: (v) {
+                                  final val = int.tryParse(v);
+                                  if (val != null) tempTasks = val;
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Revenue Target (\$)", style: TextStyle(fontSize: 9, color: Color(0xFF6E7979))),
+                              const SizedBox(height: 4),
+                              TextFormField(
+                                initialValue: tempRevenue.toStringAsFixed(0),
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFFF1F4F6),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                ),
+                                onChanged: (v) {
+                                  final val = double.tryParse(v);
+                                  if (val != null) tempRevenue = val;
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text("SUBMISSION TRIGGERS", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949))),
+                    const SizedBox(height: 6),
+                    CheckboxListTile(
+                      title: const Text("Project Submission", style: TextStyle(fontSize: 12)),
+                      value: tempTriggers[0],
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: const Color(0xFF006565),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setModalState(() {
+                            tempTriggers[0] = v;
+                          });
+                        }
+                      },
+                    ),
+                    CheckboxListTile(
+                      title: const Text("Document Verification", style: TextStyle(fontSize: 12)),
+                      value: tempTriggers[1],
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: const Color(0xFF006565),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setModalState(() {
+                            tempTriggers[1] = v;
+                          });
+                        }
+                      },
+                    ),
+                    CheckboxListTile(
+                      title: const Text("Milestone Achievement", style: TextStyle(fontSize: 12)),
+                      value: tempTriggers[2],
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: const Color(0xFF006565),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setModalState(() {
+                            tempTriggers[2] = v;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    const Text("REAL-TIME LOGIC", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949))),
+                    const SizedBox(height: 6),
+                    SwitchListTile(
+                      title: const Text("Automatic Real-time Payout", style: TextStyle(fontSize: 12)),
+                      subtitle: const Text("If disabled, rewards require Manual Admin Review", style: TextStyle(fontSize: 9, color: Color(0xFF6E7979))),
+                      value: tempAutoPay,
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: const Color(0xFF006565),
+                      onChanged: (v) {
+                        setModalState(() {
+                          tempAutoPay = v;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text("WEIGHT / MULTIPLIER", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949))),
+                        Text("${tempWeight.toStringAsFixed(1)}x", style: const TextStyle(color: Color(0xFF006565), fontWeight: FontWeight.bold, fontSize: 12)),
+                      ],
+                    ),
+                    Slider(
+                      value: tempWeight,
+                      min: 1.0,
+                      max: 5.0,
+                      divisions: 8,
+                      activeColor: const Color(0xFF006565),
+                      onChanged: (v) {
+                        setModalState(() {
+                          tempWeight = v;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF006565),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 44),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _ruleWeightMultiplier = tempWeight;
+                      _ruleTasksCompleted = tempTasks;
+                      _ruleRevenueTarget = tempRevenue;
+                      _ruleAutoPayout = tempAutoPay;
+                      _ruleTriggers = tempTriggers;
+                    });
+                    Navigator.pop(ctx);
+                    _triggerToast("Performance Rule Saved Successfully");
+                  },
+                  child: const Text("Save Configuration", style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
-  void _giveRecognition(String name, String badge, String note) {
-    setState(() {
-      _activities.insert(0, {
-        'member': name,
-        'action': 'was recognized with "$badge" badge: "$note"',
-        'time': 'Just now',
-        'icon': Icons.emoji_events_rounded,
-        'color': Colors.deepOrange,
-      });
-    });
+  void _showSendRecognitionModal(String name) {
+    final amountController = TextEditingController();
+    final messageController = TextEditingController();
+    String selectedType = 'Bonus (Monetary)';
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Awarded $badge to $name!"),
-        backgroundColor: Colors.deepOrange,
-      ),
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Send Recognition Award", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF006565).withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor: const Color(0xFF006565).withOpacity(0.1),
+                            child: const Text("MS", style: TextStyle(color: Color(0xFF006565), fontWeight: FontWeight.bold)),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                const Text("Regional Manager", style: TextStyle(fontSize: 10, color: Color(0xFF6E7979))),
+                              ],
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text("AWARD TYPE", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949))),
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<String>(
+                      value: selectedType,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFFF1F4F6),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'Bonus (Monetary)', child: Text('Bonus (Monetary)')),
+                        DropdownMenuItem(value: 'Voucher (Gift Card)', child: Text('Voucher (Gift Card)')),
+                        DropdownMenuItem(value: 'Points (Internal)', child: Text('Points (Internal)')),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) {
+                          setModalState(() {
+                            selectedType = v;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    const Text("AMOUNT / POINTS", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: amountController,
+                      decoration: InputDecoration(
+                        hintText: "e.g. 500 or \$50",
+                        filled: true,
+                        fillColor: const Color(0xFFF1F4F6),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text("CONGRATULATORY MESSAGE", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: messageController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: "Write a congratulatory message...",
+                        filled: true,
+                        fillColor: const Color(0xFFF1F4F6),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF006565),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 44),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () {
+                    final amt = amountController.text.trim();
+                    final msg = messageController.text.trim();
+                    if (amt.isEmpty || msg.isEmpty) {
+                      _triggerToast("Please fill all required fields");
+                      return;
+                    }
+                    Navigator.pop(ctx);
+                    _sendAward(name, selectedType, amt, msg);
+                  },
+                  child: const Text("Confirm & Send", style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffFCF9F8),
+      backgroundColor: const Color(0xFFF8F9FF),
       appBar: widget.isEmbedded
           ? null
           : AppBar(
-              elevation: 0,
               backgroundColor: Colors.white,
+              elevation: 0,
+              centerTitle: false,
               title: const Text(
-                "Rewards & Recognition",
-                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                "Rewards & Recognition Hub",
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF006565),
+                ),
               ),
-              iconTheme: const IconThemeData(color: Colors.black),
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(1),
+                child: Container(color: const Color(0xFFE6EEFF), height: 1),
+              ),
             ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildStatsGrid(),
-            const SizedBox(height: 20),
-            _buildActionSection(),
-            const SizedBox(height: 20),
-            _buildPendingPayoutsSection(),
-            const SizedBox(height: 20),
-            _buildLeaderboardSection(),
-            const SizedBox(height: 20),
-            _buildRecentActivitySection(),
-          ],
-        ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF006565),
+        foregroundColor: Colors.white,
+        onPressed: _showAllocationModal,
+        child: const Icon(Icons.add, size: 28),
       ),
-    );
-  }
-
-  Widget _buildStatsGrid() {
-    final listStats = [
-      {
-        "label": "Total Distributed",
-        "value": "₹${_totalDistributed.toStringAsFixed(0)}",
-        "icon": Icons.emoji_events,
-        "colors": [Colors.amber, Colors.orange],
-      },
-      {
-        "label": "Pending Payouts",
-        "value": "₹${_availablePayout.toStringAsFixed(0)}",
-        "icon": Icons.payments,
-        "colors": [Colors.green, Colors.teal],
-      },
-      {
-        "label": "Active Contributors",
-        "value": "$_activeContributors Members",
-        "icon": Icons.people_alt,
-        "colors": [Color(0xFF006565), Color(0xFF008080)],
-      },
-      {
-        "label": "Leaderboard Points",
-        "value": "14.8k Coins",
-        "icon": Icons.stars,
-        "colors": [Color(0xFF516161), Color(0xFFBDC9C8)],
-      },
-    ];
-
-    return SizedBox(
-      height: 120,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: listStats.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final stat = listStats[index];
-          return SizedBox(
-            width: 140,
-            child: _buildStatCard(
-              stat["label"] as String,
-              stat["value"] as String,
-              stat["icon"] as IconData,
-              stat["colors"] as List<Color>,
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String label, String value, IconData icon, List<Color> colors) {
-    return StatCard(
-      title: label,
-      value: value,
-      icon: icon,
-      gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
-      valueColor: Colors.white,
-      titleColor: Colors.white70,
-      iconColor: Colors.white70,
-      bgHighlightColor: Colors.white.withOpacity(0.15),
-    );
-  }
-
-  Widget _buildActionSection() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
+      body: Stack(
         children: [
-          Expanded(
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber.shade700,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                minimumSize: const Size(0, 45),
-              ),
-              onPressed: () => _showGiveRecognitionDialog(),
-              icon: const Icon(Icons.stars),
-              label: const Text("Recognize", style: TextStyle(fontWeight: FontWeight.bold)),
+          SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Section 1: System Overview (Stats Slider)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "System Overview",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF121C2A)),
+                    ),
+                    TextButton.icon(
+                      onPressed: () {
+                        _triggerToast("Downloading full analytics report PDF...");
+                      },
+                      icon: const Icon(Icons.download, size: 16, color: Color(0xFF006565)),
+                      label: const Text(
+                        "Download Report",
+                        style: TextStyle(color: Color(0xFF006565), fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    children: [
+                      _buildOverviewStatCard(
+                        title: "Total Distributed",
+                        value: "\$${(_totalDistributed / 1000).toStringAsFixed(1)}k",
+                        subtitle: "+12% Since last period",
+                        isUrgent: false,
+                        showProgressBar: false,
+                      ),
+                      _buildOverviewStatCard(
+                        title: "Pending Approvals",
+                        value: "$_pendingApprovalsCount",
+                        subtitle: "Awaiting review",
+                        isUrgent: _pendingApprovalsCount > 0,
+                        showProgressBar: false,
+                      ),
+                      _buildOverviewStatCard(
+                        title: "Active Campaigns",
+                        value: "$_activeCampaignsCount",
+                        subtitle: "Running programs",
+                        isUrgent: false,
+                        showProgressBar: true,
+                        progressVal: 0.75,
+                      ),
+                      _buildOverviewStatCard(
+                        title: "Budget Utilization",
+                        value: "${_budgetUtilization.toStringAsFixed(0)}%",
+                        subtitle: "\$22k remaining",
+                        isUrgent: false,
+                        showProgressBar: false,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Section 2: Pending Approvals (Horizontal Cards Slider)
+                if (_pendingRequests.isNotEmpty) ...[
+                  const Row(
+                    children: [
+                      Icon(Icons.pending_actions, color: Color(0xFF735C00), size: 20),
+                      SizedBox(width: 6),
+                      Text(
+                        "Pending Approvals",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF121C2A)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Row(
+                      children: _pendingRequests.map((req) {
+                        return _buildPendingApprovalCard(req);
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                // Section 3: Dynamic Performance Rules
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Dynamic Performance Rules",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF121C2A)),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => _triggerToast("Category builder coming soon!"),
+                      icon: const Icon(Icons.add, size: 16, color: Color(0xFF006565)),
+                      label: const Text(
+                        "Add Category",
+                        style: TextStyle(color: Color(0xFF006565), fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 1,
+                  childAspectRatio: 1.1,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  children: [
+                    _buildRuleCategoryCard(
+                      title: "Monetary Bonuses",
+                      desc: "Direct payroll additions for performance.",
+                      imageUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuCtBCNS1GguNtpjKW5S6sEOoUqA-p9U8-OaFdcsPaa5lPRly1dFLBOxGg2HoUCCM8dPcgBXDvsow87kYzxBGHFR44GJU_OYjvVpVOVbrgiLlPs7RwSkV1g-F1pGuijHo1-9sX9Yo3xkwSiP0hht7dK7-KtDm_9CW_3Y2ws0W0RxaiDxDB9VjqaE6uaeXVRkaKSbuaSF_qh-L93O4kkD-rrFFiZ8zl4AZDcaJn1BUFAP5UCA8RZcjWR-",
+                    ),
+                    _buildRuleCategoryCard(
+                      title: "Vouchers",
+                      desc: "Gift cards for popular retailers.",
+                      imageUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuArWEshTJvnPafuG1Ceftx1mhZQxBdITcjOFfOaO7gw-uPeDcNN9VNsJgj-nwOJHLMAsWXRCeeIkPlT1pVHuSMpycpYyKZ2UBEVhTDpb-oXmJXU4ePGqV4Unfa-dQwM-V5nS_JAyKj_7AgI5EwoYIjs5elokLGMDla2yJJ4oLC3MeRKMmvkpHd2V55xNZuQZ86ryGE8b_3MpQY7Ow6CYlOrPAsoVePAeVgw8IZItFoZskEYIV6Z904f",
+                    ),
+                    _buildRuleCategoryCard(
+                      title: "Experiences",
+                      desc: "Wellness retreats and PTO perks.",
+                      imageUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuDwlWBjePeg-ImYhg9iMOmYY6eTffParomwH_e9V45mZWKCzQHO_Yb4wtbYc0jvE6K5iHmgXhMu7cv93XDL8RPVOomE0q8-VrE5YSku4RUlYdgtvpP7oCh3F9pv2cuSwDlLW-eqhtsz6Igl6JJ0f3O6w74TDH-itV42hd6Kr0U1Y8Nm8C2uuLOmQ-j1qkolLxsoTWDg8aBbOzL9nIKVY0X_gF-_4KB5UEw9PwyWTnrwSyqskvuQs0gA",
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Section 4: Due for Recognition
+                if (_nominations.isNotEmpty) ...[
+                  const Row(
+                    children: [
+                      Icon(Icons.celebration, color: Color(0xFF006565), size: 20),
+                      SizedBox(width: 6),
+                      Text(
+                        "Due for Recognition",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF121C2A)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: MediaQuery.of(context).size.width > 600 ? 2 : 1,
+                    childAspectRatio: 3.8,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    children: _nominations.map((nom) {
+                      return _buildNominationCard(nom);
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                // Section 5: Tables (Recognition History)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Recognition History",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF121C2A)),
+                    ),
+                    TextButton(
+                      onPressed: () => _triggerToast("Opening comprehensive history log..."),
+                      child: const Text("View All", style: TextStyle(color: Color(0xFF006565), fontWeight: FontWeight.bold, fontSize: 12)),
+                    )
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _buildHistoryTable(),
+                const SizedBox(height: 24),
+
+                // Section 6: Team Performance Table
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Team Performance",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF121C2A)),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE6EEFF),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () => _triggerToast("Switching to Weekly stats..."),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              child: const Text("Weekly", style: TextStyle(fontSize: 10, color: Color(0xFF3E4949))),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF006565),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text("Monthly", style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _buildPerformanceTable(),
+                const SizedBox(height: 80),
+              ],
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF006565),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                minimumSize: const Size(0, 45),
+
+          // Sliding checkmark Toast Notification overlay
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+            top: _showToast ? 16 : -80,
+            left: MediaQuery.of(context).size.width * 0.1,
+            right: MediaQuery.of(context).size.width * 0.1,
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 300),
+              opacity: _showToast ? 1.0 : 0.0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF006565),
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    )
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _toastMessage,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              onPressed: () => _showSendPayoutDialog(),
-              icon: const Icon(Icons.payment),
-              label: const Text("Send Payout", style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -322,539 +1042,460 @@ class _RewardsRecognitionScreenState extends State<RewardsRecognitionScreen> {
     );
   }
 
-  Widget _buildPendingPayoutsSection() {
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Pending Payout Requests",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+  // UI Stat Card builder
+  Widget _buildOverviewStatCard({
+    required String title,
+    required String value,
+    required String subtitle,
+    required bool isUrgent,
+    required bool showProgressBar,
+    double progressVal = 0.0,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.all(16),
+      width: 200,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFBDC9C8).withOpacity(0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.01),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              color: Color(0xFF3E4949),
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
             ),
-            const SizedBox(height: 12),
-            if (_pendingPayouts.isEmpty)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Text("No pending requests.", style: TextStyle(color: Colors.grey)),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Color(0xFF006565),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
                 ),
-              )
-            else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _pendingPayouts.length,
-                separatorBuilder: (context, index) => const Divider(height: 12),
-                itemBuilder: (context, index) {
-                  final item = _pendingPayouts[index];
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: CircleAvatar(
-                          backgroundImage: NetworkImage(item['avatar']),
-                        ),
-                        title: Text(item['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: Text("Requested ${item['date']}", style: const TextStyle(fontSize: 12)),
-                        trailing: Text(
-                          "₹${item['amount'].toStringAsFixed(0)}",
-                          style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.teal.shade50,
-                              foregroundColor: Colors.teal.shade800,
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              minimumSize: const Size(0, 32),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                            ),
-                            onPressed: () => _showPayoutApprovalConfirmation(item),
-                            child: const Text("Approve", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red.shade50,
-                              foregroundColor: Colors.red.shade800,
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              minimumSize: const Size(0, 32),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                            ),
-                            onPressed: () => _showPayoutRejectionDialog(item),
-                            child: const Text("Reject", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                  );
-                },
-              )
+              ),
+              if (isUrgent)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFDAD6),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    "URGENT",
+                    style: TextStyle(color: Color(0xFF93000A), fontSize: 8, fontWeight: FontWeight.bold),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (showProgressBar) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(2),
+              child: LinearProgressIndicator(
+                value: progressVal,
+                backgroundColor: const Color(0xFFE5E9EB),
+                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF006565)),
+                minHeight: 4,
+              ),
+            ),
+            const SizedBox(height: 4),
           ],
-        ),
+          Text(
+            subtitle,
+            style: const TextStyle(color: Color(0xFF6E7979), fontSize: 10, fontStyle: FontStyle.italic),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildLeaderboardSection() {
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  // UI Pending Approval Card builder
+  Widget _buildPendingApprovalCard(Map<String, dynamic> req) {
+    return Container(
+      margin: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.all(12),
+      width: 320,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFBDC9C8).withOpacity(0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.01),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: const Color(0xFFDEE9FC),
+                child: Text(req['initials'], style: const TextStyle(color: Color(0xFF006565), fontWeight: FontWeight.bold, fontSize: 13)),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(req['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF121C2A))),
+                    Text(req['role'], style: const TextStyle(fontSize: 10, color: Color(0xFF6E7979))),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFED65B),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  req['points'],
+                  style: const TextStyle(color: Color(0xFF241A00), fontWeight: FontWeight.bold, fontSize: 10),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(8),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF4FF),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              req['message'],
+              style: const TextStyle(color: Color(0xFF3E4949), fontSize: 11, fontStyle: FontStyle.italic),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Recipient: ${req['recipient']}",
+            style: const TextStyle(color: Color(0xFF6E7979), fontSize: 10, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF006565),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    minimumSize: const Size(0, 32),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () => _approveRequest(req['id'], req['recipient'], req['points']),
+                  child: const Text("Approve", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF6E7979)),
+                    foregroundColor: const Color(0xFF6E7979),
+                    minimumSize: const Size(0, 32),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () => _showRejectionModal(req['id'], req['recipient']),
+                  child: const Text("Reject", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Performance Rule Category Cards
+  Widget _buildRuleCategoryCard({
+    required String title,
+    required String desc,
+    required String imageUrl,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFBDC9C8).withOpacity(0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 4,
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              color: Color(0xFFD4AF37),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+            ),
+          ),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.zero,
+              child: Image.network(
+                imageUrl,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(color: const Color(0xFFE5E9EB), child: const Icon(Icons.stars, color: Color(0xFF006565))),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Contributors Leaderboard",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  "Monthly Stats",
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 12, fontWeight: FontWeight.bold),
-                )
-              ],
-            ),
-            const SizedBox(height: 16),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _contributors.length,
-              itemBuilder: (context, index) {
-                final member = _contributors[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 24,
-                        alignment: Alignment.center,
-                        child: Text(
-                          "#${member['rank']}",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: member['rank'] == 1 ? Colors.amber.shade700 : (member['rank'] == 2 ? Colors.grey : Colors.brown),
-                          ),
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF121C2A))),
+                const SizedBox(height: 2),
+                Text(desc, style: const TextStyle(color: Color(0xFF6E7979), fontSize: 10), maxLines: 2, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: const Color(0xFF006565).withOpacity(0.3)),
+                          foregroundColor: const Color(0xFF006565),
+                          minimumSize: const Size(0, 28),
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         ),
+                        onPressed: () => _triggerToast("Category editor coming soon!"),
+                        child: const Text("Edit", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                       ),
-                      const SizedBox(width: 8),
-                      CircleAvatar(
-                        backgroundImage: NetworkImage(member['avatar']),
-                        radius: 18,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(member['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                            const SizedBox(height: 2),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: (member['badgeColor'] as Color).withAlpha(30),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                member['badge'],
-                                style: TextStyle(color: member['badgeColor'], fontSize: 9, fontWeight: FontWeight.bold),
-                              ),
-                            )
-                          ],
-                        ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            "${member['points']} pts",
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
-                          InkWell(
-                            onTap: () => _showQuickRecognizeDialog(member['name']),
-                            child: const Text(
-                              "Recognize",
-                              style: TextStyle(color: Color(0xFF006565), fontSize: 10, fontWeight: FontWeight.bold),
-                            ),
-                          )
-                        ],
-                      )
-                    ],
-                  ),
-                );
-              },
-            )
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecentActivitySection() {
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Recent Recognition Feed",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _activities.length,
-              separatorBuilder: (context, index) => const Divider(height: 12),
-              itemBuilder: (context, index) {
-                final act = _activities[index];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CircleAvatar(
-                        radius: 16,
-                        backgroundColor: (act['color'] as Color).withAlpha(30),
-                        child: Icon(act['icon'], color: act['color'], size: 16),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            RichText(
-                              text: TextSpan(
-                                style: const TextStyle(color: Colors.black, fontSize: 12),
-                                children: [
-                                  TextSpan(text: "${act['member']} ", style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  TextSpan(text: act['action'], style: TextStyle(color: Colors.grey.shade700)),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(act['time'], style: const TextStyle(color: Colors.grey, fontSize: 10)),
-                          ],
-                        ),
-                      )
-                    ],
-                  ),
-                );
-              },
-            )
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showPayoutApprovalConfirmation(Map<String, dynamic> payout) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Approve Payout Request"),
-          content: Text("Are you sure you want to approve the payout of ₹${payout['amount'].toStringAsFixed(0)} to ${payout['name']}?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
-              onPressed: () {
-                Navigator.pop(context);
-                _approvePayout(payout['id'], payout['amount'], payout['name']);
-              },
-              child: const Text("Approve", style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showPayoutRejectionDialog(Map<String, dynamic> payout) {
-    final reasonController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text(
-            "Reason for Rejection",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: TextField(
-            controller: reasonController,
-            maxLines: 4,
-            decoration: InputDecoration(
-              hintText: "Enter the reason why this payout request is rejected...",
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              contentPadding: const EdgeInsets.all(12),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
-              onPressed: () {
-                final reason = reasonController.text.trim();
-                if (reason.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Rejection reason is required"),
-                      backgroundColor: Colors.red,
                     ),
-                  );
-                  return;
-                }
-                Navigator.pop(context);
-                _rejectPayout(payout['id'], payout['amount'], payout['name'], reason);
-              },
-              child: const Text("Reject Payout", style: TextStyle(color: Colors.white)),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF6E7979)),
+                          foregroundColor: const Color(0xFF121C2A),
+                          minimumSize: const Size(0, 28),
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        ),
+                        onPressed: _showConfigModal,
+                        child: const Text("Configure", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Due for Recognition Nomination Cards
+  Widget _buildNominationCard(Map<String, dynamic> nom) {
+    final avatar = nom['avatarUrl']?.toString() ?? '';
+    final name = nom['name'];
+    final initials = nom['initials'];
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFBDC9C8).withOpacity(0.4)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: const Color(0xFFE5E9EB),
+            backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
+            child: avatar.isEmpty
+                ? Text(initials, style: const TextStyle(color: Color(0xFF006565), fontWeight: FontWeight.bold, fontSize: 12))
+                : null,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF121C2A))),
+                Text(nom['role'], style: const TextStyle(color: Color(0xFF6E7979), fontSize: 9), maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF006565),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              minimumSize: const Size(0, 30),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => _showSendRecognitionModal(name),
+            child: const Text("Reward", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 4),
+          IconButton(
+            icon: const Icon(Icons.close, size: 16, color: Color(0xFF6E7979)),
+            onPressed: () {
+              setState(() {
+                _nominations.removeWhere((item) => item['name'] == name);
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Recognition History Table
+  Widget _buildHistoryTable() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFBDC9C8).withOpacity(0.4)),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          headingRowColor: WidgetStateProperty.all(const Color(0xFFEFF4FF)),
+          columnSpacing: 24,
+          horizontalMargin: 12,
+          columns: const [
+            DataColumn(label: Text('DATE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)))),
+            DataColumn(label: Text('RECIPIENT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)))),
+            DataColumn(label: Text('TYPE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)))),
+            DataColumn(label: Text('AMOUNT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)))),
+            DataColumn(label: Text('STATUS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)))),
+            DataColumn(label: Text('RECEIPT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)))),
           ],
-        );
-      },
+          rows: _history.map((item) {
+            final status = item['status']?.toString() ?? '';
+            final isProcessed = status == 'Processed';
+            return DataRow(cells: [
+              DataCell(Text(item['date']?.toString() ?? '', style: const TextStyle(fontSize: 11, color: Color(0xFF6E7979)))),
+              DataCell(Text(item['recipient']?.toString() ?? '', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold))),
+              DataCell(Text(item['type']?.toString() ?? '', style: const TextStyle(fontSize: 11))),
+              DataCell(Text(item['amount']?.toString() ?? '', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF006565)))),
+              DataCell(
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isProcessed ? const Color(0xFF006565).withOpacity(0.1) : const Color(0xFFFED65B).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    status,
+                    style: TextStyle(
+                      color: isProcessed ? const Color(0xFF006565) : const Color(0xFF745C00),
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              DataCell(
+                IconButton(
+                  icon: const Icon(Icons.receipt_long, size: 18, color: Color(0xFF6E7979)),
+                  onPressed: () => _triggerToast("Opening receipt log details..."),
+                ),
+              ),
+            ]);
+          }).toList(),
+        ),
+      ),
     );
   }
 
-  void _showSendPayoutDialog() {
-    final nameController = TextEditingController();
-    final amountController = TextEditingController();
-    String method = "GPay / UPI";
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              title: const Text("Send Direct Payout"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: "Recipient Name", hintText: "Enter contributor name"),
+  // Team Performance Table
+  Widget _buildPerformanceTable() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFBDC9C8).withOpacity(0.4)),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          headingRowColor: WidgetStateProperty.all(const Color(0xFFEFF4FF)),
+          columnSpacing: 24,
+          horizontalMargin: 12,
+          columns: const [
+            DataColumn(label: Text('DATE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)))),
+            DataColumn(label: Text('RECIPIENT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)))),
+            DataColumn(label: Text('PROJECT/TASK', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)))),
+            DataColumn(label: Text('TYPE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)))),
+            DataColumn(label: Text('AMOUNT/POINTS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)))),
+            DataColumn(label: Text('STATUS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)))),
+            DataColumn(label: Text('ACTIONS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3E4949)))),
+          ],
+          rows: _teamPerformance.map((item) {
+            final status = item['status']?.toString() ?? '';
+            final isDistributed = status == 'Distributed';
+            return DataRow(cells: [
+              DataCell(Text(item['date']?.toString() ?? '', style: const TextStyle(fontSize: 11, color: Color(0xFF6E7979)))),
+              DataCell(Text(item['recipient']?.toString() ?? '', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold))),
+              DataCell(Text(item['task']?.toString() ?? '', style: const TextStyle(fontSize: 11))),
+              DataCell(Text(item['type']?.toString() ?? '', style: const TextStyle(fontSize: 11))),
+              DataCell(Text(item['amount']?.toString() ?? '', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF006565)))),
+              DataCell(
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isDistributed ? const Color(0xFF006565).withOpacity(0.1) : const Color(0xFFFED65B).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: amountController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: "Payout Amount (₹)", hintText: "e.g. 1500"),
+                  child: Text(
+                    status,
+                    style: TextStyle(
+                      color: isDistributed ? const Color(0xFF006565) : const Color(0xFF745C00),
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: method,
-                    decoration: const InputDecoration(labelText: "Transfer Method"),
-                    items: const [
-                      DropdownMenuItem(value: "GPay / UPI", child: Text("GPay / UPI")),
-                      DropdownMenuItem(value: "Bank Transfer", child: Text("Direct Bank Transfer")),
-                      DropdownMenuItem(value: "E-Wallet", child: Text("E-Wallet")),
-                    ],
-                    onChanged: (v) {
-                      setDialogState(() {
-                        method = v!;
-                      });
-                    },
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Cancel"),
                 ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF006565)),
-                  onPressed: () {
-                    final name = nameController.text.trim();
-                    final amt = double.tryParse(amountController.text.trim()) ?? 0.0;
-                    if (name.isEmpty || amt <= 0) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Name and valid positive amount are required")),
-                      );
-                      return;
-                    }
-                    Navigator.pop(context);
-                    _sendPayout(name, amt, method);
-                  },
-                  child: const Text("Send Payout", style: TextStyle(color: Colors.white)),
-                )
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showGiveRecognitionDialog() {
-    final nameController = TextEditingController();
-    final noteController = TextEditingController();
-    String badge = "Top Contributor";
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              title: const Text("Award Badge / Recognize"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: "Recipient Name"),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: badge,
-                    decoration: const InputDecoration(labelText: "Recognition Badge"),
-                    items: const [
-                      DropdownMenuItem(value: "Top Contributor", child: Text("🏆 Top Contributor")),
-                      DropdownMenuItem(value: "Code Ninja", child: Text("💻 Code Ninja")),
-                      DropdownMenuItem(value: "Pixel Perfect", child: Text("🎨 Pixel Perfect")),
-                      DropdownMenuItem(value: "Team Player", child: Text("🤝 Team Player")),
-                      DropdownMenuItem(value: "Rising Star", child: Text("⭐ Rising Star")),
-                    ],
-                    onChanged: (v) {
-                      setDialogState(() {
-                        badge = v!;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: noteController,
-                    decoration: const InputDecoration(labelText: "Personalized Message", hintText: "Why are you recognizing them?"),
-                    maxLines: 2,
-                  ),
-                ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Cancel"),
+              DataCell(
+                IconButton(
+                  icon: const Icon(Icons.receipt_long, size: 18, color: Color(0xFF6E7979)),
+                  onPressed: () => _triggerToast("Opening receipt log details..."),
                 ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.amber.shade700),
-                  onPressed: () {
-                    final name = nameController.text.trim();
-                    final note = noteController.text.trim();
-                    if (name.isEmpty || note.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Name and message are required")),
-                      );
-                      return;
-                    }
-                    Navigator.pop(context);
-                    _giveRecognition(name, badge, note);
-                  },
-                  child: const Text("Recognize", style: TextStyle(color: Colors.white)),
-                )
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showQuickRecognizeDialog(String name) {
-    final noteController = TextEditingController();
-    String badge = "Team Player";
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              title: Text("Recognize $name"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButtonFormField<String>(
-                    value: badge,
-                    decoration: const InputDecoration(labelText: "Recognition Badge"),
-                    items: const [
-                      DropdownMenuItem(value: "Top Contributor", child: Text("🏆 Top Contributor")),
-                      DropdownMenuItem(value: "Code Ninja", child: Text("💻 Code Ninja")),
-                      DropdownMenuItem(value: "Pixel Perfect", child: Text("🎨 Pixel Perfect")),
-                      DropdownMenuItem(value: "Team Player", child: Text("🤝 Team Player")),
-                      DropdownMenuItem(value: "Rising Star", child: Text("⭐ Rising Star")),
-                    ],
-                    onChanged: (v) {
-                      setDialogState(() {
-                        badge = v!;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: noteController,
-                    decoration: const InputDecoration(labelText: "Personalized Message", hintText: "Add notes..."),
-                  ),
-                ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Cancel"),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.amber.shade700),
-                  onPressed: () {
-                    final note = noteController.text.trim();
-                    if (note.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Please write a message")),
-                      );
-                      return;
-                    }
-                    Navigator.pop(context);
-                    _giveRecognition(name, badge, note);
-                  },
-                  child: const Text("Award Badge", style: TextStyle(color: Colors.white)),
-                )
-              ],
-            );
-          },
-        );
-      },
+            ]);
+          }).toList(),
+        ),
+      ),
     );
   }
 }
