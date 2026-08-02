@@ -122,7 +122,7 @@ class _ProductListingScreenState extends State<ProductListingScreen> {
         'action': 'checkServicePosts',
       }, endpoint: 'new_apis/product_listing_api.php');
 
-      if (response != null && response['success'] == true && response['data'] != null) {
+      if (response['success'] == true && response['data'] != null) {
         final left = response['data']['posts_left'];
         setState(() {
           postsLeft = int.tryParse(left.toString()) ?? 0;
@@ -301,7 +301,7 @@ class _ProductListingScreenState extends State<ProductListingScreen> {
       }, endpoint: 'new_apis/community_palatform_setting_api 2.php');
 
       String? apiKey;
-      if (keyResponse != null && (keyResponse['success'] == true || keyResponse['status'] == 200)) {
+      if ((keyResponse['success'] == true || keyResponse['status'] == 200)) {
         apiKey = keyResponse['data']?['api_key']?.toString();
       }
 

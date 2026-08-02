@@ -270,7 +270,7 @@ class _ExploreCommunitiesScreenState extends State<ExploreCommunitiesScreen> wit
     }
 
     final filteredList = _myCommunities.where((c) {
-      final name = c['community_title']?.toString()?.toLowerCase() ?? '';
+      final name = c['community_title']?.toString().toLowerCase() ?? '';
       return name.contains(_searchQuery);
     }).toList();
 

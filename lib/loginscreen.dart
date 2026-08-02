@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:trading_ecommerce_admin/admin/business_user_profile_screen.dart';
 import 'package:trading_ecommerce_admin/services/auth_service.dart';
 import 'package:trading_ecommerce_admin/services/location_service.dart';
 import 'package:trading_ecommerce_admin/common/shell.dart';
@@ -13,6 +14,8 @@ import 'package:trading_ecommerce_admin/admin/business_user_dashboard_screen.dar
 import 'Database/Database.dart';
 import 'admin/admin_login.dart';
 import 'admin/admin_loginscreen.dart';
+import 'admin/seller_dashboard_screen.dart';
+import 'normaluser/UsermainScreen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -43,6 +46,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final signupEmailController = TextEditingController();
   final signupMobileController = TextEditingController();
   final signupPasswordController = TextEditingController();
+
+  get userData => null;
 
   @override
   void dispose() {
@@ -86,15 +91,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response['success'] == true || response['status'] == 200) {
         final vendorId = int.tryParse(
-              response['vendor_id']?.toString() ??
-                  response['data']?['vendor_id']?.toString() ??
-                  '0',
-            ) ??
+          response['vendor_id']?.toString() ??
+              response['data']?['vendor_id']?.toString() ??
+              '0',
+        ) ??
             0;
 
         // Fetch full profile to get the actual vendor_type if missing
         Map<String, dynamic> fullUserData =
-            response is Map ? Map<String, dynamic>.from(response) : {};
+        Map<String, dynamic>.from(response);
         String? vendorType = response['vendor_type']?.toString() ??
             response['data']?['vendor_type']?.toString() ??
             response['full_data']?['vendor_type']?.toString() ??
@@ -158,33 +163,105 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const SuperAdminDashboard()),
-            (route) => false,
+                (route) => false,
           );
           return;
         }
 
-        // if (selectedRole == 'Business' &&
-        //     (vendorType != '500' || vendorType != '1')) {
-        //   _showError('This account is not registered as a Business.');
-        //   await AuthService.clearSession();
-        //   return;
-        // }
-        if (selectedRole == 'Normal' &&
-            (vendorType == '500' && vendorType != '1')) {
-          _showError(
-              'This is a Business User account. Please select Business User role.');
-          await AuthService.clearSession();
+        print("vendor type::---------");
+        print(vendorType);
+        // Admin role
+        if (selectedRole == 'Admin') {
+          if (vendorType == '1') {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const SuperAdminDashboard()),
+                  (route) => false,
+            );
+          } else {
+            _showError('This account is not an Admin.');
+            await AuthService.clearSession();
+          }
           return;
         }
 
-        if (vendorType == '200') {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const CommunityAdminDashboard()),
-            (route) => false,
-          );
+        // Normal role
+        if (selectedRole == 'Normal') {
+          if (vendorType == '500') {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const UserMainScreen()),
+                  (route) => false,
+            );
+          } else {
+            _showError('This account is not a Normal User.');
+            await AuthService.clearSession();
+          }
           return;
         }
+
+        // Business role
+        if (selectedRole == 'Business') {
+          if (vendorType == '200') {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => const CommunityAdminDashboard()),
+                  (route) => false,
+            );
+          } else if (vendorType == '5') {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const SellerDashboard()),
+                  (route) => false,
+            );
+          } else {
+            // Other business types → show modal
+            final vendorTypes = (userData['vendor_type']?.toString().split(
+                ',') ?? []);
+            _showBusinessRoleSelection(vendorId, userData, vendorTypes);
+          }
+          return;
+        }
+        //
+        // if (vendorType == '1') {
+        //
+        //   // Admin → SuperAdminDashboard
+        //
+        //   Navigator.pushAndRemoveUntil(
+        //
+        //     context,
+        //
+        //     MaterialPageRoute(builder: (_) => const SuperAdminDashboard()),
+        //
+        //         (route) => false,
+        //
+        //   );
+        //
+        // } else if (vendorType == '500') {
+        //
+        //   // Normal User → UserDashboard
+        //
+        //   Navigator.pushAndRemoveUntil(
+        //
+        //     context,
+        //
+        //     MaterialPageRoute(builder: (_) => const UserMainScreen()),
+        //
+        //         (route) => false,
+        //
+        //   );
+        //
+        // } else {
+        //   // 1. Parse the vendor types into a List<String>
+        //   final vendorTypes = (userData['vendor_type']?.toString().split(',') ?? []);
+        //
+        //   // 2. Pass both vendorId and vendorTypes to the modal function
+        //   _showBusinessRoleSelection(vendorId, vendorTypes);}
+        //
+        //
+        //
+
 
         final hasInterests = await _checkUserHasInterests(vendorId);
         if (!mounted) return;
@@ -192,15 +269,15 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const AppShell()),
-            (route) => false,
+                (route) => false,
           );
         } else {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
-              builder: (_) => SuperAdminDashboard()
+                builder: (_) => SuperAdminDashboard()
             ),
-            (route) => false,
+                (route) => false,
           );
         }
       } else {
@@ -233,7 +310,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final database = Database();
       final response = await database.getData({
         'action':
-            selectedRole == 'Admin' ? 'send_admin_login_otp' : 'send_login_otp',
+        selectedRole == 'Admin' ? 'send_admin_login_otp' : 'send_login_otp',
         'email': email,
       }, endpoint: 'new_apis/sign_up_API.php');
 
@@ -285,19 +362,19 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const SuperAdminDashboard()),
-            (route) => false,
+                (route) => false,
           );
           return;
         }
 
         final vendorId = int.tryParse(
-              response['vendor_id']?.toString() ?? '0',
-            ) ??
+          response['vendor_id']?.toString() ?? '0',
+        ) ??
             0;
 
         // Fetch full profile to get the actual vendor_type if missing
         Map<String, dynamic> fullUserData =
-            response is Map ? Map<String, dynamic>.from(response) : {};
+        Map<String, dynamic>.from(response);
         String? vendorType = response['vendor_type']?.toString() ??
             response['data']?['vendor_type']?.toString() ??
             response['full_data']?['vendor_type']?.toString() ??
@@ -366,7 +443,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const CommunityAdminDashboard()),
-            (route) => false,
+                (route) => false,
           );
           return;
         }
@@ -377,7 +454,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const AppShell()),
-            (route) => false,
+                (route) => false,
           );
         } else {
           Navigator.pushAndRemoveUntil(
@@ -386,7 +463,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 builder: (_) => SuperAdminDashboard()
 
             ),
-            (route) => false,
+                (route) => false,
           );
         }
       } else {
@@ -433,14 +510,15 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => OtpScreen(
-              email: email,
-              isRecruiter: signupIsAdmin,
-              name: name,
-              mobile: mobile,
-              password: password,
-              vendorType: signupIsAdmin ? '1' : '20',
-            ),
+            builder: (_) =>
+                OtpScreen(
+                  email: email,
+                  isRecruiter: signupIsAdmin,
+                  name: name,
+                  mobile: mobile,
+                  password: password,
+                  vendorType: signupIsAdmin ? '1' : '20',
+                ),
           ),
         );
       } else {
@@ -626,10 +704,10 @@ class _LoginScreenState extends State<LoginScreen> {
         if (data != null && data is List && data.isNotEmpty) {
           final ids = data
               .map((i) =>
-                  int.tryParse(
-                    i['interest_id']?.toString() ?? i['id']?.toString() ?? '0',
-                  ) ??
-                  0)
+          int.tryParse(
+            i['interest_id']?.toString() ?? i['id']?.toString() ?? '0',
+          ) ??
+              0)
               .toList();
           await AuthService.saveUserInterests(ids.cast<int>());
           return true;
@@ -682,7 +760,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Padding(
                     padding: const EdgeInsets.all(28.0),
                     child:
-                        isSignUpTab ? _buildSignUpForm() : _buildSignInForm(),
+                    isSignUpTab ? _buildSignUpForm() : _buildSignInForm(),
                   ),
                 ],
               ),
@@ -699,7 +777,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Expanded(
           child: GestureDetector(
             onTap:
-                _isLoading ? null : () => setState(() => isSignUpTab = false),
+            _isLoading ? null : () => setState(() => isSignUpTab = false),
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 20),
               decoration: BoxDecoration(
@@ -825,7 +903,6 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           _buildRoleItem('Normal', Icons.person_outline_rounded, 'Normal User'),
           _buildRoleItem('Business', Icons.business_outlined, 'Business User'),
-          // _buildRoleItem('Admin', Icons.shield_outlined, 'Admin'),
         ],
       ),
     );
@@ -836,7 +913,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Expanded(
       child: GestureDetector(
         onTap:
-            _isLoading ? null : () => setState(() => selectedRole = roleType),
+        _isLoading ? null : () => setState(() => selectedRole = roleType),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -845,12 +922,12 @@ class _LoginScreenState extends State<LoginScreen> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: isSelected
                 ? [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 5,
-                      offset: const Offset(0, 2),
-                    )
-                  ]
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 5,
+                offset: const Offset(0, 2),
+              )
+            ]
                 : null,
           ),
           child: Column(
@@ -926,7 +1003,7 @@ class _LoginScreenState extends State<LoginScreen> {
           style: const TextStyle(color: Colors.black),
           decoration: InputDecoration(
             prefixIcon:
-                const Icon(Icons.person_outline_rounded, color: Colors.grey),
+            const Icon(Icons.person_outline_rounded, color: Colors.grey),
             hintText: "Full Name",
             hintStyle: const TextStyle(color: Colors.grey),
             filled: true,
@@ -1011,7 +1088,7 @@ class _LoginScreenState extends State<LoginScreen> {
           style: const TextStyle(color: Colors.black),
           decoration: InputDecoration(
             prefixIcon:
-                const Icon(Icons.lock_outline_rounded, color: Colors.grey),
+            const Icon(Icons.lock_outline_rounded, color: Colors.grey),
             suffixIcon: IconButton(
               icon: Icon(
                 signupObscurePassword
@@ -1019,8 +1096,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     : Icons.visibility_outlined,
                 color: Colors.grey,
               ),
-              onPressed: () => setState(
-                  () => signupObscurePassword = !signupObscurePassword),
+              onPressed: () =>
+                  setState(
+                          () => signupObscurePassword = !signupObscurePassword),
             ),
             hintText: "Password",
             hintStyle: const TextStyle(color: Colors.grey),
@@ -1056,21 +1134,21 @@ class _LoginScreenState extends State<LoginScreen> {
             onPressed: _isLoading ? null : _signUpSendOtp,
             child: _isLoading
                 ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
+            )
                 : const Text(
-                    "Send OTP",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+              "Send OTP",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 28),
@@ -1101,12 +1179,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: !signupIsAdmin
                       ? [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 5,
-                            offset: const Offset(0, 2),
-                          )
-                        ]
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
+                    )
+                  ]
                       : null,
                 ),
                 child: Text(
@@ -1134,12 +1212,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: signupIsAdmin
                       ? [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 5,
-                            offset: const Offset(0, 2),
-                          )
-                        ]
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
+                    )
+                  ]
                       : null,
                 ),
                 child: Text(
@@ -1169,7 +1247,7 @@ class _LoginScreenState extends State<LoginScreen> {
           style: const TextStyle(color: Colors.black),
           decoration: InputDecoration(
             prefixIcon:
-                const Icon(Icons.person_outline_rounded, color: Colors.grey),
+            const Icon(Icons.person_outline_rounded, color: Colors.grey),
             hintText: "Username or Email",
             hintStyle: const TextStyle(color: Colors.grey),
             filled: true,
@@ -1198,7 +1276,7 @@ class _LoginScreenState extends State<LoginScreen> {
           style: const TextStyle(color: Colors.black),
           decoration: InputDecoration(
             prefixIcon:
-                const Icon(Icons.lock_outline_rounded, color: Colors.grey),
+            const Icon(Icons.lock_outline_rounded, color: Colors.grey),
             suffixIcon: IconButton(
               icon: Icon(
                 _obscurePassword
@@ -1240,10 +1318,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 onChanged: _isLoading
                     ? null
                     : (val) {
-                        setState(() {
-                          _rememberMe = val ?? false;
-                        });
-                      },
+                  setState(() {
+                    _rememberMe = val ?? false;
+                  });
+                },
               ),
             ),
             const SizedBox(width: 8),
@@ -1257,8 +1335,9 @@ class _LoginScreenState extends State<LoginScreen> {
           ],
         ),
         const SizedBox(height: 10),
-        TextButton(onPressed: (){
-        Navigator.push(context, MaterialPageRoute(builder: (context) => AdminLoginScreen(),));
+        TextButton(onPressed: () {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => AdminLoginScreen(),));
         }, child: Text("Admin Login")),
         // Main Sign In Button
         const SizedBox(height: 10),
@@ -1277,35 +1356,35 @@ class _LoginScreenState extends State<LoginScreen> {
             onPressed: _isLoading ? null : _login,
             child: _isLoading
                 ? Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Text(
-                        "Signing in...",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  )
-                : const Text(
-                    "Sign In",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
                   ),
+                ),
+                SizedBox(width: 12),
+                Text(
+                  "Signing in...",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            )
+                : const Text(
+              "Sign In",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 20),
@@ -1345,10 +1424,11 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             onPressed: _isLoading
                 ? null
-                : () => setState(() {
-                      isPasswordLogin = false;
-                      otpSent = false;
-                    }),
+                : () =>
+                setState(() {
+                  isPasswordLogin = false;
+                  otpSent = false;
+                }),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: const [
@@ -1415,83 +1495,84 @@ class _LoginScreenState extends State<LoginScreen> {
               onPressed: _isLoading ? null : _sendOtp,
               child: _isLoading
                   ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Text(
-                      "Send OTP",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-            ),
-          ),
-        ] else ...[
-          // OTP input
-          TextField(
-            controller: otpController,
-            enabled: !_isLoading,
-            style: const TextStyle(color: Colors.black),
-            decoration: InputDecoration(
-              prefixIcon:
-                  const Icon(Icons.lock_outline_rounded, color: Colors.grey),
-              hintText: "Enter OTP",
-              hintStyle: const TextStyle(color: Colors.grey),
-              filled: true,
-              fillColor: const Color(0xFFF0F7F7),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: accentColor, width: 1.5),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accentColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
                 ),
-                elevation: 0,
-              ),
-              onPressed: _isLoading ? null : _verifyOtp,
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
+              )
                   : const Text(
-                      "Verify & Login",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                "Send OTP",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
-        ],
+        ] else
+          ...[
+            // OTP input
+            TextField(
+              controller: otpController,
+              enabled: !_isLoading,
+              style: const TextStyle(color: Colors.black),
+              decoration: InputDecoration(
+                prefixIcon:
+                const Icon(Icons.lock_outline_rounded, color: Colors.grey),
+                hintText: "Enter OTP",
+                hintStyle: const TextStyle(color: Colors.grey),
+                filled: true,
+                fillColor: const Color(0xFFF0F7F7),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: accentColor, width: 1.5),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accentColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 0,
+                ),
+                onPressed: _isLoading ? null : _verifyOtp,
+                child: _isLoading
+                    ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                )
+                    : const Text(
+                  "Verify & Login",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
         const SizedBox(height: 20),
 
         // OR Divider
@@ -1582,6 +1663,76 @@ class _LoginScreenState extends State<LoginScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showBusinessRoleSelection(int vendorId,
+      Map<String, dynamic> userData,
+      List<String> vendorTypes,) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Select Business Role",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+
+              // ListTile(
+              //   leading: const Icon(Icons.business_outlined),
+              //   title: const Text("Business User Dashboard"),
+              //   onTap: () {
+              //     Navigator.pop(context);
+              //     Navigator.pushAndRemoveUntil(
+              //       context,
+              //       MaterialPageRoute(
+              //           builder: (_) => const CommunityAdminDashboard()),
+              //           (route) => false,
+              //     );
+              //   },
+              // ),
+
+              if (vendorTypes.contains('200'))
+                ListTile(
+                  leading: const Icon(Icons.admin_panel_settings_rounded),
+                  title: const Text("Community Admin Dashboard"),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const CommunityAdminDashboard()),
+                          (route) => false,
+                    );
+                  },
+                ),
+
+              if (vendorTypes.contains('5'))
+                ListTile(
+                  leading: const Icon(Icons.storefront_rounded),
+                  title: const Text("Seller Dashboard"),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const SellerDashboard()),
+                          (route) => false,
+                    );
+                  },
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

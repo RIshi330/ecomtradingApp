@@ -5421,7 +5421,7 @@ class _CommunityAdminDashboardState extends State<CommunityAdminDashboard> {
     final String postImage = post['image_url']?.toString() ?? '';
     final String? youtubeId = _extractYoutubeId(postText);
     final String? twitterUrl = youtubeId == null ? _extractTwitterVideoUrl(postText) : null;
-    final String createdDate = post['created_date']?.toString()?.split(' ')?.first ?? 'Just now';
+    final String createdDate = post['created_date']?.toString().split(' ').first ?? 'Just now';
     final int likesCount = int.tryParse(post['likes_count']?.toString() ?? '0') ?? 0;
     final bool isLiked = int.tryParse(post['is_liked']?.toString() ?? '0') == 1;
     final List<dynamic> comments = post['comments_list'] ?? [];

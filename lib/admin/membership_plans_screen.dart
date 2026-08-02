@@ -104,36 +104,36 @@ class _MembershipPlansScreenState extends State<MembershipPlansScreen> {
           )
         ],
       ),
-      bottomNavigationBar: widget.isEmbedded ? null : BottomNavigationBar(
-        currentIndex: 1,
-        selectedItemColor: primaryColor,
-        unselectedItemColor: Colors.grey,
-        backgroundColor: Colors.white,
-        type: BottomNavigationBarType.fixed,
-        onTap: (index) {
-          if (index != 1 && Navigator.canPop(context)) {
-            Navigator.pop(context);
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: "Home",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.card_membership),
-            label: "Plans",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.verified),
-            label: "Benefits",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: "Profile",
-          ),
-        ],
-      ),
+      // bottomNavigationBar: widget.isEmbedded ? null : BottomNavigationBar(
+      //   currentIndex: 1,
+      //   selectedItemColor: primaryColor,
+      //   unselectedItemColor: Colors.grey,
+      //   backgroundColor: Colors.white,
+      //   type: BottomNavigationBarType.fixed,
+      //   onTap: (index) {
+      //     if (index != 1 && Navigator.canPop(context)) {
+      //       Navigator.pop(context);
+      //     }
+      //   },
+      //   items: const [
+      //     BottomNavigationBarItem(
+      //       icon: Icon(Icons.home),
+      //       label: "Home",
+      //     ),
+      //     BottomNavigationBarItem(
+      //       icon: Icon(Icons.card_membership),
+      //       label: "Plans",
+      //     ),
+      //     BottomNavigationBarItem(
+      //       icon: Icon(Icons.verified),
+      //       label: "Benefits",
+      //     ),
+      //     BottomNavigationBarItem(
+      //       icon: Icon(Icons.person),
+      //       label: "Profile",
+      //     ),
+      //   ],
+      // ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: primaryColor))
           : RefreshIndicator(

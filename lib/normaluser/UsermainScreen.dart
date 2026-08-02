@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:trading_ecommerce_admin/normaluser/userProfile.dart';
+import 'package:trading_ecommerce_admin/normaluser/user_myactivity.dart';
 
 import '../admin/feed_Screen.dart';
+import '../admin/my_Activity.dart';
 import 'Dashbord_Screen.dart';
 import 'Drawer.dart';
+import 'Explore_Marketplace.dart';
+import 'Wallet.dart';
 
 class ActivityScreen extends StatelessWidget {
   final VoidCallback onMenuPressed;
@@ -29,55 +34,30 @@ class ActivityScreen extends StatelessWidget {
   }
 }
 
-class ProfileScreen extends StatelessWidget {
-  final VoidCallback onMenuPressed;
-  const ProfileScreen({super.key, required this.onMenuPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        backgroundColor: Colors.purple,
-        leading: IconButton(
-          icon: const Icon(Icons.menu_rounded, color: Colors.white),
-          onPressed: onMenuPressed,
-        ),
-      ),
-      body: const Center(
-        child: Text(
-          'Profile Screen',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-}
-
-class SettingsScreena extends StatelessWidget {
-  final VoidCallback onMenuPressed;
-  const SettingsScreena({super.key, required this.onMenuPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: Colors.orange,
-        leading: IconButton(
-          icon: const Icon(Icons.menu_rounded, color: Colors.white),
-          onPressed: onMenuPressed,
-        ),
-      ),
-      body: const Center(
-        child: Text(
-          'Settings Screen',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-}
+// class SettingsScreena extends StatelessWidget {
+//   final VoidCallback onMenuPressed;
+//   const SettingsScreena({super.key, required this.onMenuPressed});
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(
+//         title: const Text('Settings'),
+//         backgroundColor: Colors.orange,
+//         leading: IconButton(
+//           icon: const Icon(Icons.menu_rounded, color: Colors.white),
+//           onPressed: onMenuPressed,
+//         ),
+//       ),
+//       body: const Center(
+//         child: Text(
+//           'Settings Screen',
+//           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+//         ),
+//       ),
+//     );
+//   }
+// }
 
 class DetailsScreen extends StatelessWidget {
   const DetailsScreen({super.key});
@@ -136,10 +116,11 @@ class _UserMainScreenState extends State<UserMainScreen> {
   Widget build(BuildContext context) {
     // Bodies only — each screen no longer wraps itself in a Scaffold.
     final List<Widget> screens = [
-      userDashboard(onMenuPressed: _openDrawer),
-      ActivityScreen(onMenuPressed: _openDrawer),
-      ProfileScreen(onMenuPressed: _openDrawer),
-      SettingsScreena(onMenuPressed: _openDrawer),
+      userDashboardscreen(onMenuPressed: _openDrawer),
+      userMyActivity(onMenuPressed: _openDrawer,),
+      ExploreMarketplaceUser(onMenuPressed: _openDrawer),
+      MemberProfileScreen(onMenuPressed: _openDrawer),
+      FinancialOverviewScreen(onMenuPressed: _openDrawer),
     ];
 
     return Scaffold(
@@ -171,14 +152,19 @@ class _UserMainScreenState extends State<UserMainScreen> {
               label: 'Activity',
             ),
             NavigationDestination(
+              icon: Icon(Icons.shopping_cart_sharp),
+              selectedIcon: Icon(Icons.shopping_cart),
+              label: 'Shop',
+            ),
+            NavigationDestination(
               icon: Icon(Icons.person_outline),
               selectedIcon: Icon(Icons.person),
               label: 'Profile',
             ),
             NavigationDestination(
-              icon: Icon(Icons.settings_outlined),
-              selectedIcon: Icon(Icons.settings),
-              label: 'Settings',
+              icon: Icon(Icons.account_balance_wallet_outlined),
+              selectedIcon: Icon(Icons.account_balance_wallet),
+              label: 'Wallet',
             ),
           ],
         ),

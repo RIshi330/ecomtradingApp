@@ -133,7 +133,7 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
       final res = await db.getJsonData({
         'action': 'fetch_clients',
       }, endpoint: 'new_apis/combo_pack_api.php');
-      if (res != null && res['clients'] != null) {
+      if (res['clients'] != null) {
         final List<dynamic> list = res['clients'];
         if (mounted) {
           setState(() {
@@ -532,7 +532,7 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
                               'user_type': '52',
                             }, endpoint: 'new_apis/user_manager_API.php').then((res) {
                               Navigator.pop(context); // Close loading indicator
-                              if (res != null && res['success'] == true) {
+                              if (res['success'] == true) {
                                 final String newId = res['data']['user_id']?.toString() ?? '';
                                 final String newName = res['data']['user_name']?.toString() ?? clientNameController.text;
                                 final String newPhone = phoneController.text;
@@ -551,7 +551,7 @@ class _SelectedItemsScreenState extends State<SelectedItemsScreen> {
 
                                 payNow(product, newName, newPhone);
                               } else {
-                                final String errorMsg = res != null ? res['message']?.toString() ?? "Failed to add client" : "Failed to add client";
+                                final String errorMsg = res['message']?.toString() ?? "Failed to add client";
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(errorMsg),

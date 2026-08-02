@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/admin/Admin_Dashboard.dart';
 import 'package:trading_ecommerce_admin/admin/test.dart';
+import 'package:trading_ecommerce_admin/businessDashboard/Roleselection_screen.dart';
+import 'package:trading_ecommerce_admin/normaluser/UsermainScreen.dart';
 
 // Import Screens from their new locations
 import 'loginscreen.dart';
+import 'normaluser/UsermainScreen.dart';
 import 'signupscreen.dart';
 import 'otp_screen.dart';
 import 'auth_screen_not_use.dart';
@@ -16,7 +19,6 @@ import 'admin/admin_profile_screen.dart';
 import 'admin/manage_items_screen.dart';
 import 'admin/membership_builder_screen.dart';
 import 'admin/membership_plans_screen.dart';
-import 'admin/memberships_and_plans_screen.dart';
 import 'admin/manage_vendors_screen.dart';
 import 'admin/platform_settings_screen.dart';
 import 'admin/commission_settings_screen.dart';
@@ -96,7 +98,7 @@ class AppRoutes {
   static const String notification = '/common/notification';
   static const String setting = '/common/setting';
   static const String shell = '/shell';
-  static const String businessDashboard = '/business/dashboard';
+  static const String businessDashboard = '/businessDashboard/Roleselection';
   // static const String businessDashboard = '/admin/test';
   static const String createCommunity = '/create_community';
 
@@ -155,6 +157,8 @@ class AppRoutes {
   static const String trainingDetails = '/training_details';
   static const String enrollPayment = '/enroll_payment';
   static const String campaignScheduler = '/admin/campaign_scheduler';
+  static const String userDashboard = '/normaluser/Dashboard';
+
 
   /// Named routes mapping for MaterialApp
   static Map<String, WidgetBuilder> get routes => {
@@ -172,6 +176,7 @@ class AppRoutes {
         },
         auth: (context) => const AuthProduction(),
          adminDashboard: (context) => const SuperAdminDashboard(),//super admin for main admin
+          userDashboard: (context) => const UserMainScreen(),//user for normal user
         adminProfile: (context) => const admin.ProfileScreen(),
         userProfile: (context) => const SellerProfileScreen(),
         sellerBankAccounts: (context) => const SellerBankAccountsScreen(),
@@ -181,7 +186,7 @@ class AppRoutes {
         notification: (context) => const NotificationsScreen(),
         setting: (context) => const SettingsScreen(),
         shell: (context) => const AppShell(),
-        businessDashboard: (context) => const AdminDashboard(),
+        businessDashboard: (context) => const RoleselectionScreen(),
         // businessDashboard: (context) => const testapp(),
         createCommunity: (context) => const CreateCommunityScreen(),
 
@@ -197,7 +202,6 @@ class AppRoutes {
         commissionSettings: (context) => const CommissionSettingsScreen(),
         membershipPlans: (context) => const MembershipPlansScreen(),
         manageVendors: (context) => const ManageVendorsScreen(),
-        membershipsAndPlans: (context) => const MembershipsAndPlansScreen(),
         membershipBuilder: (context) => const MembershipBuilderScreen(),
         marketplaceModules: (context) => const MarketplaceModulesScreen(),
         moduleDetails: (context) => const ModuleDetailsScreen(),
@@ -212,7 +216,7 @@ class AppRoutes {
         // tradingMarketplace: (context) => const TradingMarketplaceScreen(),
         selectedItems: (context) => const SelectedItemsScreen(),
         affiliateOrders: (context) => const AffiliateOrdersScreen(),
-        payment: (context) => const PaymentScreen(),
+         // payment: (context) => const PaymentScreen(),
         sellerOrders: (context) => const SellerOrderScreen(),
         orderDetails: (context) => const OrderDetailsScreen(),
         offers: (context) => const OffersScreen(),

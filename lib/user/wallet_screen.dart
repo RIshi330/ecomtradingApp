@@ -70,7 +70,7 @@ class _WalletScreenState extends State<WalletScreen> {
       "action": "get_wallet",
     });
 
-    if (res != null && res['status'] == 200 && res['data'] != null) {
+    if (res['status'] == 200 && res['data'] != null) {
       final balances = res['data']['balances'];
       final txns = res['data']['transactions'] as List? ?? [];
 

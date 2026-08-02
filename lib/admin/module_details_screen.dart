@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../Database/Database.dart';
+import '../common/payment_screen.dart';
 import '../model/module_model.dart';
 import '../core/theme/app_theme.dart';
 
@@ -321,7 +322,27 @@ class ModuleDetailsScreen extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
-                      Navigator.pushNamed(context, '/payment', arguments: module);
+                      final selectedModule = ModuleModel(
+                        id: "_details!.id",
+                        title: "_details!.title",
+                        price: "₹100",
+                        discountPrice: "₹${100}",
+                        icon: Icons.school,
+                        badge: 'BESTSELLER',
+                        category: 'Training',
+                        features: const [],
+                        iconName: 'school',
+                        installs: '0',
+                        rating: "_details!.avgRating.toString(",
+                      );
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PaymentScreen(module: selectedModule),
+                        ),
+                      );
+                      // Navigator.pushNamed(context, '/payment', arguments: module);
                     },
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,

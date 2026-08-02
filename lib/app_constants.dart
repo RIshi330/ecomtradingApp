@@ -6,3 +6,5 @@ const int appId = 1;
 const int adminAppId = 3;
 const bool liveModeEnabled = true;
 const String razorpayTestKey = "rzp_test_mock";
+const String apiUrl = "${baseUrl}index.php";
+const String authApiUrl = "${baseUrl}auth.php";

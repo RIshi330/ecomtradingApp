@@ -5,6 +5,10 @@ import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:vsc_quill_delta_to_html/vsc_quill_delta_to_html.dart';
 
+/// This endpoint (new_apis/create_community_API.php) is shared for every
+/// action used on this screen. Keeping it in one place avoids typos.
+const String _kCommunityApiEndpoint = 'new_apis/community_app_api_v6.php';
+
 class CreateCommunityScreen extends StatefulWidget {
   const CreateCommunityScreen({super.key});
 
@@ -15,25 +19,59 @@ class CreateCommunityScreen extends StatefulWidget {
 class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isSubmitting = false;
+  bool _isLoadingOptions = true;
 
   // Form Fields
   final _nameController = TextEditingController();
   final _taglineController = TextEditingController();
-  final _descriptionController = TextEditingController();
   final _tagInputController = TextEditingController();
-  
-  final List<String> _tags = ["Technology", "Networking"];
+
+  // Tags = free-form labels (kept separate from Industries, which the API
+  // treats as its own column and uses for "communities_for_you" matching).
+  final List<String> _tags = ["Networking"];
   String _selectedType = "Professional";
   String _visibility = "public"; // "public" or "private"
   String _joiningRule = "free"; // "free", "approval", "invite", "paid"
-  String _communityStructure = "Centralized"; // "Centralized", "Decentralized", "Hybrid"
-  
+  String _communityStructure = "Centralized"; // UI-only, not yet stored by the API
+
+  // ---- Industries: sourced live from action=get_job_industries ----
+  List<Map<String, dynamic>> _jobIndustries = [];
+  final List<String> _selectedIndustries = [];
+  final TextEditingController _industrySearchController = TextEditingController();
+  String _industrySearchQuery = "";
+
+  // ---- "Community For" (vendor type): sourced live from action=get_vendor_types ----
+  // The API validates these as numeric vendor_type IDs (see validateVendorTypeIds
+  // in the PHP), so this MUST be an id-based multi-select, not free text.
+  List<Map<String, dynamic>> _vendorTypeOptions = [];
+  final List<int> _selectedVendorTypeIds = [];
+  final TextEditingController _vendorTypeSearchController = TextEditingController();
+  String _vendorTypeSearchQuery = "";
+
+  // Community Module Template dropdown.
+  // The PHP only accepts: 'social_feed' | 'marketplace' | 'hybrid'.
+  // We show friendly labels and map them right before sending.
+  String _moduleTemplate = "Social Community Feed";
+  final List<String> _moduleTemplateList = [
+    "Social Community Feed",
+    "Marketplace",
+    "Hybrid",
+  ];
+  static const Map<String, String> _moduleTemplateApiValues = {
+    "Social Community Feed": "social_feed",
+    "Marketplace": "marketplace",
+    "Hybrid": "hybrid",
+  };
+
   // Paid Membership Fields
   final _feeController = TextEditingController(text: "0.00");
-  String _billingType = "Recurring"; // "Recurring", "One-time"
-  String _duration = "Monthly"; // "Monthly", "Quarterly", "Annual", "Lifetime"
+  String _billingType = "Recurring"; // UI-only, not yet stored by the API
+  String _duration = "Monthly"; // UI-only, not yet stored by the API
 
-  // Target Audience Fields
+  // Target Audience Fields (UI-only for now — the API has no columns for
+  // these yet, so they are not sent. Left in place for when the backend
+  // adds support, so no data entered by the user is silently discarded
+  // without at least being visible to them here.)
   String _ageGroup = "All Ages";
   String _gender = "All";
   final _professionController = TextEditingController();
@@ -49,32 +87,97 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
   final _descriptionQuillController = QuillController.basic();
 
   final List<String> _communityTypes = [
-    "Professional", "Business", "NGO", "Educational", "Sports", "Religious", 
+    "Professional", "Business", "NGO", "Educational", "Sports", "Religious",
     "Local", "Startup", "Women", "Kids", "Alumni", "Hobby", "Club", "Other"
   ];
 
-  final List<String> _industriesList = [
-    "Technology", "Finance", "Education", "Healthcare", "Marketing", "Real Estate", 
-    "Retail & E-commerce", "NGO & Non-Profit", "Entertainment", "Logistics"
-  ];
-
   final List<String> _categoriesList = [
-    "Networking", "Mentorship", "Job Opportunities", "B2B Collaboration", 
+    "Networking", "Mentorship", "Job Opportunities", "B2B Collaboration",
     "Events & Meetups", "Skill Development", "Support & Wellness", "General Discussion"
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchFormOptions();
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _taglineController.dispose();
-    _descriptionController.dispose();
     _tagInputController.dispose();
     _feeController.dispose();
     _professionController.dispose();
     _interestsController.dispose();
     _locationController.dispose();
     _descriptionQuillController.dispose();
+    _industrySearchController.dispose();
+    _vendorTypeSearchController.dispose();
     super.dispose();
+  }
+
+  /// Loads the real industry list (action=get_job_industries) and the real
+  /// vendor-type list (action=get_vendor_types) from the backend so the user
+  /// picks values the API will actually accept, instead of typing free text.
+  Future<void> _fetchFormOptions() async {
+    setState(() => _isLoadingOptions = true);
+
+    try {
+      final industriesResp = await Database().getData(
+        {'action': 'get_job_industries'},
+        endpoint: _kCommunityApiEndpoint,
+      );
+      if (industriesResp['success'] == true) {
+        final list = (industriesResp['data']?['industries'] as List?) ?? [];
+        _jobIndustries = list
+            .whereType<Map>()
+            .map((e) => e.map((k, v) => MapEntry(k.toString(), v)))
+            .toList();
+      }
+    } catch (e) {
+      debugPrint("Failed to load industries: $e");
+    }
+
+    try {
+      final vendorResp = await Database().getData(
+        {'action': 'get_vendor_types'},
+        endpoint: _kCommunityApiEndpoint,
+      );
+      if (vendorResp['success'] == true) {
+        final list = (vendorResp['data']?['marketplace_list'] as List?) ?? [];
+        _vendorTypeOptions = list
+            .whereType<Map>()
+            .map((e) => e.map((k, v) => MapEntry(k.toString(), v)))
+            .toList();
+      }
+    } catch (e) {
+      debugPrint("Failed to load vendor types: $e");
+    }
+
+    if (mounted) setState(() => _isLoadingOptions = false);
+  }
+
+  // ---- Filtered views used by the searchable selectors below ----
+
+  List<Map<String, dynamic>> get _filteredIndustries {
+    final query = _industrySearchQuery.trim().toLowerCase();
+    if (query.isEmpty) return _jobIndustries;
+    return _jobIndustries.where((row) {
+      final title = (row['industry_title'] ?? '').toString().toLowerCase();
+      return title.contains(query);
+    }).toList();
+  }
+
+  List<Map<String, dynamic>> get _filteredVendorTypes {
+    final query = _vendorTypeSearchQuery.trim().toLowerCase();
+    if (query.isEmpty) return _vendorTypeOptions;
+    return _vendorTypeOptions.where((row) {
+      final label = (row['display_name'] ?? row['marketplace_name'] ?? '')
+          .toString()
+          .toLowerCase();
+      return label.contains(query);
+    }).toList();
   }
 
   Future<void> _pickLogo() async {
@@ -107,6 +210,26 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
     }
   }
 
+  void _toggleIndustry(String title) {
+    setState(() {
+      if (_selectedIndustries.contains(title)) {
+        _selectedIndustries.remove(title);
+      } else {
+        _selectedIndustries.add(title);
+      }
+    });
+  }
+
+  void _toggleVendorType(int id) {
+    setState(() {
+      if (_selectedVendorTypeIds.contains(id)) {
+        _selectedVendorTypeIds.remove(id);
+      } else {
+        _selectedVendorTypeIds.add(id);
+      }
+    });
+  }
+
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -114,31 +237,37 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
 
     try {
       final double fee = double.tryParse(_feeController.text) ?? 0.0;
-      final response = await Database().getData({
+
+      // Keys below match exactly what create_community_API.php reads from
+      // $input. Anything not read by the PHP is intentionally left out so
+      // the payload reflects what is actually persisted.
+      final Map<String, dynamic> payload = {
         'action': 'create_community',
-        'community_title': _nameController.text.trim(),
+        'title': _nameController.text.trim(),
         'description': _getHtmlFromQuill(_descriptionQuillController),
-        'community_type': _selectedType,
+        'type': _selectedType,
+        'module_template': _moduleTemplateApiValues[_moduleTemplate] ?? 'social_feed',
         'visibility': _visibility,
         'joining_rule': _joiningRule,
         'joining_fee': fee.toStringAsFixed(2),
-        'logo': _logoName ?? 'default_logo.png',
-        'cover_image': _coverName ?? 'default_cover.png',
-        'tags': _tags.join(','),
-        'tagline': _taglineController.text.trim(),
-        'age_group': _ageGroup,
-        'gender': _gender,
-        'profession': _professionController.text.trim(),
-        'interests': _interestsController.text.trim(),
-        'location_coverage': _locationController.text.trim(),
-        'billing_type': _billingType,
-        'duration': _duration,
-        'community_structure': _communityStructure,
-      }, endpoint: 'new_apis/create_community_API.php');
+        if (_logoName != null) 'logo': _logoName,
+        if (_coverName != null) 'cover_image': _coverName,
+        if (_tags.isNotEmpty) 'tags': _tags.join(','),
+        if (_selectedIndustries.isNotEmpty) 'industries': _selectedIndustries.join(','),
+        if (_selectedVendorTypeIds.isNotEmpty)
+          'for_vendor_type': _selectedVendorTypeIds.join(','),
+      };
+
+      final response = await Database().getData(
+        payload,
+        endpoint: _kCommunityApiEndpoint,
+      );
 
       if (!mounted) return;
 
-      if (response['success'] == true || response['status'] == 200) {
+      final bool success = response['success'] == true;
+
+      if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Community created successfully!"),
@@ -148,9 +277,10 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
         );
         Navigator.pop(context, true);
       } else {
+        final message = (response['message'] ?? "Failed to create community").toString();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response['message'] ?? "Failed to create community"),
+            content: Text(message),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),
@@ -255,7 +385,7 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  "COMMUNITY LOGO (1:1)",
+                                  "COMMUNITY LOGO ",
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
@@ -275,31 +405,31 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                                     child: Center(
                                       child: _logoPath != null
                                           ? ClipRRect(
-                                              borderRadius: BorderRadius.circular(12),
-                                              child: Image.file(
-                                                File(_logoPath!),
-                                                width: double.infinity,
-                                                height: double.infinity,
-                                                fit: BoxFit.cover,
-                                              ),
-                                            )
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Image.file(
+                                          File(_logoPath!),
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      )
                                           : _logoName != null
-                                              ? Padding(
-                                                  padding: const EdgeInsets.all(8.0),
-                                                  child: Text(
-                                                    _logoName!,
-                                                    textAlign: TextAlign.center,
-                                                    style: const TextStyle(fontSize: 10, color: primaryColor, fontWeight: FontWeight.bold),
-                                                  ),
-                                                )
-                                              : Column(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: const [
-                                                    Icon(Icons.add_photo_alternate_outlined, color: Colors.grey),
-                                                    SizedBox(height: 4),
-                                                    Text("Upload Logo", style: TextStyle(fontSize: 9, color: Colors.grey)),
-                                                  ],
-                                                ),
+                                          ? Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Text(
+                                          _logoName!,
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(fontSize: 10, color: primaryColor, fontWeight: FontWeight.bold),
+                                        ),
+                                      )
+                                          : Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: const [
+                                          Icon(Icons.add_photo_alternate_outlined, color: Colors.grey),
+                                          SizedBox(height: 4),
+                                          Text("Upload Logo", style: TextStyle(fontSize: 9, color: Colors.grey)),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -314,7 +444,7 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  "COVER PHOTO (16:9)",
+                                  "COVER PHOTO",
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
@@ -333,35 +463,35 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                                       image: _coverName != null || _coverPath != null
                                           ? null
                                           : const DecorationImage(
-                                              image: NetworkImage("https://lh3.googleusercontent.com/aida-public/AB6AXuCeZ8lweaK-XBVEvbJU6Igx-guIJrTT17cYHZ0FirV5uij6XqYsGN5Z8GiRpf21SFtyHu3mXxemren3yXQ3joQmu021Nu_g90zotvdidTguBezYMeTlxI45j7tN3iNRjQA4VQZYSZ8_uXlTqXPAb_PWkKxw3pAC7Q7O5wLF2AW2bTDCxUKAcqNVzahbb6jOsTdvt26lXGvDAZxYcX6l49nHhhbDRWjHgdNCaGW8C4eHcgUedwJFWZ49"),
-                                              fit: BoxFit.cover,
-                                              opacity: 0.15,
-                                            ),
+                                        image: NetworkImage("https://lh3.googleusercontent.com/aida-public/AB6AXuCeZ8lweaK-XBVEvbJU6Igx-guIJrTT17cYHZ0FirV5uij6XqYsGN5Z8GiRpf21SFtyHu3mXxemren3yXQ3joQmu021Nu_g90zotvdidTguBezYMeTlxI45j7tN3iNRjQA4VQZYSZ8_uXlTqXPAb_PWkKxw3pAC7Q7O5wLF2AW2bTDCxUKAcqNVzahbb6jOsTdvt26lXGvDAZxYcX6l49nHhhbDRWjHgdNCaGW8C4eHcgUedwJFWZ49"),
+                                        fit: BoxFit.cover,
+                                        opacity: 0.15,
+                                      ),
                                     ),
                                     child: Center(
                                       child: _coverPath != null
                                           ? ClipRRect(
-                                              borderRadius: BorderRadius.circular(12),
-                                              child: Image.file(
-                                                File(_coverPath!),
-                                                width: double.infinity,
-                                                height: double.infinity,
-                                                fit: BoxFit.cover,
-                                              ),
-                                            )
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Image.file(
+                                          File(_coverPath!),
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      )
                                           : _coverName != null
-                                              ? Padding(
-                                                  padding: const EdgeInsets.all(8.0),
-                                                  child: Text(
-                                                    _coverName!,
-                                                    textAlign: TextAlign.center,
-                                                    style: const TextStyle(fontSize: 12, color: primaryColor, fontWeight: FontWeight.bold),
-                                                  ),
-                                                )
-                                              : const Text(
-                                                  "Tap to replace Cover",
-                                                  style: TextStyle(fontSize: 11, color: primaryColor, fontWeight: FontWeight.bold),
-                                                ),
+                                          ? Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Text(
+                                          _coverName!,
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(fontSize: 12, color: primaryColor, fontWeight: FontWeight.bold),
+                                        ),
+                                      )
+                                          : const Text(
+                                        "Tap to replace Cover",
+                                        style: TextStyle(fontSize: 11, color: primaryColor, fontWeight: FontWeight.bold),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -372,9 +502,12 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Industry & Category Dropdowns
+                      // Industries — loaded live from action=get_job_industries.
+                      // Searchable multi-select chips, sent to the API as the
+                      // `industries` CSV field (used for "communities_for_you"
+                      // matching).
                       const Text(
-                        "SELECT INDUSTRY",
+                        "INDUSTRIES",
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -382,33 +515,33 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      DropdownButtonFormField<String>(
-                        isExpanded: true,
-                        decoration: InputDecoration(
-                          fillColor: const Color(0xFFF4F3F3),
-                          filled: true,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          hintText: "Choose Industry...",
-                          hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
-                        ),
-                        items: _industriesList.map((t) => DropdownMenuItem(
-                          value: t,
-                          child: Text(t, style: const TextStyle(color: Colors.black, fontSize: 14)),
-                        )).toList(),
-                        onChanged: (val) {
-                          if (val != null && !_tags.contains(val)) {
-                            setState(() {
-                              _tags.add(val);
-                            });
-                          }
+                      _buildSearchableMultiSelect(
+                        isLoading: _isLoadingOptions,
+                        emptyMessage: "No industries available from the server.",
+                        searchController: _industrySearchController,
+                        searchHint: "Search industries...",
+                        onSearchChanged: (val) => setState(() => _industrySearchQuery = val),
+                        allOptionsEmpty: _jobIndustries.isEmpty,
+                        selectedChips: _selectedIndustries.map((title) {
+                          return _buildSelectedChip(
+                            label: title,
+                            onRemove: () => _toggleIndustry(title),
+                          );
+                        }).toList(),
+                        filteredOptions: _filteredIndustries,
+                        optionLabel: (row) => (row['industry_title'] ?? '').toString(),
+                        isOptionSelected: (row) =>
+                            _selectedIndustries.contains((row['industry_title'] ?? '').toString()),
+                        onOptionTap: (row) {
+                          final title = (row['industry_title'] ?? '').toString();
+                          if (title.isNotEmpty) _toggleIndustry(title);
                         },
+                        noMatchMessage: "No industries match your search.",
                       ),
                       const SizedBox(height: 16),
 
+                      // Category — UI convenience only; folded into Tags
+                      // since the API has no separate category column.
                       const Text(
                         "SELECT CATEGORY",
                         style: TextStyle(
@@ -569,6 +702,101 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                 ),
                 const SizedBox(height: 20),
 
+                // "Community For" (vendor type) & Module Template
+                _buildCardSection(
+                  title: "Community For & Template",
+                  icon: Icons.store_mall_directory_rounded,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "COMMUNITY FOR (VENDOR TYPE)",
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Loaded live from action=get_vendor_types. The backend
+                      // validates for_vendor_type as numeric IDs, so this is
+                      // a real searchable multi-select against server data,
+                      // not free text.
+                      _buildSearchableMultiSelect(
+                        isLoading: _isLoadingOptions,
+                        emptyMessage: "No vendor types available from the server.",
+                        searchController: _vendorTypeSearchController,
+                        searchHint: "Search vendor types...",
+                        onSearchChanged: (val) => setState(() => _vendorTypeSearchQuery = val),
+                        allOptionsEmpty: _vendorTypeOptions.isEmpty,
+                        selectedChips: _selectedVendorTypeIds.map((id) {
+                          final match = _vendorTypeOptions.firstWhere(
+                                (row) => (int.tryParse((row['id'] ?? '').toString()) ?? -1) == id,
+                            orElse: () => {},
+                          );
+                          final label = (match['display_name'] ??
+                              match['marketplace_name'] ??
+                              'Vendor Type $id')
+                              .toString();
+                          return _buildSelectedChip(
+                            label: label,
+                            onRemove: () => _toggleVendorType(id),
+                          );
+                        }).toList(),
+                        filteredOptions: _filteredVendorTypes,
+                        optionLabel: (row) => (row['display_name'] ??
+                            row['marketplace_name'] ??
+                            'Vendor Type ${row['id']}')
+                            .toString(),
+                        isOptionSelected: (row) {
+                          final id = int.tryParse((row['id'] ?? '').toString()) ?? -1;
+                          return _selectedVendorTypeIds.contains(id);
+                        },
+                        onOptionTap: (row) {
+                          final id = int.tryParse((row['id'] ?? '').toString()) ?? -1;
+                          if (id >= 0) _toggleVendorType(id);
+                        },
+                        noMatchMessage: "No vendor types match your search.",
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        "SELECT COMMUNITY MODULE TEMPLATE",
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: _moduleTemplate,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          fillColor: const Color(0xFFF4F3F3),
+                          filled: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        items: _moduleTemplateList.map((t) => DropdownMenuItem(
+                          value: t,
+                          child: Text(t, overflow: TextOverflow.ellipsis),
+                        )).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() {
+                              _moduleTemplate = val;
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
                 _buildCardSection(
                   title: "Visibility",
                   icon: Icons.visibility_rounded,
@@ -597,7 +825,8 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Community Structure Section
+                // Community Structure Section (UI-only — no matching column
+                // in marketplace_communities yet).
                 _buildCardSection(
                   title: "Community Structure",
                   icon: Icons.hub_rounded,
@@ -770,7 +999,8 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // 4. Target Audience Section
+                // 4. Target Audience Section (UI-only — no matching columns
+                // in marketplace_communities yet).
                 _buildCardSection(
                   title: "Target Audience",
                   icon: Icons.group_rounded,
@@ -885,18 +1115,18 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                         ),
                         child: _isSubmitting
                             ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                              )
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
                             : Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  Text("Create Community", style: TextStyle(fontWeight: FontWeight.bold)),
-                                  SizedBox(width: 8),
-                                  Icon(Icons.arrow_forward),
-                                ],
-                              ),
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Text("Create Community", style: TextStyle(fontWeight: FontWeight.bold)),
+                            SizedBox(width: 8),
+                            Icon(Icons.arrow_forward),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -951,6 +1181,160 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  /// A reusable "search + scrollable chip list + selected chips" control.
+  ///
+  /// Used for both Industries and Community-For (Vendor Type) so the form
+  /// no longer dumps every option from the database onto the screen at
+  /// once — instead the user types to filter, and taps to select/deselect.
+  /// `T` is the raw option row (a `Map<String, dynamic>` in both call sites).
+  Widget _buildSearchableMultiSelect<T>({
+    required bool isLoading,
+    required bool allOptionsEmpty,
+    required String emptyMessage,
+    required TextEditingController searchController,
+    required String searchHint,
+    required ValueChanged<String> onSearchChanged,
+    required List<Widget> selectedChips,
+    required List<T> filteredOptions,
+    required String Function(T) optionLabel,
+    required bool Function(T) isOptionSelected,
+    required void Function(T) onOptionTap,
+    required String noMatchMessage,
+  }) {
+    const primaryColor = Color(0xFF006565);
+
+    if (isLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: SizedBox(
+          height: 18,
+          width: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+
+    if (allOptionsEmpty) {
+      return Text(
+        emptyMessage,
+        style: const TextStyle(fontSize: 12, color: Colors.grey),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (selectedChips.isNotEmpty) ...[
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: selectedChips,
+          ),
+          const SizedBox(height: 10),
+        ],
+
+        // Search box
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF4F3F3),
+            border: Border.all(color: const Color(0xFFBDC9C8)),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: TextField(
+            controller: searchController,
+            onChanged: onSearchChanged,
+            style: const TextStyle(fontSize: 13),
+            decoration: InputDecoration(
+              hintText: searchHint,
+              hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+              prefixIcon: const Icon(Icons.search, size: 20, color: Colors.grey),
+              suffixIcon: searchController.text.isEmpty
+                  ? null
+                  : IconButton(
+                icon: const Icon(Icons.close, size: 18, color: Colors.grey),
+                onPressed: () {
+                  searchController.clear();
+                  onSearchChanged('');
+                },
+              ),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Bounded-height results list so the page doesn't grow with the
+        // full database list — it scrolls internally instead.
+        Container(
+          constraints: const BoxConstraints(maxHeight: 180),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFBDC9C8)),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: filteredOptions.isEmpty
+              ? Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Text(
+              noMatchMessage,
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          )
+              : Scrollbar(
+            child: ListView.separated(
+              shrinkWrap: true,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              itemCount: filteredOptions.length,
+              separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFEEEEED)),
+              itemBuilder: (context, index) {
+                final option = filteredOptions[index];
+                final label = optionLabel(option);
+                final selected = isOptionSelected(option);
+                return InkWell(
+                  onTap: () => onOptionTap(option),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    child: Row(
+                      children: [
+                        Icon(
+                          selected ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                          size: 18,
+                          color: selected ? primaryColor : Colors.grey,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: selected ? primaryColor : Colors.black,
+                              fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSelectedChip({required String label, required VoidCallback onRemove}) {
+    return Chip(
+      label: Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF306E6D))),
+      backgroundColor: const Color(0xFFB0EEED),
+      onDeleted: onRemove,
+      side: BorderSide.none,
+      deleteIconColor: const Color(0xFF306E6D),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     );
   }
 

@@ -2045,7 +2045,70 @@ class Database {
       };
     }
   }
+  /// Upload a physical file via multipart request
+  Future<Map<String, dynamic>> uploadFile({
+    required String endpoint,
+    required File file,
+    required Map<String, String> body,
+    String fileFieldName = 'file',
+  }) async {
+    try {
+      final storage = FlutterSecureStorage(aOptions: _getAndroidOptions());
+      if (_cachedSessionId == null || _cachedSessionId!.isEmpty) {
+        _cachedSessionId = await _readSecureKey(storage, "SESSION_ID");
+      }
+      final existingSessionId = _cachedSessionId;
+      final rawCookie = await _getSavedRawCookie(storage);
 
+      final targetUrl = Uri.parse(Uri.encodeFull('$baseUrl?endpoint=$endpoint'));
+      final request = http.MultipartRequest('POST', targetUrl);
+
+      // Add Headers
+      request.headers.addAll({
+        'APP_ID': appId.toString(),
+        if (_buildCookieHeader(rawCookie, existingSessionId) != null)
+          'Cookie': _buildCookieHeader(rawCookie, existingSessionId)!,
+      });
+
+      // Add String Form Fields
+      request.fields.addAll(body);
+
+      // Attach Physical File
+      request.files.add(
+        await http.MultipartFile.fromPath(fileFieldName, file.path),
+      );
+
+      print('Database [uploadFile]: Uploading ${file.path} to $targetUrl');
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      await _saveRawCookieFromResponse(response, storage);
+
+      print('UPLOAD_FILE RESPONSE (${response.statusCode}): "${response.body}"');
+
+      if (response.body.isEmpty) {
+        return {'success': false, 'message': 'Server returned empty response'};
+      }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
+      } else {
+        return {
+          'success': true,
+          'data': decoded,
+          'status': response.statusCode,
+        };
+      }
+    } catch (e) {
+      print('Database [uploadFile] Error: $e');
+      return {
+        'success': false,
+        'message': 'Network upload error: ${e.toString()}',
+      };
+    }
+  }
   /// Get applicant details
   Future<Map<String, dynamic>> getApplicantDetails({
     required String vendorId,

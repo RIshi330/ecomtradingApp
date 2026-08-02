@@ -61,56 +61,54 @@ class _DigitalOrdersInstallationScreenState extends State<DigitalOrdersInstallat
             Timer? timer;
             
             // Start local periodic tick to simulate deployment progress
-            if (timer == null) {
-              const tick = Duration(milliseconds: 150);
-              timer = Timer.periodic(tick, (t) {
-                if (!mounted || !isDeploying) {
+            const tick = Duration(milliseconds: 150);
+            timer = Timer.periodic(tick, (t) {
+              if (!mounted || !isDeploying) {
+                t.cancel();
+                return;
+              }
+              
+              setDialogState(() {
+                deploymentProgress += 0.02;
+                if (deploymentProgress >= 1.0) {
+                  deploymentProgress = 1.0;
                   t.cancel();
-                  return;
+                  
+                  // Finish deployment
+                  Future.delayed(const Duration(milliseconds: 500), () {
+                    if (mounted) {
+                      Navigator.pop(dialogContext); // Close modal
+                      setState(() {
+                        isDeploying = false;
+                        websiteStatus = "Live";
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Website deployed successfully! Status is now LIVE."),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  });
                 }
-                
-                setDialogState(() {
-                  deploymentProgress += 0.02;
-                  if (deploymentProgress >= 1.0) {
-                    deploymentProgress = 1.0;
-                    t.cancel();
-                    
-                    // Finish deployment
-                    Future.delayed(const Duration(milliseconds: 500), () {
-                      if (mounted) {
-                        Navigator.pop(dialogContext); // Close modal
-                        setState(() {
-                          isDeploying = false;
-                          websiteStatus = "Live";
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Website deployed successfully! Status is now LIVE."),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      }
-                    });
-                  }
 
-                  // Update steps based on progress percent
-                  if (deploymentProgress < 0.3) {
-                    deploymentStep = 1;
-                    deploymentStepText = "Selecting Components...";
-                  } else if (deploymentProgress < 0.6) {
-                    deploymentStep = 2;
-                    deploymentStepText = "Writing Codes & Configuration...";
-                  } else if (deploymentProgress < 0.85) {
-                    deploymentStep = 3;
-                    deploymentStepText = "Migrating Database & Schema...";
-                  } else {
-                    deploymentStep = 4;
-                    deploymentStepText = "Verifying Services & DNS...";
-                  }
-                });
+                // Update steps based on progress percent
+                if (deploymentProgress < 0.3) {
+                  deploymentStep = 1;
+                  deploymentStepText = "Selecting Components...";
+                } else if (deploymentProgress < 0.6) {
+                  deploymentStep = 2;
+                  deploymentStepText = "Writing Codes & Configuration...";
+                } else if (deploymentProgress < 0.85) {
+                  deploymentStep = 3;
+                  deploymentStepText = "Migrating Database & Schema...";
+                } else {
+                  deploymentStep = 4;
+                  deploymentStepText = "Verifying Services & DNS...";
+                }
               });
-            }
-
+            });
+          
             return AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               contentPadding: const EdgeInsets.all(24),

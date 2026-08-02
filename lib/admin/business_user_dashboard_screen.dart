@@ -59,10 +59,10 @@ class SuperAdminDashboard extends StatefulWidget {
   const SuperAdminDashboard({super.key});
 
   @override
-  State<SuperAdminDashboard> createState() => _BusinessUserDashboardState();
+  State<SuperAdminDashboard> createState() => _SuperAdminDashboard();
 }
 
-class _BusinessUserDashboardState extends State<SuperAdminDashboard> {
+class _SuperAdminDashboard extends State<SuperAdminDashboard> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   // Navigation State

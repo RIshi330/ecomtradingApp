@@ -163,11 +163,12 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
     // Default fallback to login screen
     Navigator.pushReplacementNamed(
       context,
-         AppRoutes.login,
-        // AppRoutes.sellerDashboard
+         //  AppRoutes.userDashboard,
+            AppRoutes.login
 
     );
-    //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => testapp(),));
+    //    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => CommunityAdminDashboard(),));
+    //    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => SellerDashboard(),));
   }
 
   @override

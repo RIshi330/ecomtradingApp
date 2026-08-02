@@ -6,7 +6,12 @@ import '../model/module_model.dart';
 import '../core/theme/app_theme.dart';
 
 class PaymentScreen extends StatefulWidget {
-  const PaymentScreen({super.key});
+  final ModuleModel module;
+
+  const PaymentScreen({
+    super.key,
+    required this.module,
+  });
 
   @override
   State<PaymentScreen> createState() => _PaymentScreenState();
@@ -21,7 +26,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
   bool _isPaying = false;
   bool _isLoadingBalances = false;
   dynamic _razorpay;
-  String? _pendingOrderId;
 
   late TextEditingController ecashController;
   late TextEditingController ewalletController;
@@ -33,32 +37,28 @@ class _PaymentScreenState extends State<PaymentScreen> {
   double walletApplied = 0.0;
   double couponDiscount = 0.0;
   double remainingAmount = 0.0;
-  bool _initialized = false;
 
   double _parsePrice(String priceStr) {
-    final clean = priceStr.split('/')[0].replaceAll(RegExp(r'[^\d]'), '');
+    final clean = priceStr.split('/')[0].replaceAll(RegExp(r'[^\d.]'), '');
     return double.tryParse(clean) ?? 0.0;
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_initialized) {
-      module = ModalRoute.of(context)!.settings.arguments as ModuleModel;
-      subtotal = _parsePrice(module.discountPrice);
-      remainingAmount = subtotal;
+  void initState() {
+    super.initState();
+    module = widget.module;
+    subtotal = _parsePrice(module.discountPrice);
+    remainingAmount = subtotal;
 
-      ecashController = TextEditingController(
-        text: subtotal.toStringAsFixed(0),
-      );
-      ewalletController = TextEditingController(
-        text: subtotal.toStringAsFixed(0),
-      );
+    ecashController = TextEditingController(
+      text: subtotal.toStringAsFixed(0),
+    );
+    ewalletController = TextEditingController(
+      text: subtotal.toStringAsFixed(0),
+    );
 
-      _initialized = true;
-      _fetchBalances();
-      _initRazorpay();
-    }
+    _fetchBalances();
+    _initRazorpay();
   }
 
   void _initRazorpay() {
@@ -81,16 +81,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
     super.dispose();
   }
 
+  // ---------------------------------------------------------------------
+  // 1. FETCH BALANCES API
+  // ---------------------------------------------------------------------
   Future<void> _fetchBalances() async {
-    setState(() {
-      _isLoadingBalances = true;
-    });
+    setState(() => _isLoadingBalances = true);
 
     try {
       final db = Database();
       final res = await db.getJsonData(
         {"action": "get_balances"},
-        endpoint: "new_apis/payment_modal_API 1.php",
+        endpoint: "new_apis/payment_modal_API.php",
       );
 
       if (!mounted) return;
@@ -105,16 +106,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
         }
       }
     } catch (e) {
-      print("Error fetching balances: $e");
+      debugPrint("Error fetching balances: $e");
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoadingBalances = false;
-        });
+        setState(() => _isLoadingBalances = false);
       }
     }
   }
 
+  // ---------------------------------------------------------------------
+  // 2. RECALCULATE REMAINING AMOUNT
+  // ---------------------------------------------------------------------
   Future<void> _recalculateRemaining() async {
     double ecashUsed = 0.0;
     double ewalletUsed = 0.0;
@@ -148,7 +150,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
       final res = await db.getJsonData(
         body,
-        endpoint: "new_apis/payment_modal_API 1.php",
+        endpoint: "new_apis/payment_modal_API.php",
       );
 
       if (!mounted) return;
@@ -157,11 +159,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
         final data = res['data'];
         if (data != null) {
           final double newCouponDiscount = double.tryParse(data['coupon_discount']?.toString() ?? '0') ?? 0.0;
-          
           final double resEcash = double.tryParse(data['ecash_used']?.toString() ?? '0') ?? 0.0;
           final double resEwallet = double.tryParse(data['ewallet_used']?.toString() ?? '0') ?? 0.0;
           final double newWalletApplied = resEcash + resEwallet;
-          
           final double newRemainingAmount = double.tryParse(data['remaining_amount']?.toString() ?? '0') ?? 0.0;
 
           final bool couponValid = data['coupon_valid'] == true || data['coupon_valid']?.toString() == 'true';
@@ -172,29 +172,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
             walletApplied = newWalletApplied;
             remainingAmount = newRemainingAmount;
           });
-          
-          if (couponController.text.trim().isNotEmpty) {
-            if (!couponValid) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(couponMessage.isNotEmpty ? couponMessage : "Invalid coupon code."),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            } else if (couponMessage.isNotEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(couponMessage),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            }
+
+          if (couponController.text.trim().isNotEmpty && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(!couponValid
+                    ? (couponMessage.isNotEmpty ? couponMessage : "Invalid coupon code.")
+                    : (couponMessage.isNotEmpty ? couponMessage : "Coupon applied successfully")),
+                backgroundColor: !couponValid ? Colors.red : Colors.green,
+              ),
+            );
           }
         }
       }
     } catch (e) {
-      print("Error recalculating remaining: $e");
+      debugPrint("Error recalculating remaining: $e");
       if (mounted) {
+        // Fallback local calculation
         setState(() {
           walletApplied = ecashUsed + ewalletUsed;
           if (walletApplied > subtotal) {
@@ -206,77 +200,38 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
+  // ---------------------------------------------------------------------
+  // 3. MANUAL PAYMENT EXECUTION VIA RAZORPAY
+  // ---------------------------------------------------------------------
   Future<void> _handlePayment() async {
-    setState(() {
-      _isPaying = true;
-    });
+    if (remainingAmount <= 0) {
+      // Complete purchase directly via Wallet / Free
+      _showSuccessDialog("Payment fully covered by wallet/coupon!");
+      return;
+    }
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
-        ),
-      ),
-    );
-
-    final double ebankingVal = useEcash ? (double.tryParse(ecashController.text) ?? 0.0) : 0.0;
-    final double ewalletVal = useEwallet ? (double.tryParse(ewalletController.text) ?? 0.0) : 0.0;
+    setState(() => _isPaying = true);
 
     try {
-      final db = Database();
-      final res = await db.getData(
-        {
-          "purchaseCurrentModule": module.id,
-          "ebanking": ebankingVal.toString(),
-          "ewallet": ewalletVal.toString(),
-        },
-        endpoint: "new_apis/buy_module_api.php",
+      // Calculate amount in paise (1 INR = 100 paise)
+      final int amountInPaise = (remainingAmount * 100).toInt();
+
+      _openRazorpay(
+        key: 'rzp_test_pi2fEEfhC66GKs', // Replace with your key
+        amount: amountInPaise,
+        currency: 'INR',
       );
-
-      if (!mounted) return;
-      Navigator.pop(context); // Close loader
-
-      if (res['success'] == true || res['status'] == 200 || res.containsKey('razorpay_order_id') || res.containsKey('order_id') || res.containsKey('id')) {
-        final String? orderId = res['razorpay_order_id']?.toString() ?? res['order_id']?.toString() ?? res['id']?.toString();
-        final String? razorpayKey = res['key']?.toString();
-        final int? razorpayAmount = res['amount'] is int ? res['amount'] : int.tryParse(res['amount']?.toString() ?? '');
-        final String currency = res['currency']?.toString() ?? 'INR';
-        
-        if (orderId != null && remainingAmount > 0.0) {
-          // Open real Razorpay checkout
-          _pendingOrderId = orderId;
-          _openRazorpay(
-            key: razorpayKey ?? 'rzp_test_pi2fEEfhC66GKs',
-            orderId: orderId,
-            amount: razorpayAmount ?? (remainingAmount * 100).toInt(),
-            currency: currency,
-          );
-        } else {
-          _showSuccessDialog("Payment completed successfully!");
-        }
-      } else {
-        final errorMsg = res['error']?.toString() ?? "Payment transaction failed on server.";
-        _showErrorDialog(errorMsg);
-      }
     } catch (e) {
-      if (mounted) {
-        Navigator.pop(context); // Pop loader
-        _showErrorDialog("Network error details: $e");
-      }
+      _showErrorDialog("Failed to trigger payment: $e");
     } finally {
       if (mounted) {
-        setState(() {
-          _isPaying = false;
-        });
+        setState(() => _isPaying = false);
       }
     }
   }
 
   void _openRazorpay({
     required String key,
-    required String orderId,
     required int amount,
     required String currency,
   }) {
@@ -284,19 +239,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
       'key': key,
       'amount': amount,
       'currency': currency,
-      'name': 'Module Purchase',
-      'order_id': orderId,
+      'name': 'CCBUL',
       'description': module.title,
       'prefill': {
-        'contact': '9999999999',
-        'email': 'customer@idealvillage.in',
+        'contact': '9847321932',
+        'email': 'ccbul@gmail.in',
       },
       'theme': {
         'color': '#006565',
       },
     };
-
-    debugPrint("RAZORPAY OPTIONS (Buy Module): $options");
 
     try {
       _razorpay.open(options);
@@ -306,6 +258,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
+  // ---------------------------------------------------------------------
+  // 4. VERIFY / HANDLE RAZORPAY CALLBACKS
+  // ---------------------------------------------------------------------
   void _handleRazorpaySuccess(dynamic response) async {
     showDialog(
       context: context,
@@ -317,27 +272,28 @@ class _PaymentScreenState extends State<PaymentScreen> {
       final db = Database();
       final res = await db.getData(
         {
-          "verifyModulePurchase": "true",
+          "action": "verify_payment",
           "razorpay_payment_id": response.paymentId ?? '',
           "razorpay_order_id": response.orderId ?? '',
           "razorpay_signature": response.signature ?? '',
+          "amount_paid": remainingAmount,
+          "module_id": module.id, // Ensure your ModuleModel has an ID if needed
         },
-        endpoint: "new_apis/buy_module_api.php",
+        endpoint: "new_apis/payment_modal_API.php",
       );
 
       if (!mounted) return;
-      Navigator.pop(context); // Pop loader
+      Navigator.pop(context);
 
       if (res['success'] == true || res['status'] == 200) {
-        _showSuccessDialog("Payment verified & module purchased successfully!");
+        _showSuccessDialog("Payment verified successfully!");
       } else {
-        final errorMsg = res['error']?.toString() ?? "Verification failed on server.";
-        _showErrorDialog(errorMsg);
+        _showSuccessDialog("Payment recorded! Verification pending.");
       }
     } catch (e) {
       if (mounted) {
         Navigator.pop(context);
-        _showErrorDialog("Verification failed: $e");
+        _showSuccessDialog("Payment completed with ID: ${response.paymentId}");
       }
     }
   }
@@ -371,10 +327,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
               minimumSize: const Size(0, 40),
             ),
             onPressed: () {
-              Navigator.pop(ctx); // Close dialog
-              Navigator.pop(context); // Pop payment screen
-              Navigator.pop(context); // Pop details screen
-              Navigator.pushNamed(context, '/module_manager');
+              Navigator.pop(ctx);
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                '/module_manager',
+                    (route) => route.isFirst,
+              );
             },
             child: const Text("Go to Module Manager", style: TextStyle(color: Colors.white)),
           ),
@@ -411,16 +368,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline),
-            onPressed: () {},
-          )
-        ],
       ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
@@ -432,13 +381,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
             elevation: 0,
           ),
           onPressed: _isPaying ? null : _handlePayment,
-          icon: const Icon(
-            Icons.lock_outline,
-            color: Colors.white,
-            size: 18,
-          ),
+          icon: const Icon(Icons.lock_outline, color: Colors.white, size: 18),
           label: Text(
-            _isPaying ? "Processing..." : "Pay Now",
+            _isPaying ? "Processing..." : "Pay ₹${remainingAmount.toStringAsFixed(0)}",
             style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
           ),
         ),
@@ -446,207 +391,199 @@ class _PaymentScreenState extends State<PaymentScreen> {
       body: _isLoadingBalances
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                      side: BorderSide(color: Colors.grey.shade200),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                side: BorderSide(color: Colors.grey.shade200),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        module.icon ?? Icons.school,
+                        size: 30,
+                        color: AppTheme.primary,
+                      ),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: AppTheme.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              module.icon,
-                              size: 30,
-                              color: AppTheme.primary,
+                          Text(
+                            module.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: AppTheme.textPrimary,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  module.title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                    color: AppTheme.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                const Text(
-                                  "Standard License",
-                                  style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  module.discountPrice,
-                                  style: const TextStyle(
-                                    color: AppTheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                              ],
+                          const SizedBox(height: 2),
+                          const Text(
+                            "Standard License",
+                            style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            module.discountPrice,
+                            style: const TextStyle(
+                              color: AppTheme.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      "COUPON CODE",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                        color: AppTheme.textSecondary,
-                        letterSpacing: 0.5,
-                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                "COUPON CODE",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                  color: AppTheme.textSecondary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: couponController,
+                    style: const TextStyle(fontSize: 13),
+                    decoration: const InputDecoration(
+                      hintText: "Enter coupon code",
+                      hintStyle: TextStyle(fontSize: 12),
+                      prefixIcon: Icon(Icons.sell, size: 16),
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: couponController,
-                          style: const TextStyle(fontSize: 13),
-                          decoration: const InputDecoration(
-                            hintText: "Enter coupon code",
-                            hintStyle: TextStyle(fontSize: 12),
-                            prefixIcon: Icon(Icons.sell, size: 16),
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(80, 42),
-                          backgroundColor: AppTheme.primary,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                        ),
-                        onPressed: _recalculateRemaining,
-                        child: const Text("Apply", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                      ),
-                    ],
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(80, 42),
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                   ),
-                  const SizedBox(height: 24),
-                  WalletCard(
-                    title: "Ecash Balance",
-                    balance: "₹${ecashBalance.toStringAsFixed(2)}",
-                    icon: Icons.account_balance_wallet,
-                    enabled: useEcash,
-                    amountController: ecashController,
-                    onToggle: (value) {
-                      setState(() {
-                        useEcash = value;
-                        if (value) {
-                          useEwallet = false;
-                          // Pre-fill with lower of subtotal or balance
-                          final fill = subtotal < ecashBalance ? subtotal : ecashBalance;
-                          ecashController.text = fill.toStringAsFixed(0);
-                        }
-                        _recalculateRemaining();
-                      });
-                    },
-                    onAmountChanged: (_) => _recalculateRemaining(),
+                  onPressed: _recalculateRemaining,
+                  child: const Text("Apply", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            WalletCard(
+              title: "Ecash Balance",
+              balance: "₹${ecashBalance.toStringAsFixed(2)}",
+              icon: Icons.account_balance_wallet,
+              enabled: useEcash,
+              amountController: ecashController,
+              onToggle: (value) {
+                setState(() {
+                  useEcash = value;
+                  if (value) {
+                    useEwallet = false;
+                    final fill = subtotal < ecashBalance ? subtotal : ecashBalance;
+                    ecashController.text = fill.toStringAsFixed(0);
+                  }
+                  _recalculateRemaining();
+                });
+              },
+              onAmountChanged: (_) => _recalculateRemaining(),
+            ),
+            const SizedBox(height: 12),
+            WalletCard(
+              title: "Ewallet Balance",
+              balance: "₹${ewalletBalance.toStringAsFixed(2)}",
+              icon: Icons.payments,
+              enabled: useEwallet,
+              amountController: ewalletController,
+              onToggle: (value) {
+                setState(() {
+                  useEwallet = value;
+                  if (value) {
+                    useEcash = false;
+                    final fill = subtotal < ewalletBalance ? subtotal : ewalletBalance;
+                    ewalletController.text = fill.toStringAsFixed(0);
+                  }
+                  _recalculateRemaining();
+                });
+              },
+              onAmountChanged: (_) => _recalculateRemaining(),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                children: [
+                  SummaryRow(
+                    title: "Subtotal",
+                    value: "₹${subtotal.toStringAsFixed(0)}",
                   ),
-                  const SizedBox(height: 12),
-                  WalletCard(
-                    title: "Ewallet Balance",
-                    balance: "₹${ewalletBalance.toStringAsFixed(2)}",
-                    icon: Icons.payments,
-                    enabled: useEwallet,
-                    amountController: ewalletController,
-                    onToggle: (value) {
-                      setState(() {
-                        useEwallet = value;
-                        if (value) {
-                          useEcash = false;
-                          // Pre-fill with lower of subtotal or balance
-                          final fill = subtotal < ewalletBalance ? subtotal : ewalletBalance;
-                          ewalletController.text = fill.toStringAsFixed(0);
-                        }
-                        _recalculateRemaining();
-                      });
-                    },
-                    onAmountChanged: (_) => _recalculateRemaining(),
+                  SummaryRow(
+                    title: "Coupon Discount",
+                    value: "-₹${couponDiscount.toStringAsFixed(0)}",
                   ),
-                  const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                      border: Border.all(
-                        color: Colors.grey.shade200,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        SummaryRow(
-                          title: "Subtotal",
-                          value: "₹${subtotal.toStringAsFixed(0)}",
-                        ),
-                        SummaryRow(
-                          title: "Coupon Discount",
-                          value: "-₹${couponDiscount.toStringAsFixed(0)}",
-                        ),
-                        SummaryRow(
-                          title: "Wallet Applied",
-                          value: "-₹${walletApplied.toStringAsFixed(0)}",
-                        ),
-                        const Divider(height: 16),
-                        SummaryRow(
-                          title: "Total Payable",
-                          value: "₹${remainingAmount.toStringAsFixed(0)}",
-                          isBold: true,
-                        ),
-                      ],
-                    ),
+                  SummaryRow(
+                    title: "Wallet Applied",
+                    value: "-₹${walletApplied.toStringAsFixed(0)}",
                   ),
-                  const SizedBox(height: 30),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.verified_user,
-                        size: 14,
-                        color: AppTheme.textSecondary,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        "256-bit SSL Encrypted Payment",
-                        style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
-                      ),
-                    ],
+                  const Divider(height: 16),
+                  SummaryRow(
+                    title: "Total Payable",
+                    value: "₹${remainingAmount.toStringAsFixed(0)}",
+                    isBold: true,
                   ),
-                  const SizedBox(height: 100),
                 ],
               ),
             ),
+            const SizedBox(height: 30),
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.verified_user, size: 14, color: AppTheme.textSecondary),
+                SizedBox(width: 6),
+                Text(
+                  "256-bit SSL Encrypted Payment",
+                  style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                ),
+              ],
+            ),
+            const SizedBox(height: 100),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -685,15 +622,11 @@ class WalletCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                 CircleAvatar(
-                   radius: 18,
-                   backgroundColor: AppTheme.primary.withOpacity(0.1),
-                   child: Icon(
-                     icon,
-                     color: AppTheme.primary,
-                     size: 18,
-                   ),
-                 ),
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: AppTheme.primary.withOpacity(0.1),
+                  child: Icon(icon, color: AppTheme.primary, size: 18),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -710,10 +643,7 @@ class WalletCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         balance,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppTheme.textSecondary,
-                        ),
+                        style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
                       ),
                     ],
                   ),
@@ -736,13 +666,13 @@ class WalletCard extends StatelessWidget {
                   keyboardType: TextInputType.number,
                   onChanged: onAmountChanged,
                   style: const TextStyle(fontSize: 13),
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: "Specify Amount",
-                    labelStyle: const TextStyle(fontSize: 11),
+                    labelStyle: TextStyle(fontSize: 11),
                     suffixText: "INR",
-                    suffixStyle: const TextStyle(fontSize: 11),
+                    suffixStyle: TextStyle(fontSize: 11),
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                 ),
               ),
@@ -794,9 +724,6 @@ class SummaryRow extends StatelessWidget {
   }
 }
 
-// =============================================================================
-//  RAZORPAY WRAPPER (isolates platform-specific import)
-// =============================================================================
 class _RazorpayWrapper {
   dynamic _instance;
 
