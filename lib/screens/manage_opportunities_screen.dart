@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../admin/Admin_Dashboard.dart';
 import '../model/opportunity_model.dart';
+import '../services/auth_User_and_Business_Session.dart';
 import '../widgets/opportunity_card.dart';
 import '../widgets/featured_banner.dart';
 import '../widgets/filter_bottom_sheet.dart';
@@ -46,6 +48,7 @@ class _ManageOpportunitiesScreenState extends State<ManageOpportunitiesScreen> {
         'search': searchQuery,
         'type': filterType == 'All' ? '' : filterType,
         'status': filterStatus == 'All' ? '' : (filterStatus == 'Active' ? '1' : (filterStatus == 'Pending' ? '0' : '-1')),
+        'vendor_id': UserSessionSet.instance.vendorId,
       }, endpoint: 'new_apis/manage_opportunities_api.php');
 
       if (response['success'] == true && response['data'] != null) {
@@ -55,7 +58,7 @@ class _ManageOpportunitiesScreenState extends State<ManageOpportunitiesScreen> {
           opportunitiesList = listData.map((item) {
             final opp = item['opportunity'] as Map<String, dynamic>;
             final totalApps = item['total_applications'] ?? 0;
-            
+
             final rawStatus = opp['status']?.toString() ?? '1';
             String statusString = "Active";
             if (rawStatus == "0") {
@@ -202,7 +205,7 @@ class _ManageOpportunitiesScreenState extends State<ManageOpportunitiesScreen> {
                       );
                       return;
                     }
-                    
+
                     final response = await Database().getData({
                       "action": "create_opportunity",
                       "title": titleCtrl.text.trim(),
@@ -402,14 +405,8 @@ class _ManageOpportunitiesScreenState extends State<ManageOpportunitiesScreen> {
               ],
 
               // Opportunities list heading
-              const Text(
-                "All Opportunities",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
+              const Text("All Opportunities", style: AppText.sectionTitle),
+
               const SizedBox(height: 12),
 
               // Loading Spinner or Card list with empty state helper

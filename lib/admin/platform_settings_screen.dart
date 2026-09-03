@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 
+import '../services/auth_User_and_Business_Session.dart';
+
 class PlatformSettingsScreen extends StatefulWidget {
   final bool isEmbedded;
   const PlatformSettingsScreen({super.key, this.isEmbedded = false});
@@ -45,6 +47,8 @@ class _PlatformSettingsScreenState
     try {
       final response = await Database().getData({
         'action': 'fetch_settings',
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/platform_setting_API.php');
       
       if (response['success'] == true && response['data'] != null) {
@@ -76,6 +80,8 @@ class _PlatformSettingsScreenState
         'update_action': 'update_single_setting',
         'key': key,
         'value': value.toString(),
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/platform_setting_API.php');
 
       if (response['success'] == true) {
@@ -105,6 +111,8 @@ class _PlatformSettingsScreenState
       final db = Database();
       final response = await db.getData({
         'action': 'get_gemini_key',
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/community_palatform_setting_api 2.php');
 
       if (response['success'] == true || response['status'] == 200) {
@@ -127,6 +135,8 @@ class _PlatformSettingsScreenState
         'action': 'admin_update_auto_approval',
         'community_id': 10,
         'auto_approval': isEnabled ? 1 : 0,
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/community_palatform_setting_api 2.php');
 
       if (response['success'] == true || response['status'] == 200) {
@@ -158,6 +168,8 @@ class _PlatformSettingsScreenState
       final response = await db.getData({
         'action': 'update_gemini_key',
         'api_key': key,
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/community_palatform_setting_api 2.php');
 
       if (response['success'] == true || response['status'] == 200) {
@@ -308,6 +320,7 @@ class _PlatformSettingsScreenState
           _buildSettingsSwitchTile(
             "Push Notifications",
             "Send instant transaction alerts to users",
+
             _isPushNotificationsEnabled,
             (val) {
               setState(() => _isPushNotificationsEnabled = val);

@@ -1,20 +1,13 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:trading_ecommerce_admin/admin/business_user_profile_screen.dart';
-import 'package:trading_ecommerce_admin/services/auth_service.dart';
+import 'package:trading_ecommerce_admin/seller/join_seller_screen.dart';
+import 'package:trading_ecommerce_admin/services/auth_User_and_Business_Session.dart';
 import 'package:trading_ecommerce_admin/services/location_service.dart';
-import 'package:trading_ecommerce_admin/common/shell.dart';
-import 'package:trading_ecommerce_admin/common/industries_screen.dart';
-import 'package:trading_ecommerce_admin/app_constants.dart';
 import 'package:trading_ecommerce_admin/otp_screen.dart';
-import 'package:trading_ecommerce_admin/admin/Community_Admin_Dashboard.dart';
-import 'package:trading_ecommerce_admin/admin/business_user_dashboard_screen.dart';
-
 import 'Database/Database.dart';
-import 'admin/admin_login.dart';
 import 'admin/admin_loginscreen.dart';
-import 'admin/seller_dashboard_screen.dart';
+import 'businessDashboard/Roleselection_screen.dart';
+import 'businessDashboard/Seller_dashboard.dart';
+import 'businessDashboard/community Dashboard.dart';
 import 'normaluser/UsermainScreen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -31,8 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _rememberMe = false;
-  bool signupIsAdmin = false;
-  String selectedRole = 'Normal'; // 'Normal', 'Business', 'Admin'
+  String selectedRole = 'Normal'; // 'Normal' or 'Business'
   static const Color accentColor = Color(0xFF006565);
 
   final usernameController = TextEditingController();
@@ -46,8 +38,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final signupEmailController = TextEditingController();
   final signupMobileController = TextEditingController();
   final signupPasswordController = TextEditingController();
-
-  get userData => null;
 
   @override
   void dispose() {
@@ -79,9 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final database = Database();
       final response = await database.getData({
-        'action': selectedRole == 'Admin'
-            ? 'admin_login_with_password'
-            : 'login_with_password',
+        'action': 'login_with_password',
         'email': email,
         'password': password,
         'rememberMe': _rememberMe ? 'true' : 'false',
@@ -89,204 +77,153 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      if (response['success'] == true || response['status'] == 200) {
-        final vendorId = int.tryParse(
-          response['vendor_id']?.toString() ??
-              response['data']?['vendor_id']?.toString() ??
-              '0',
-        ) ??
-            0;
-
-        // Fetch full profile to get the actual vendor_type if missing
-        Map<String, dynamic> fullUserData =
-        Map<String, dynamic>.from(response);
-        String? vendorType = response['vendor_type']?.toString() ??
-            response['data']?['vendor_type']?.toString() ??
-            response['full_data']?['vendor_type']?.toString() ??
-            response['LOGIN_RESPONSE']?['vendor_type']?.toString() ??
-            response['LOGIN_RESPONSE']?['full_data']?['vendor_type']
-                ?.toString();
-
-        if (vendorType == '1' && vendorId != 0 && selectedRole != 'Admin') {
-          try {
-            print(
-                'loginscreen: vendor_type missing from login response. Fetching profile for vendor $vendorId...');
-            final profileRes = await database.getData({
-              'action': 'profile',
-              'vendor_id': vendorId.toString(),
-            });
-            if (profileRes['success'] == true || profileRes['status'] == 200) {
-              final profile = profileRes['data']?['profile'];
-              if (profile != null && profile is Map) {
-                vendorType = profile['vendor_type']?.toString();
-                fullUserData.addAll(Map<String, dynamic>.from(profile));
-              }
-            }
-          } catch (e) {
-            print('Error fetching profile for login check: $e');
-          }
-        }
-
-        if (vendorType == null && response['redirect'] != null) {
-          final redirect = response['redirect'].toString().toLowerCase();
-          if (redirect.contains('dashboard')) {
-            print(
-                'loginscreen: Inferring vendor_type as 2 based on redirect dashboard: $redirect');
-            vendorType = '2';
-            fullUserData['vendor_type'] = '2';
-          }
-        }
-
-        vendorType ??= '500'; // Default fallback
-
-        await AuthService.saveLoginSession(
-          vendorId: vendorId,
-          userData: fullUserData,
-        );
-        _showSuccessBanner('Login successful! Redirecting...');
-
-        // Wait 1.5 seconds to show the toast banner before navigating
-        await Future.delayed(const Duration(milliseconds: 1500));
-        if (!mounted) return;
-
-        // await _showLocationPermissionDialog();
-        if (!mounted) return;
-
-        if (selectedRole == 'Admin') {
-          final adminId =
-              int.tryParse(response['admin_id']?.toString() ?? '1') ?? 1;
-          final adminEmail = email;
-
-          await AuthService.saveAdminSession(
-              adminId: adminId, email: adminEmail);
-
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const SuperAdminDashboard()),
-                (route) => false,
-          );
-          return;
-        }
-
-        print("vendor type::---------");
-        print(vendorType);
-        // Admin role
-        if (selectedRole == 'Admin') {
-          if (vendorType == '1') {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => const SuperAdminDashboard()),
-                  (route) => false,
-            );
-          } else {
-            _showError('This account is not an Admin.');
-            await AuthService.clearSession();
-          }
-          return;
-        }
-
-        // Normal role
-        if (selectedRole == 'Normal') {
-          if (vendorType == '500') {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => const UserMainScreen()),
-                  (route) => false,
-            );
-          } else {
-            _showError('This account is not a Normal User.');
-            await AuthService.clearSession();
-          }
-          return;
-        }
-
-        // Business role
-        if (selectedRole == 'Business') {
-          if (vendorType == '200') {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => const CommunityAdminDashboard()),
-                  (route) => false,
-            );
-          } else if (vendorType == '5') {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => const SellerDashboard()),
-                  (route) => false,
-            );
-          } else {
-            // Other business types → show modal
-            final vendorTypes = (userData['vendor_type']?.toString().split(
-                ',') ?? []);
-            _showBusinessRoleSelection(vendorId, userData, vendorTypes);
-          }
-          return;
-        }
-        //
-        // if (vendorType == '1') {
-        //
-        //   // Admin → SuperAdminDashboard
-        //
-        //   Navigator.pushAndRemoveUntil(
-        //
-        //     context,
-        //
-        //     MaterialPageRoute(builder: (_) => const SuperAdminDashboard()),
-        //
-        //         (route) => false,
-        //
-        //   );
-        //
-        // } else if (vendorType == '500') {
-        //
-        //   // Normal User → UserDashboard
-        //
-        //   Navigator.pushAndRemoveUntil(
-        //
-        //     context,
-        //
-        //     MaterialPageRoute(builder: (_) => const UserMainScreen()),
-        //
-        //         (route) => false,
-        //
-        //   );
-        //
-        // } else {
-        //   // 1. Parse the vendor types into a List<String>
-        //   final vendorTypes = (userData['vendor_type']?.toString().split(',') ?? []);
-        //
-        //   // 2. Pass both vendorId and vendorTypes to the modal function
-        //   _showBusinessRoleSelection(vendorId, vendorTypes);}
-        //
-        //
-        //
-
-
-        final hasInterests = await _checkUserHasInterests(vendorId);
-        if (!mounted) return;
-        if (hasInterests) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const AppShell()),
-                (route) => false,
-          );
-        } else {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-                builder: (_) => SuperAdminDashboard()
-            ),
-                (route) => false,
-          );
-        }
-      } else {
+      if (response['success'] != true && response['status'] != 200) {
         _showError(
           response['message'] ??
               response['error'] ??
               'Invalid email or password',
         );
+        return;
       }
+
+      final vendorId = int.tryParse(
+        response['vendor_id']?.toString() ??
+            response['data']?['vendor_id']?.toString() ??
+            '0',
+      ) ??
+          0;
+
+      // Fetch full profile to get the actual vendor_type if missing
+      Map<String, dynamic> fullUserData = Map<String, dynamic>.from(response);
+      String? vendorType = response['vendor_type']?.toString() ??
+          response['data']?['vendor_type']?.toString() ??
+          response['full_data']?['vendor_type']?.toString() ??
+          response['LOGIN_RESPONSE']?['vendor_type']?.toString() ??
+          response['LOGIN_RESPONSE']?['full_data']?['vendor_type']
+              ?.toString();
+      final String sessionId =
+          response['verify_code']?.toString() ?? '';
+
+      if (vendorType == null && vendorId != 0) {
+        try {
+          debugPrint(
+              'loginscreen: vendor_type missing from login response. Fetching profile for vendor $vendorId...');
+          final profileRes = await database.getData({
+            'action': 'profile',
+            'vendor_id': vendorId.toString(),
+          });
+          if (profileRes['success'] == true || profileRes['status'] == 200) {
+            final profile = profileRes['data']?['profile'];
+            if (profile != null && profile is Map) {
+              vendorType = profile['vendor_type']?.toString();
+              fullUserData.addAll(Map<String, dynamic>.from(profile));
+            }
+          }
+        } catch (e) {
+          debugPrint('Error fetching profile for login check: $e');
+        }
+      }
+
+      if (vendorType == null && response['redirect'] != null) {
+        final redirect = response['redirect'].toString().toLowerCase();
+        if (redirect.contains('dashboard')) {
+          debugPrint(
+              'loginscreen: Inferring vendor_type as 2 based on redirect dashboard: $redirect');
+          vendorType = '2';
+          fullUserData['vendor_type'] = '2';
+        }
+      }
+
+      vendorType ??= '500'; // Default fallback
+      print("---------------------------");
+      await UserSessionSet.instance.saveLoginData(sessionId: sessionId, vendorId: vendorId.toString(), vendorType: vendorType.toString());
+
+      _showSuccessBanner('Login successful! Redirecting...');
+
+      // Wait to show the toast banner before navigating
+      await Future.delayed(const Duration(milliseconds: 1500));
+      if (!mounted) return;
+
+      // // Role mismatch checks
+      // if (selectedRole == 'Business' && vendorType == '500') {
+      //   _showError('This account is not registered as a Business User.');
+      //   await UserSessionSet.instance.logout();
+      //   return;
+      // }
+      // if (selectedRole == 'Normal' && vendorType != '500') {
+      //   _showError(
+      //       'This is a Business User account. Please select Business User role.');
+      //   await UserSessionSet.instance.logout();
+      //   return;
+      // }
+      // Handle business users with multiple linked accounts/roles
+      final bool hasMultipleAccounts = response['multiple_accounts'] == true &&
+          response['accounts'] is List &&
+          (response['accounts'] as List).isNotEmpty;
+
+      if (hasMultipleAccounts) {
+        final accounts = (response['accounts'] as List)
+            .map((a) => VendorAccount.fromJson(Map<String, dynamic>.from(a)))
+            .toList();
+
+        final String sessionId = response['SESSION_ID']?.toString() ??
+            response['ESSION_ID']?.toString() ??
+            '';
+
+        _showSuccessBanner('Login successful! Please select a role.');
+        await Future.delayed(const Duration(milliseconds: 1000));
+        if (!mounted) return;
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) => BusinessRoleSelectionScreen(
+              accounts: accounts,
+              sessionId: sessionId,
+            ),
+          ),
+              (route) => false,
+        );
+        return;
+      }
+
+      // Normal role → straight to user main screen
+      if (selectedRole == 'Normal') {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const UserMainScreen()),
+              (route) => false,
+        );
+        return;
+      }
+
+      // Business role
+      if (vendorType == '200') {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const CommunityDashboardScreen()),
+              (route) => false,
+        );
+        return;
+      }
+
+      if (vendorType == '5') {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const SellerDashboard()),
+              (route) => false,
+        );
+        return;
+      }
+
+      // Other/multiple business roles → let the user choose
+      final vendorTypes =
+      (fullUserData['vendor_type']?.toString().split(',') ?? <String>[]);
+      _showBusinessRoleSelection(
+        vendorId,
+        fullUserData,
+        vendorTypes.cast<String>(),
+      );
     } catch (e) {
       if (!mounted) return;
       _showError('Network error: ${e.toString()}');
@@ -309,8 +246,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final database = Database();
       final response = await database.getData({
-        'action':
-        selectedRole == 'Admin' ? 'send_admin_login_otp' : 'send_login_otp',
+        'action': 'send_login_otp',
         'email': email,
       }, endpoint: 'new_apis/sign_up_API.php');
 
@@ -343,133 +279,111 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final database = Database();
       final response = await database.getData({
-        'action': selectedRole == 'Admin'
-            ? 'verify_admin_login_otp'
-            : 'verify_login_otp',
+        'action': 'verify_login_otp',
         'otp': otp,
         'rememberMe': _rememberMe ? 'true' : 'false',
       }, endpoint: 'new_apis/sign_up_API.php');
 
       if (!mounted) return;
-      if (response['success'] == true || response['status'] == 200) {
-        if (selectedRole == 'Admin') {
-          final adminId =
-              int.tryParse(response['admin_id']?.toString() ?? '1') ?? 1;
-          final adminEmail = otpEmailController.text.trim();
-          await AuthService.saveAdminSession(
-              adminId: adminId, email: adminEmail);
 
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const SuperAdminDashboard()),
-                (route) => false,
-          );
-          return;
-        }
-
-        final vendorId = int.tryParse(
-          response['vendor_id']?.toString() ?? '0',
-        ) ??
-            0;
-
-        // Fetch full profile to get the actual vendor_type if missing
-        Map<String, dynamic> fullUserData =
-        Map<String, dynamic>.from(response);
-        String? vendorType = response['vendor_type']?.toString() ??
-            response['data']?['vendor_type']?.toString() ??
-            response['full_data']?['vendor_type']?.toString() ??
-            response['LOGIN_RESPONSE']?['vendor_type']?.toString() ??
-            response['LOGIN_RESPONSE']?['full_data']?['vendor_type']
-                ?.toString();
-
-        if (vendorType == null && vendorId != 0 && selectedRole != 'Admin') {
-          try {
-            print(
-                'loginscreen: vendor_type missing from login response. Fetching profile for vendor $vendorId...');
-            final profileRes = await database.getData({
-              'action': 'profile',
-              'vendor_id': vendorId.toString(),
-            });
-            if (profileRes['success'] == true || profileRes['status'] == 200) {
-              final profile = profileRes['data']?['profile'];
-              if (profile != null && profile is Map) {
-                vendorType = profile['vendor_type']?.toString();
-                fullUserData.addAll(Map<String, dynamic>.from(profile));
-              }
-            }
-          } catch (e) {
-            print('Error fetching profile for login check: $e');
-          }
-        }
-
-        if (vendorType == null && response['redirect'] != null) {
-          final redirect = response['redirect'].toString().toLowerCase();
-          if (redirect.contains('dashboard')) {
-            print(
-                'loginscreen: Inferring vendor_type as 2 based on redirect dashboard: $redirect');
-            vendorType = '2';
-            fullUserData['vendor_type'] = '2';
-          }
-        }
-
-        vendorType ??= '500'; // Default fallback
-
-        await AuthService.saveLoginSession(
-          vendorId: vendorId,
-          userData: fullUserData,
-        );
-        _showSuccessBanner('Login successful! Redirecting...');
-        await Future.delayed(const Duration(milliseconds: 1500));
-        if (!mounted) return;
-        //biswajit
-        // await _showLocationPermissionDialog();
-        if (!mounted) return;
-
-        if (selectedRole == 'Business' &&
-            (vendorType == '500' || vendorType == '1')) {
-          _showError('This account is not registered as a Business User.');
-          await AuthService.clearSession();
-          return;
-        }
-        if (selectedRole == 'Normal' &&
-            (vendorType != '500' && vendorType != '1')) {
-          _showError(
-              'This is a Business User account. Please select Business User role.');
-          await AuthService.clearSession();
-          return;
-        }
-
-        if (vendorType != '500' && vendorType != '1') {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const CommunityAdminDashboard()),
-                (route) => false,
-          );
-          return;
-        }
-
-        final hasInterests = await _checkUserHasInterests(vendorId);
-        if (!mounted) return;
-        if (hasInterests) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const AppShell()),
-                (route) => false,
-          );
-        } else {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-                builder: (_) => SuperAdminDashboard()
-
-            ),
-                (route) => false,
-          );
-        }
-      } else {
+      if (response['success'] != true && response['status'] != 200) {
         _showError(response['message'] ?? 'Invalid OTP');
+        return;
       }
-    } catch (e) {
+
+      final vendorId = int.tryParse(
+        response['vendor_id']?.toString() ?? '0',
+      ) ??
+          0;
+
+      // Fetch full profile to get the actual vendor_type if missing
+      Map<String, dynamic> fullUserData = Map<String, dynamic>.from(response);
+      String? vendorType = response['vendor_type']?.toString() ??
+          response['data']?['vendor_type']?.toString() ??
+          response['full_data']?['vendor_type']?.toString() ??
+          response['LOGIN_RESPONSE']?['vendor_type']?.toString() ??
+          response['LOGIN_RESPONSE']?['full_data']?['vendor_type']
+              ?.toString();
+
+      if (vendorType == null && vendorId != 0) {
+        try {
+          debugPrint(
+              'loginscreen: vendor_type missing from login response. Fetching profile for vendor $vendorId...');
+          final profileRes = await database.getData({
+            'action': 'profile',
+            'vendor_id': vendorId.toString(),
+          });
+          if (profileRes['success'] == true || profileRes['status'] == 200) {
+            final profile = profileRes['data']?['profile'];
+            if (profile != null && profile is Map) {
+              vendorType = profile['vendor_type']?.toString();
+              fullUserData.addAll(Map<String, dynamic>.from(profile));
+            }
+          }
+        } catch (e) {
+          debugPrint('Error fetching profile for login check: $e');
+        }
+      }
+
+      if (vendorType == null && response['redirect'] != null) {
+        final redirect = response['redirect'].toString().toLowerCase();
+        if (redirect.contains('dashboard')) {
+          debugPrint(
+              'loginscreen: Inferring vendor_type as 2 based on redirect dashboard: $redirect');
+          vendorType = '2';
+          fullUserData['vendor_type'] = '2';
+        }
+      }
+      final String sessionId =
+          response['SESSION_ID']?.toString() ?? '';
+
+      vendorType ??= '500'; // Default fallback
+
+      await UserSessionSet.instance.saveLoginData(sessionId: sessionId, vendorId: vendorId.toString(), vendorType: vendorType.toString());
+
+      _showSuccessBanner('Login successful! Redirecting...');
+      await Future.delayed(const Duration(milliseconds: 1500));
+      if (!mounted) return;
+
+      if (selectedRole == 'Business' && vendorType == '500') {
+        _showError('This account is not registered as a Business User.');
+        await UserSessionSet.instance.logout();
+        return;
+      }
+      if (selectedRole == 'Normal' && vendorType != '500') {
+        _showError(
+            'This is a Business User account. Please select Business User role.');
+        await UserSessionSet.instance.logout();
+        return;
+      }
+
+      if (vendorType != '500') {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const SellerDashboard()),
+              (route) => false,
+        );
+        return;
+      }
+
+      //  final hasInterests = await _checkUserHasInterests(vendorId);
+      // if (!mounted) return;
+      // if (hasInterests) {
+      //   Navigator.pushAndRemoveUntil(
+      //     context,
+      //     MaterialPageRoute(builder: (_) => const AppShell()),
+      //         (route) => false,
+      //   );
+      //  }
+      else {
+        //   Navigator.pushAndRemoveUntil(
+        //     context,
+        //     MaterialPageRoute(builder: (_) => const IndustriesScreen()),
+        //         (route) => false,
+        //   );
+      }
+    }
+    catch (e) {
       if (!mounted) return;
       _showError('Network error. Please try again.');
     } finally {
@@ -510,15 +424,14 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) =>
-                OtpScreen(
-                  email: email,
-                  isRecruiter: signupIsAdmin,
-                  name: name,
-                  mobile: mobile,
-                  password: password,
-                  vendorType: signupIsAdmin ? '1' : '20',
-                ),
+            builder: (_) => OtpScreen(
+              email: email,
+              isRecruiter: false,
+              name: name,
+              mobile: mobile,
+              password: password,
+              vendorType: '20',
+            ),
           ),
         );
       } else {
@@ -574,6 +487,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // Kept for future use (currently not called from the login flows above).
   Future<void> _showLocationPermissionDialog() async {
     if (!mounted) return;
     await showDialog(
@@ -590,24 +504,22 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Top Icon
                 Container(
                   width: 72,
                   height: 72,
                   decoration: const BoxDecoration(
-                    color: Color(0xFFE5F5F5), // Light teal circle background
+                    color: Color(0xFFE5F5F5),
                     shape: BoxShape.circle,
                   ),
                   child: const Center(
                     child: Icon(
                       Icons.location_on,
-                      color: Color(0xFF006565), // Dark teal pin
+                      color: Color(0xFF006565),
                       size: 38,
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
-                // Title
                 const Text(
                   "Enable Location",
                   style: TextStyle(
@@ -617,7 +529,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                // Subtitle
                 const Text(
                   "Luxe requires access to your location to provide personalized delivery estimates, calculate taxes correctly, and display premium stores near you.",
                   textAlign: TextAlign.center,
@@ -628,7 +539,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                // Allow Access Button
                 SizedBox(
                   width: double.infinity,
                   height: 48,
@@ -657,7 +567,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                // Not Now Button
                 SizedBox(
                   width: double.infinity,
                   height: 48,
@@ -690,81 +599,77 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Future<bool> _checkUserHasInterests(int vendorId) async {
-    try {
-      final local = await AuthService.hasSelectedInterests();
-      if (local) return true;
-      final database = Database();
-      final res = await database.getData({
-        'action': 'get_user_interests',
-        'vendor_id': vendorId.toString(),
-      });
-      if (res['success'] == true || res['status'] == 200) {
-        final data = res['data'];
-        if (data != null && data is List && data.isNotEmpty) {
-          final ids = data
-              .map((i) =>
-          int.tryParse(
-            i['interest_id']?.toString() ?? i['id']?.toString() ?? '0',
-          ) ??
-              0)
-              .toList();
-          await AuthService.saveUserInterests(ids.cast<int>());
-          return true;
-        }
-      }
-      return false;
-    } catch (_) {
-      return false;
-    }
-  }
+  // ══════════════════════════════════════════════════════════
+  // UI — restyled to match AdminLoginScreen (light gradient bg,
+  // back button, accent icon badge, white filled inputs)
+  // ══════════════════════════════════════════════════════════
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF001F1F),
       body: Container(
         height: double.infinity,
         width: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF004D4D),
-              Color(0xFF001F1F),
+              Color(0xFFE2EAE9),
+              Color(0xFFD4DFDD),
             ],
           ),
         ),
-        child: Center(
-          child: SingleChildScrollView(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 420),
-              margin: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 30,
-                    offset: const Offset(0, 10),
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+
+              // ==================================================
+              // MAIN CONTENT CARD
+              // ==================================================
+              Expanded(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 20,
+                    ),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 24,
+                              offset: const Offset(0, 12),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildTabBar(),
+                              Padding(
+                                padding: const EdgeInsets.all(28.0),
+                                child: isSignUpTab
+                                    ? _buildSignUpForm()
+                                    : _buildSignInForm(),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                ],
+                ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Tab Bar at the top of the card
-                  _buildTabBar(),
-                  Padding(
-                    padding: const EdgeInsets.all(28.0),
-                    child:
-                    isSignUpTab ? _buildSignUpForm() : _buildSignInForm(),
-                  ),
-                ],
-              ),
-            ),
+            ],
           ),
         ),
       ),
@@ -784,7 +689,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 border: Border(
                   bottom: BorderSide(
                     color: !isSignUpTab
-                        ? const Color(0xFF006565)
+                        ? accentColor
                         : Colors.transparent,
                     width: 3,
                   ),
@@ -795,9 +700,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: !isSignUpTab
-                      ? const Color(0xFF006565)
-                      : Colors.grey.shade400,
+                  color: !isSignUpTab ? accentColor : Colors.grey.shade400,
                   fontSize: 16,
                 ),
               ),
@@ -806,15 +709,14 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         Expanded(
           child: GestureDetector(
-            onTap: _isLoading ? null : () => setState(() => isSignUpTab = true),
+            onTap:
+            _isLoading ? null : () => setState(() => isSignUpTab = true),
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 20),
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
-                    color: isSignUpTab
-                        ? const Color(0xFF006565)
-                        : Colors.transparent,
+                    color: isSignUpTab ? accentColor : Colors.transparent,
                     width: 3,
                   ),
                 ),
@@ -824,9 +726,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: isSignUpTab
-                      ? const Color(0xFF006565)
-                      : Colors.grey.shade400,
+                  color: isSignUpTab ? accentColor : Colors.grey.shade400,
                   fontSize: 16,
                 ),
               ),
@@ -841,68 +741,72 @@ class _LoginScreenState extends State<LoginScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Centered Unlock Padlock Graphic
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF0F7F7),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: const Icon(
-            Icons.lock_open_rounded,
-            color: accentColor,
-            size: 36,
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Welcome Back Title
+        _buildIconBadge(Icons.lock_open_rounded),
+        const SizedBox(height: 20),
         const Text(
-          "Welcome back",
+          "Welcome Back",
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w800,
-            color: Colors.black,
+            color: Colors.black87,
           ),
         ),
         const SizedBox(height: 8),
-
-        // Subtitle
         Text(
           "Join your community conversations today",
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey.shade600,
+            height: 1.4,
           ),
         ),
-        const SizedBox(height: 24),
-
-        // Custom Role Selector
+        const SizedBox(height: 28),
         _buildRoleSelector(),
         const SizedBox(height: 24),
-
-        // Password vs OTP Login inputs
         isPasswordLogin ? _buildPasswordLoginForm() : _buildOtpLoginForm(),
         const SizedBox(height: 28),
-
         _buildTermsAndPrivacy(),
       ],
+    );
+  }
+
+  // Accent-filled icon badge with soft shadow, matching AdminLoginScreen.
+  Widget _buildIconBadge(IconData icon) {
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        color: accentColor,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Icon(
+        icon,
+        color: Colors.white,
+        size: 38,
+      ),
     );
   }
 
   Widget _buildRoleSelector() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F7F7),
+        color: const Color(0xFFE5F5F5),
         borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.all(6),
       child: Row(
         children: [
           _buildRoleItem('Normal', Icons.person_outline_rounded, 'Normal User'),
-          _buildRoleItem('Business', Icons.business_outlined, 'Business User'),
+          _buildRoleItem(
+              'Business', Icons.business_outlined, 'Business User'),
         ],
       ),
     );
@@ -923,9 +827,9 @@ class _LoginScreenState extends State<LoginScreen> {
             boxShadow: isSelected
                 ? [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 5,
-                offset: const Offset(0, 2),
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
               )
             ]
                 : null,
@@ -944,7 +848,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: isSelected ? accentColor : Colors.grey.shade600,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontWeight:
+                  isSelected ? FontWeight.bold : FontWeight.normal,
                   fontSize: 12,
                 ),
               ),
@@ -959,28 +864,14 @@ class _LoginScreenState extends State<LoginScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Centered Add User Graphic
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF0F7F7),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: const Icon(
-            Icons.person_add_outlined,
-            color: accentColor,
-            size: 36,
-          ),
-        ),
-        const SizedBox(height: 16),
-
+        _buildIconBadge(Icons.person_add_outlined),
+        const SizedBox(height: 20),
         const Text(
           "Create Account",
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w800,
-            color: Colors.black,
+            color: Colors.black87,
           ),
         ),
         const SizedBox(height: 8),
@@ -990,139 +881,63 @@ class _LoginScreenState extends State<LoginScreen> {
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey.shade600,
+            height: 1.4,
           ),
         ),
-        const SizedBox(height: 24),
-        _buildSignUpRoleTabs(),
-        const SizedBox(height: 24),
-
-        // Full Name field
-        TextField(
+        const SizedBox(height: 28),
+        _styledField(
           controller: signupNameController,
-          enabled: !_isLoading,
-          style: const TextStyle(color: Colors.black),
-          decoration: InputDecoration(
-            prefixIcon:
-            const Icon(Icons.person_outline_rounded, color: Colors.grey),
-            hintText: "Full Name",
-            hintStyle: const TextStyle(color: Colors.grey),
-            filled: true,
-            fillColor: const Color(0xFFF0F7F7),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: accentColor, width: 1.5),
-            ),
-          ),
+          icon: Icons.person_outline_rounded,
+          hint: "Full Name",
         ),
         const SizedBox(height: 16),
-
-        // Email Input field
-        TextField(
+        _styledField(
           controller: signupEmailController,
-          enabled: !_isLoading,
-          style: const TextStyle(color: Colors.black),
+          icon: Icons.email_outlined,
+          hint: "Email Address",
           keyboardType: TextInputType.emailAddress,
-          decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.email_outlined, color: Colors.grey),
-            hintText: "Email Address",
-            hintStyle: const TextStyle(color: Colors.grey),
-            filled: true,
-            fillColor: const Color(0xFFF0F7F7),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: accentColor, width: 1.5),
-            ),
-          ),
         ),
         const SizedBox(height: 16),
-
-        // Mobile Number field
-        TextField(
+        _styledField(
           controller: signupMobileController,
-          enabled: !_isLoading,
-          style: const TextStyle(color: Colors.black),
+          icon: Icons.phone_outlined,
+          hint: "Mobile Number",
           keyboardType: TextInputType.phone,
-          decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.phone_outlined, color: Colors.grey),
-            hintText: "Mobile Number",
-            hintStyle: const TextStyle(color: Colors.grey),
-            filled: true,
-            fillColor: const Color(0xFFF0F7F7),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: accentColor, width: 1.5),
-            ),
-          ),
         ),
         const SizedBox(height: 16),
-
-        // Password field
-        TextField(
+        _styledField(
           controller: signupPasswordController,
+          icon: Icons.lock_outline_rounded,
+          hint: "Password",
           obscureText: signupObscurePassword,
-          enabled: !_isLoading,
-          style: const TextStyle(color: Colors.black),
-          decoration: InputDecoration(
-            prefixIcon:
-            const Icon(Icons.lock_outline_rounded, color: Colors.grey),
-            suffixIcon: IconButton(
-              icon: Icon(
-                signupObscurePassword
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-                color: Colors.grey,
-              ),
-              onPressed: () =>
-                  setState(
-                          () => signupObscurePassword = !signupObscurePassword),
+          suffixIcon: IconButton(
+            icon: Icon(
+              signupObscurePassword
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
+              color: Colors.grey,
             ),
-            hintText: "Password",
-            hintStyle: const TextStyle(color: Colors.grey),
-            filled: true,
-            fillColor: const Color(0xFFF0F7F7),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: accentColor, width: 1.5),
-            ),
+            onPressed: () => setState(
+                    () => signupObscurePassword = !signupObscurePassword),
           ),
         ),
-        const SizedBox(height: 24),
-
+        const SizedBox(height: 4),
+        TextButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => SellOnLuxeScreen()),
+            );
+          },
+          child: const Text(
+            "Join as a Seller",
+            style: TextStyle(color: accentColor, fontWeight: FontWeight.w600),
+          ),
+        ),
+        const SizedBox(height: 10),
         SizedBox(
           width: double.infinity,
-          height: 52,
+          height: 54,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: accentColor,
@@ -1141,13 +956,21 @@ class _LoginScreenState extends State<LoginScreen> {
                 strokeWidth: 2,
               ),
             )
-                : const Text(
-              "Send OTP",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+                : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Text(
+                  "Send OTP",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(width: 8),
+                Icon(Icons.arrow_forward_rounded,
+                    color: Colors.white, size: 18),
+              ],
             ),
           ),
         ),
@@ -1157,156 +980,32 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildSignUpRoleTabs() {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0F7F7),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      padding: const EdgeInsets.all(6),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: _isLoading
-                  ? null
-                  : () => setState(() => signupIsAdmin = false),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: !signupIsAdmin ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: !signupIsAdmin
-                      ? [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 5,
-                      offset: const Offset(0, 2),
-                    )
-                  ]
-                      : null,
-                ),
-                child: Text(
-                  "Vendor",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: !signupIsAdmin ? accentColor : Colors.grey.shade600,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: _isLoading
-                  ? null
-                  : () => setState(() => signupIsAdmin = true),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: signupIsAdmin ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: signupIsAdmin
-                      ? [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 5,
-                      offset: const Offset(0, 2),
-                    )
-                  ]
-                      : null,
-                ),
-                child: Text(
-                  "Admin",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: signupIsAdmin ? accentColor : Colors.grey.shade600,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildPasswordLoginForm() {
     return Column(
       children: [
-        // Username / Email Field
-        TextField(
+        _styledField(
           controller: usernameController,
-          enabled: !_isLoading,
-          style: const TextStyle(color: Colors.black),
-          decoration: InputDecoration(
-            prefixIcon:
-            const Icon(Icons.person_outline_rounded, color: Colors.grey),
-            hintText: "Username or Email",
-            hintStyle: const TextStyle(color: Colors.grey),
-            filled: true,
-            fillColor: const Color(0xFFF0F7F7),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: accentColor, width: 1.5),
-            ),
-          ),
+          icon: Icons.person_outline_rounded,
+          hint: "Username or Email",
         ),
         const SizedBox(height: 16),
-
-        // Password Field
-        TextField(
+        _styledField(
           controller: passwordController,
+          icon: Icons.lock_outline_rounded,
+          hint: "Password",
           obscureText: _obscurePassword,
-          enabled: !_isLoading,
-          style: const TextStyle(color: Colors.black),
-          decoration: InputDecoration(
-            prefixIcon:
-            const Icon(Icons.lock_outline_rounded, color: Colors.grey),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _obscurePassword
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-                color: Colors.grey,
-              ),
-              onPressed: () =>
-                  setState(() => _obscurePassword = !_obscurePassword),
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscurePassword
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
+              color: Colors.grey,
             ),
-            hintText: "Password",
-            hintStyle: const TextStyle(color: Colors.grey),
-            filled: true,
-            fillColor: const Color(0xFFF0F7F7),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: accentColor, width: 1.5),
-            ),
+            onPressed: () =>
+                setState(() => _obscurePassword = !_obscurePassword),
           ),
         ),
         const SizedBox(height: 16),
-
         Row(
           children: [
             SizedBox(
@@ -1315,6 +1014,9 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Checkbox(
                 value: _rememberMe,
                 activeColor: accentColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
                 onChanged: _isLoading
                     ? null
                     : (val) {
@@ -1334,17 +1036,32 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 10),
-        TextButton(onPressed: () {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (context) => AdminLoginScreen(),));
-        }, child: Text("Admin Login")),
-        // Main Sign In Button
-        const SizedBox(height: 10),
-
+        const SizedBox(height: 6),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(0, 0),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const AdminLoginScreen()),
+              );
+            },
+            child: const Text(
+              "Admin Login",
+              style: TextStyle(color: accentColor, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
         SizedBox(
           width: double.infinity,
-          height: 52,
+          height: 54,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: accentColor,
@@ -1377,46 +1094,34 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ],
             )
-                : const Text(
-              "Sign In",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+                : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Text(
+                  "Sign In",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(width: 8),
+                Icon(Icons.arrow_forward_rounded,
+                    color: Colors.white, size: 18),
+              ],
             ),
           ),
         ),
-        const SizedBox(height: 20),
-
-        // OR Divider
-        Row(
-          children: [
-            Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                "OR",
-                style: TextStyle(
-                  color: Colors.grey.shade500,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-            Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
-          ],
-        ),
-        const SizedBox(height: 20),
-
-        // Sign In with OTP button
+        const SizedBox(height: 24),
+        _buildOrDivider(),
+        const SizedBox(height: 24),
         SizedBox(
           width: double.infinity,
-          height: 52,
+          height: 54,
           child: OutlinedButton(
             style: OutlinedButton.styleFrom(
               foregroundColor: accentColor,
-              backgroundColor: const Color(0xFFF0F7F7),
+              backgroundColor: const Color(0xFFE5F5F5),
               side: const BorderSide(color: accentColor, width: 1.5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -1424,11 +1129,10 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             onPressed: _isLoading
                 ? null
-                : () =>
-                setState(() {
-                  isPasswordLogin = false;
-                  otpSent = false;
-                }),
+                : () => setState(() {
+              isPasswordLogin = false;
+              otpSent = false;
+            }),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: const [
@@ -1455,35 +1159,15 @@ class _LoginScreenState extends State<LoginScreen> {
     return Column(
       children: [
         if (!otpSent) ...[
-          // Email or Mobile input
-          TextField(
+          _styledField(
             controller: otpEmailController,
-            enabled: !_isLoading,
-            style: const TextStyle(color: Colors.black),
-            decoration: InputDecoration(
-              prefixIcon: const Icon(Icons.email_outlined, color: Colors.grey),
-              hintText: "Email or Mobile",
-              hintStyle: const TextStyle(color: Colors.grey),
-              filled: true,
-              fillColor: const Color(0xFFF0F7F7),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: accentColor, width: 1.5),
-              ),
-            ),
+            icon: Icons.email_outlined,
+            hint: "Email or Mobile",
           ),
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
-            height: 52,
+            height: 54,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: accentColor,
@@ -1512,97 +1196,55 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-        ] else
-          ...[
-            // OTP input
-            TextField(
-              controller: otpController,
-              enabled: !_isLoading,
-              style: const TextStyle(color: Colors.black),
-              decoration: InputDecoration(
-                prefixIcon:
-                const Icon(Icons.lock_outline_rounded, color: Colors.grey),
-                hintText: "Enter OTP",
-                hintStyle: const TextStyle(color: Colors.grey),
-                filled: true,
-                fillColor: const Color(0xFFF0F7F7),
-                border: OutlineInputBorder(
+        ] else ...[
+          _styledField(
+            controller: otpController,
+            icon: Icons.lock_outline_rounded,
+            hint: "Enter OTP",
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accentColor,
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: accentColor, width: 1.5),
-                ),
+                elevation: 0,
               ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: accentColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
+              onPressed: _isLoading ? null : _verifyOtp,
+              child: _isLoading
+                  ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
                 ),
-                onPressed: _isLoading ? null : _verifyOtp,
-                child: _isLoading
-                    ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                )
-                    : const Text(
-                  "Verify & Login",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        const SizedBox(height: 20),
-
-        // OR Divider
-        Row(
-          children: [
-            Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                "OR",
+              )
+                  : const Text(
+                "Verify & Login",
                 style: TextStyle(
-                  color: Colors.grey.shade500,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-            Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
-          ],
-        ),
-        const SizedBox(height: 20),
-
-        // Sign In with Password Button
+          ),
+        ],
+        const SizedBox(height: 24),
+        _buildOrDivider(),
+        const SizedBox(height: 24),
         SizedBox(
           width: double.infinity,
-          height: 52,
+          height: 54,
           child: OutlinedButton(
             style: OutlinedButton.styleFrom(
               foregroundColor: accentColor,
-              backgroundColor: const Color(0xFFF0F7F7),
+              backgroundColor: const Color(0xFFE5F5F5),
               side: const BorderSide(color: accentColor, width: 1.5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -1629,6 +1271,67 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  // Reusable "Secure Access"-style divider, matching AdminLoginScreen.
+  Widget _buildOrDivider() {
+    return Row(
+      children: [
+        Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            "OR",
+            style: TextStyle(
+              color: Colors.grey.shade500,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+        ),
+        Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
+      ],
+    );
+  }
+
+  // Reusable text field styled exactly like AdminLoginScreen's inputs:
+  // filled white, no border, rounded 16, accentColor focus ring.
+  Widget _styledField({
+    required TextEditingController controller,
+    required IconData icon,
+    required String hint,
+    bool obscureText = false,
+    Widget? suffixIcon,
+    TextInputType? keyboardType,
+  }) {
+    return TextField(
+      controller: controller,
+      enabled: !_isLoading,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      style: const TextStyle(color: Colors.black),
+      decoration: InputDecoration(
+        prefixIcon: Icon(icon, color: Colors.grey),
+        suffixIcon: suffixIcon,
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.grey),
+        filled: true,
+        fillColor: const Color(0xFFE5F5F5),
+        contentPadding: const EdgeInsets.symmetric(vertical: 18),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: accentColor, width: 1.5),
+        ),
+      ),
     );
   }
 
@@ -1666,9 +1369,11 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _showBusinessRoleSelection(int vendorId,
+  void _showBusinessRoleSelection(
+      int vendorId,
       Map<String, dynamic> userData,
-      List<String> vendorTypes,) {
+      List<String> vendorTypes,
+      ) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -1685,21 +1390,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-
-              // ListTile(
-              //   leading: const Icon(Icons.business_outlined),
-              //   title: const Text("Business User Dashboard"),
-              //   onTap: () {
-              //     Navigator.pop(context);
-              //     Navigator.pushAndRemoveUntil(
-              //       context,
-              //       MaterialPageRoute(
-              //           builder: (_) => const CommunityAdminDashboard()),
-              //           (route) => false,
-              //     );
-              //   },
-              // ),
-
               if (vendorTypes.contains('200'))
                 ListTile(
                   leading: const Icon(Icons.admin_panel_settings_rounded),
@@ -1709,12 +1399,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     Navigator.pushAndRemoveUntil(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const CommunityAdminDashboard()),
+                          builder: (_) => const CommunityDashboardScreen()),
                           (route) => false,
                     );
                   },
                 ),
-
               if (vendorTypes.contains('5'))
                 ListTile(
                   leading: const Icon(Icons.storefront_rounded),
@@ -1723,8 +1412,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Navigator.pop(context);
                     Navigator.pushAndRemoveUntil(
                       context,
-                      MaterialPageRoute(
-                          builder: (_) => const SellerDashboard()),
+                      MaterialPageRoute(builder: (_) => const SellerDashboard()),
                           (route) => false,
                     );
                   },

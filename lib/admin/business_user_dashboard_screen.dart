@@ -17,7 +17,7 @@ import 'package:trading_ecommerce_admin/admin/wallet_admin_screen.dart';
 import 'package:trading_ecommerce_admin/admin/seller_orders_screen.dart';
 import 'package:trading_ecommerce_admin/admin/marketplace_modules_screen.dart';
 import 'package:trading_ecommerce_admin/admin/module_manager_screen.dart';
-import 'package:trading_ecommerce_admin/screens/manage_opportunities_screen.dart';
+import 'package:trading_ecommerce_admin/screens/manage_opportunities_screen.dart' hide ExploreCommunitiesScreen;
 import 'package:trading_ecommerce_admin/screens/trading_marketplace_screen.dart';
 import 'package:trading_ecommerce_admin/screens/selected_items_screen.dart';
 import 'package:trading_ecommerce_admin/screens/affiliate_orders_screen.dart';
@@ -39,11 +39,16 @@ import 'package:trading_ecommerce_admin/admin/business_user_profile_screen.dart'
 import 'package:trading_ecommerce_admin/admin/financial_command_center_screen.dart';
 import 'package:trading_ecommerce_admin/admin/manage_vendors_screen.dart';
 import 'package:trading_ecommerce_admin/admin/commission_settings_screen.dart';
-import 'package:trading_ecommerce_admin/user/seller_bank_accounts_screen.dart';
+import 'package:trading_ecommerce_admin/user/seller_bank_accounts_screen.dart' hide HoverableCard;
 import 'package:trading_ecommerce_admin/screens/marketplace_trainings_screen.dart';
 import 'package:trading_ecommerce_admin/screens/enrolled_trainings_screen.dart';
 import 'package:trading_ecommerce_admin/screens/mom_trainings_screen.dart';
 
+import '../common/Industry_interest.dart';
+import '../common/community_app_interest.dart';
+import '../common/growCommunities.dart';
+import '../common/logout.dart';
+import '../common/opportunityScreen.dart';
 import 'Explore_communities.dart';
 import 'candidate_manage_hub.dart';
 import 'explore_communities_screen.dart';
@@ -52,6 +57,7 @@ import 'grow-community.dart';
 import 'job_applications_screen.dart';
 import 'job_form.dart';
 import 'joblisting.dart';
+import 'manage-community.dart';
 import 'manage_opportunity.dart';
 import 'my-network.dart';
 
@@ -208,133 +214,6 @@ class _SuperAdminDashboard extends State<SuperAdminDashboard> {
     });
   }
 
-  Future<void> _requestLocationPermission() async {
-    try {
-      final denied = await LocationService.isPermissionDenied();
-      if (denied) {
-        await _showLocationPermissionDialog();
-      } else {
-        await LocationService.requestAndGetLocation();
-      }
-    } catch (e) {
-      debugPrint("Error requesting location: $e");
-    }
-  }
-  Future<void> _showLocationPermissionDialog() async {
-    if (!mounted) return;
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Top Icon
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE5F5F5), // Light teal circle background
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.location_on,
-                      color: Color(0xFF006565), // Dark teal pin
-                      size: 38,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // Title
-                const Text(
-                  "Enable Location",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Subtitle
-                const Text(
-                  "Luxe requires access to your location to provide personalized delivery estimates, calculate taxes correctly, and display premium stores near you.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // Allow Access Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF006565),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    onPressed: () async {
-                      Navigator.pop(context);
-                      try {
-                        await LocationService.requestAndGetLocation();
-                      } catch (_) {}
-                    },
-                    child: const Text(
-                      "Allow Access",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Not Now Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF006565)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: const Text(
-                      "Not Now",
-                      style: TextStyle(
-                        color: Color(0xFF006565),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   Future<void> _loadBusinessProfile() async {
     setState(() => _isLoading = true);
@@ -937,7 +816,7 @@ class _SuperAdminDashboard extends State<SuperAdminDashboard> {
       case 10: titleText = "My Addresses"; break;
       case 11: titleText = "Orders Central"; break;
       case 26: titleText = "Withdrawals"; break;
-      case 12: titleText = "Community approvals"; break;
+      case 12: titleText = "Grow Communities"; break;
       case 13: titleText = "Module Marketplace"; break;
       case 14: titleText = "Module Manager"; break;
       case 15: titleText = "Marketplace Opportunities"; break;
@@ -965,8 +844,9 @@ class _SuperAdminDashboard extends State<SuperAdminDashboard> {
       // case 42: titleText = "MOM Trainings"; break;
       case 43: titleText = "Candidate Manage"; break;
       case 45: titleText = "Manage Opp.."; break;
-      case 49: titleText = "Marketplace OPP.."; break;
+      case 49: titleText = "Marketplace Opportunity"; break;
       case 70: titleText = "Explore Communities"; break;
+      case 99 : titleText ="Community Management";break;
 
 
     }
@@ -1091,7 +971,9 @@ class _SuperAdminDashboard extends State<SuperAdminDashboard> {
                 _buildDrawerItem(36, Icons.percent_rounded, "Commission Settings"),
                 _buildDrawerItem(1, Icons.storefront_rounded, "Manage Vendors"),
                 _buildDrawerItem(70, Icons.storefront_rounded, "Explore Communities"),
-                Theme(
+                  _buildDrawerItem(99, Icons.storefront_rounded, "Manage Communities"),
+
+                  Theme(
                   data: Theme.of(context).copyWith(
                     dividerColor: Colors.transparent,
                     listTileTheme: const ListTileThemeData(
@@ -1119,34 +1001,34 @@ class _SuperAdminDashboard extends State<SuperAdminDashboard> {
                   ),
                 ),
 
-                  Theme(
-                    data: Theme.of(context).copyWith(
-                      dividerColor: Colors.transparent,
-                      listTileTheme: const ListTileThemeData(
-                        horizontalTitleGap: 8,
-                        dense: true,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ),
-                    child: Container(
-                      margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
-                      child: ExpansionTile(
-                        shape: const Border(),
-                        collapsedShape: const Border(),
-                        tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                        leading: const Icon(Icons.task_rounded, color: textLight, size: 24),
-                        title: const Text("Business Opportunities", style: TextStyle(fontSize: 14, color: textDark)),
-                        children: [
-                          _buildDrawerItem(45, Icons.task_outlined, "Manage opportunities", isSubItem: true),
-                          _buildDrawerItem(49, Icons.people_outline_rounded, "Explore Opportunities", isSubItem: true),
-
-                        ],
-                      ),
-                    ),
-                  ),
+                  // Theme(
+                  //   data: Theme.of(context).copyWith(
+                  //     dividerColor: Colors.transparent,
+                  //     listTileTheme: const ListTileThemeData(
+                  //       horizontalTitleGap: 8,
+                  //       dense: true,
+                  //       visualDensity: VisualDensity.compact,
+                  //     ),
+                  //   ),
+                  //   child: Container(
+                  //     margin: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+                  //     child: ExpansionTile(
+                  //       shape: const Border(),
+                  //       collapsedShape: const Border(),
+                  //       tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                  //       leading: const Icon(Icons.task_rounded, color: textLight, size: 24),
+                  //       title: const Text("Business Opportunities", style: TextStyle(fontSize: 14, color: textDark)),
+                  //       children: [
+                  //         _buildDrawerItem(45, Icons.task_outlined, "Manage opportunities", isSubItem: true),
+                  //         _buildDrawerItem(49, Icons.people_outline_rounded, "Explore Opportunities", isSubItem: true),
+                  //
+                  //       ],
+                  //     ),
+                  //   ),
+                  // ),
 
                   _buildDrawerItem(11, Icons.shopping_bag_rounded, "Order Management"),
-                _buildDrawerItem(12, Icons.diversity_3_rounded, "Manage Communities"),
+                _buildDrawerItem(12, Icons.diversity_3_rounded, "Grow Communities"),
                   Theme(
                     data: Theme.of(context).copyWith(
                       dividerColor: Colors.transparent,
@@ -1228,9 +1110,9 @@ class _SuperAdminDashboard extends State<SuperAdminDashboard> {
                       leading: const Icon(Icons.business_center_rounded, color: textLight, size: 24),
                       title: const Text("Opportunity Marketplace", style: TextStyle(fontSize: 14, color: textDark)),
                       children: [
-                        _buildDrawerItem(15, Icons.storefront_rounded, "Marketplace", isSubItem: true),
-                        _buildDrawerItem(16, Icons.list_alt_rounded, "My Listings", isSubItem: true),
-                        _buildDrawerItem(17, Icons.assignment_turned_in_rounded, "My Submissions", isSubItem: true),
+                        _buildDrawerItem(49, Icons.storefront_rounded, "Explore Opportunities", isSubItem: true),
+                        _buildDrawerItem(45, Icons.list_alt_rounded, "My Listings", isSubItem: true),
+                        // _buildDrawerItem(17, Icons.assignment_turned_in_rounded, "My Submissions", isSubItem: true),
                       ],
                     ),
                   ),
@@ -1311,9 +1193,12 @@ class _SuperAdminDashboard extends State<SuperAdminDashboard> {
                       collapsedShape: const Border(),
                       tilePadding: const EdgeInsets.symmetric(horizontal: 12),
                       leading: const Icon(Icons.settings_rounded, color: textLight, size: 24),
-                      title: const Text("Platform Settings", style: TextStyle(fontSize: 14, color: textDark)),
+                      title: const Text("General Settings", style: TextStyle(fontSize: 14, color: textDark)),
                       children: [
                         _buildDrawerItem(22, Icons.settings_rounded, "Site Setting", isSubItem: true),
+                        _buildDrawerItem(100, Icons.settings_rounded, "Interest  Preferences", isSubItem: true),
+                        _buildDrawerItem(101, Icons.settings_rounded, "Industry pretences", isSubItem: true),
+                        // _buildDrawerItem(0, Icons.settings_rounded, "App Settings", isSubItem: true),
                         _buildDrawerItem(23, Icons.category_rounded, "Category Settings", isSubItem: true),
                         _buildDrawerItem(24, Icons.manage_accounts_rounded, "Item Setting", isSubItem: true),
                         _buildDrawerItem(21, Icons.settings_applications_rounded, "Platform Setting", isSubItem: true),
@@ -1334,8 +1219,8 @@ class _SuperAdminDashboard extends State<SuperAdminDashboard> {
             title: const Text("Sign Out", style: TextStyle(color: Color(0xFFBA1A1A), fontWeight: FontWeight.bold)),
             onTap: () {
               Navigator.pop(context);
-              _handleLogout();
-            },
+              showLogoutConfirmationDialog(context)   ;
+              },
           ),
           const SizedBox(height: 8),
         ],
@@ -1388,6 +1273,7 @@ class _SuperAdminDashboard extends State<SuperAdminDashboard> {
 
   Widget _buildBodyContent() {
     switch (_currentIndex) {
+      case 99: return CommunityManagementScreen();
       case 0: return AdminDashboard();
       case 36: return const CommissionSettingsScreen(isEmbedded: true);
       case 1: return const ManageVendorsScreen(isEmbedded: true);
@@ -1402,11 +1288,11 @@ class _SuperAdminDashboard extends State<SuperAdminDashboard> {
       case 10: return _buildMyAddressesView();
       case 11: return const SellerOrderScreen(isEmbedded: true);
       case 26: return _buildWithdrawalsView();
-      case 12: return _buildCommunityApprovalsView();
+      case 12: return  GrowCommunityApp();
       case 13: return const MarketplaceModulesScreen(isEmbedded: true);
-      case 14: return const ModuleManagerScreen();
-      case 15: return _buildMarketplaceOpportunitiesView();
-      case 16: return const ManageOpportunitiesScreen(isTab: true);
+        case 14: return const MarketplaceScreen();
+       // case 15: return MarketplaceScreen();
+      // case 16: return const manageopportunity();
       case 17: return _buildMySubmissionsView();
       case 18: return const TradingMarketplaceScreen();//isEmbedded: true /comment
       case 19: return const SelectedItemsScreen(isEmbedded: true);
@@ -1434,1009 +1320,16 @@ class _SuperAdminDashboard extends State<SuperAdminDashboard> {
       case 42: return const RecruiterApp();
       case 43: return const CandidateHubScreen();
       case 45: return const manageopportunity();
-      case 49: return const MarketplaceScreen();
+      case 49: return const OpportunityHomeScreen();
        case 70: return const ExploreCommunitiesScreen(isEmbedded: true,);
+       case 100: return const PersonalizeFeedDialog();
+       case 101: return const PersonalizeIndustryDialog();
       //   case 70: return const mynetwork();
 
       // case 70: return const growcommunity();
       default: return AdminDashboard();
     }
   }
-
-  // ══════════════════════════════════════════════════════════
-  // VIEW BUILDERS
-  // ══════════════════════════════════════════════════════════
-
-  // 1. Dashboard View (Serene Commerce Executive Dashboard Layout)
-  // Widget _buildDashboardView() {
-  //   return SingleChildScrollView(
-  //     padding: const EdgeInsets.all(20),
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: [
-  //         // Header Section
-  //         Wrap(
-  //           alignment: WrapAlignment.spaceBetween,
-  //           crossAxisAlignment: WrapCrossAlignment.center,
-  //           spacing: 16,
-  //           runSpacing: 12,
-  //           children: [
-  //             Column(
-  //               crossAxisAlignment: CrossAxisAlignment.start,
-  //               children: const [
-  //                 Text(
-  //                   "Strategic Overview",
-  //                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryTeal, fontFamily: 'Manrope'),
-  //                 ),
-  //                 SizedBox(height: 2),
-  //                 Text(
-  //                   "Enhanced executive insights and operational flows.",
-  //                   style: TextStyle(fontSize: 12, color: textLight),
-  //                 ),
-  //               ],
-  //             ),
-  //           ],
-  //         ),
-  //         const Divider(),
-  //
-  //         // 1. Platform Health & Access Header
-  //         const Text("Platform Health & Access", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
-  //         const SizedBox(height: 12),
-  //
-  //         // Row 1: Horizontal Sliding Stats
-  //         SingleChildScrollView(
-  //           scrollDirection: Axis.horizontal,
-  //           physics: const BouncingScrollPhysics(),
-  //           child: Row(
-  //             children: [
-  //               // Current Membership Card
-  //               _buildSliderCard(
-  //                 child: Column(
-  //                   crossAxisAlignment: CrossAxisAlignment.start,
-  //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                   children: [
-  //                     Column(
-  //                       crossAxisAlignment: CrossAxisAlignment.start,
-  //                       children: [
-  //                         const Text("CURRENT MEMBERSHIP", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: primaryTeal, letterSpacing: 0.5)),
-  //                         const SizedBox(height: 4),
-  //                         Text(_currentMembershipTier, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDark)),
-  //                         const SizedBox(height: 4),
-  //                         const Text("Unlimited Marketplace Access", style: TextStyle(fontSize: 11, color: textLight)),
-  //                       ],
-  //                     ),
-  //                     const SizedBox(height: 12),
-  //                     SizedBox(
-  //                       width: double.infinity,
-  //                       height: 32,
-  //                       child: FilledButton(
-  //                         style: FilledButton.styleFrom(backgroundColor: primaryTeal, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-  //                         onPressed: _showMembershipUpsellDialog,
-  //                         child: const Text("Upgrade Plan", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-  //                       ),
-  //                     )
-  //                   ],
-  //                 ),
-  //               ),
-  //               const SizedBox(width: 16),
-  //
-  //               // Space Utilization Circular Chart Card
-  //               _buildSliderCard(
-  //                 child: Row(
-  //                   children: [
-  //                     Stack(
-  //                       alignment: Alignment.center,
-  //                       children: [
-  //                         SizedBox(
-  //                           width: 54,
-  //                           height: 54,
-  //                           child: CircularProgressIndicator(
-  //                             value: 0.75,
-  //                             strokeWidth: 5,
-  //                             color: primaryTeal,
-  //                             backgroundColor: Colors.grey.shade200,
-  //                           ),
-  //                         ),
-  //                         const Text("75%", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textDark)),
-  //                       ],
-  //                     ),
-  //                     const SizedBox(width: 16),
-  //                     Expanded(
-  //                       child: Column(
-  //                         crossAxisAlignment: CrossAxisAlignment.start,
-  //                         mainAxisAlignment: MainAxisAlignment.center,
-  //                         children: const [
-  //                           Text("SPACE UTILIZATION", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: textLight, letterSpacing: 0.5)),
-  //                           SizedBox(height: 4),
-  //                           Text("6.4 / 8.0 TB", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
-  //                         ],
-  //                       ),
-  //                     )
-  //                   ],
-  //                 ),
-  //               ),
-  //               const SizedBox(width: 16),
-  //
-  //               // Platform Status
-  //               _buildSliderCard(
-  //                 child: Row(
-  //                   children: [
-  //                     Container(
-  //                       width: 50,
-  //                       height: 50,
-  //                       decoration: BoxDecoration(color: selectedBg, shape: BoxShape.circle),
-  //                       child: const Icon(Icons.verified, color: primaryTeal, size: 28),
-  //                     ),
-  //                     const SizedBox(width: 16),
-  //                     Column(
-  //                       crossAxisAlignment: CrossAxisAlignment.start,
-  //                       mainAxisAlignment: MainAxisAlignment.center,
-  //                       children: const [
-  //                         Text("PLATFORM STATUS", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: textLight, letterSpacing: 0.5)),
-  //                         SizedBox(height: 4),
-  //                         Text("Enterprise Elite", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
-  //                       ],
-  //                     )
-  //                   ],
-  //                 ),
-  //               ),
-  //               const SizedBox(width: 16),
-  //
-  //               // Next Milestone
-  //               _buildSliderCard(
-  //                 color: primaryTeal,
-  //                 child: Column(
-  //                   crossAxisAlignment: CrossAxisAlignment.start,
-  //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                   children: [
-  //                     Column(
-  //                       crossAxisAlignment: CrossAxisAlignment.start,
-  //                       children: const [
-  //                         Text("NEXT MILESTONE", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white70, letterSpacing: 0.5)),
-  //                         SizedBox(height: 4),
-  //                         Text("Unlock Global Node Access", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
-  //                       ],
-  //                     ),
-  //                     const SizedBox(height: 12),
-  //                     SizedBox(
-  //                       height: 32,
-  //                       child: OutlinedButton(
-  //                         style: OutlinedButton.styleFrom(
-  //                           side: const BorderSide(color: Colors.white),
-  //                           foregroundColor: Colors.white,
-  //                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-  //                           padding: const EdgeInsets.symmetric(horizontal: 16),
-  //                         ),
-  //                         onPressed: _showMembershipUpsellDialog,
-  //                         child: const Text("Upgrade Membership", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-  //                       ),
-  //                     )
-  //                   ],
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //         const SizedBox(height: 28),
-  //
-  //         // 2. Advanced Analytics Header
-  //         const Text("Advanced Analytics", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
-  //         const SizedBox(height: 12),
-  //
-  //         // Row 2: Analytics Cards Horizontal Scroll
-  //         SingleChildScrollView(
-  //           scrollDirection: Axis.horizontal,
-  //           physics: const BouncingScrollPhysics(),
-  //           child: Row(
-  //             children: [
-  //               // Global Traffic Density Card
-  //               Container(
-  //                 width: 320,
-  //                 height: 260,
-  //                 decoration: _dashboardCardDecoration(),
-  //                 padding: const EdgeInsets.all(20),
-  //                 child: Column(
-  //                   crossAxisAlignment: CrossAxisAlignment.start,
-  //                   children: [
-  //                     Row(
-  //                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                       children: [
-  //                         Column(
-  //                           crossAxisAlignment: CrossAxisAlignment.start,
-  //                           children: const [
-  //                             Text("Global Traffic Density", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-  //                             Text("VISITOR CLUSTERS BY REGION", style: TextStyle(fontSize: 8, color: textLight, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-  //                           ],
-  //                         ),
-  //                         Container(
-  //                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-  //                           decoration: BoxDecoration(color: Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(4)),
-  //                           child: const Text("LIVE", style: TextStyle(color: Colors.green, fontSize: 8, fontWeight: FontWeight.bold)),
-  //                         )
-  //                       ],
-  //                     ),
-  //                     const SizedBox(height: 16),
-  //                     // Mock visual representation
-  //                     Expanded(
-  //                       child: Column(
-  //                         mainAxisAlignment: MainAxisAlignment.center,
-  //                         children: [
-  //                           _buildProgressRow("North America", "42.5k", 0.85),
-  //                           const SizedBox(height: 16),
-  //                           _buildProgressRow("Europe", "38.2k", 0.76),
-  //                           const SizedBox(height: 16),
-  //                           _buildProgressRow("Asia Pacific", "24.1k", 0.48),
-  //                         ],
-  //                       ),
-  //                     )
-  //                   ],
-  //                 ),
-  //               ),
-  //               const SizedBox(width: 16),
-  //
-  //               // Listing Distribution Card
-  //               Container(
-  //                 width: 300,
-  //                 height: 260,
-  //                 decoration: _dashboardCardDecoration(),
-  //                 padding: const EdgeInsets.all(20),
-  //                 child: Column(
-  //                   crossAxisAlignment: CrossAxisAlignment.start,
-  //                   children: [
-  //                     const Text("Listing Distribution", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-  //                     const Text("CATEGORY BREAKDOWN", style: TextStyle(fontSize: 8, color: textLight, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-  //                     const SizedBox(height: 12),
-  //                     Expanded(
-  //                       child: Center(
-  //                         child: Stack(
-  //                           alignment: Alignment.center,
-  //                           children: [
-  //                             SizedBox(
-  //                               width: 100,
-  //                               height: 100,
-  //                               child: CircularProgressIndicator(
-  //                                 value: 0.45,
-  //                                 strokeWidth: 16,
-  //                                 color: primaryTeal,
-  //                                 backgroundColor: Colors.grey.shade100,
-  //                               ),
-  //                             ),
-  //                             Column(
-  //                               mainAxisAlignment: MainAxisAlignment.center,
-  //                               children: const [
-  //                                 Text("45%", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textDark)),
-  //                                 Text("PRODUCTS", style: TextStyle(fontSize: 8, color: textLight, fontWeight: FontWeight.bold)),
-  //                               ],
-  //                             )
-  //                           ],
-  //                         ),
-  //                       ),
-  //                     ),
-  //                     Row(
-  //                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-  //                       children: [
-  //                         Row(
-  //                           children: const [
-  //                             Icon(Icons.lens, color: primaryTeal, size: 8),
-  //                             SizedBox(width: 4),
-  //                             Text("Products", style: TextStyle(fontSize: 10, color: textLight)),
-  //                           ],
-  //                         ),
-  //                         Row(
-  //                           children: const [
-  //                             Icon(Icons.lens, color: Colors.grey, size: 8),
-  //                             SizedBox(width: 4),
-  //                             Text("Services", style: TextStyle(fontSize: 10, color: textLight)),
-  //                           ],
-  //                         ),
-  //                       ],
-  //                     )
-  //                   ],
-  //                 ),
-  //               ),
-  //               const SizedBox(width: 16),
-  //
-  //               // Revenue Growth Card
-  //               Container(
-  //                 width: 320,
-  //                 height: 260,
-  //                 decoration: _dashboardCardDecoration(),
-  //                 padding: const EdgeInsets.all(20),
-  //                 child: Column(
-  //                   crossAxisAlignment: CrossAxisAlignment.start,
-  //                   children: [
-  //                     Row(
-  //                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                       children: [
-  //                         Column(
-  //                           crossAxisAlignment: CrossAxisAlignment.start,
-  //                           children: const [
-  //                             Text("Revenue Growth Cycle", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-  //                             Text("PERFORMANCE OVER TIME", style: TextStyle(fontSize: 8, color: textLight, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-  //                           ],
-  //                         ),
-  //                         Container(
-  //                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-  //                           decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(6)),
-  //                           child: const Text("LAST 30 DAYS", style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: textDark)),
-  //                         )
-  //                       ],
-  //                     ),
-  //                     const SizedBox(height: 24),
-  //                     Expanded(
-  //                       child: CustomPaint(
-  //                         size: Size.infinite,
-  //                         painter: SparklinePainter(),
-  //                       ),
-  //                     ),
-  //                     const SizedBox(height: 12),
-  //                     Row(
-  //                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                       children: const [
-  //                         Text("Week 1", style: TextStyle(fontSize: 9, color: Colors.grey)),
-  //                         Text("Week 2", style: TextStyle(fontSize: 9, color: Colors.grey)),
-  //                         Text("Week 3", style: TextStyle(fontSize: 9, color: Colors.grey)),
-  //                         Text("Week 4", style: TextStyle(fontSize: 9, color: Colors.grey)),
-  //                       ],
-  //                     )
-  //                   ],
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //         const SizedBox(height: 28),
-  //
-  //         // 3. Pending Seller Withdrawals
-  //         Container(
-  //           decoration: _dashboardCardDecoration(),
-  //           clipBehavior: Clip.antiAlias,
-  //           child: Column(
-  //             crossAxisAlignment: CrossAxisAlignment.start,
-  //             children: [
-  //               Container(
-  //                 padding: const EdgeInsets.all(16),
-  //                 color: Colors.grey.shade50,
-  //                 child: Row(
-  //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                   children: [
-  //                     Column(
-  //                       crossAxisAlignment: CrossAxisAlignment.start,
-  //                       children: const [
-  //                         Text("Pending Seller Withdrawals", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textDark)),
-  //                         Text("Review and authorize financial payouts", style: TextStyle(fontSize: 11, color: textLight)),
-  //                       ],
-  //                     ),
-  //                     Container(
-  //                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-  //                       decoration: BoxDecoration(color: selectedBg, borderRadius: BorderRadius.circular(12)),
-  //                       child: const Text("2 PENDING", style: TextStyle(color: primaryTeal, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-  //                     )
-  //                   ],
-  //                 ),
-  //               ),
-  //               const Divider(height: 1),
-  //               ListView.separated(
-  //                 shrinkWrap: true,
-  //                 physics: const NeverScrollableScrollPhysics(),
-  //                 itemCount: _mockPayouts.length,
-  //                 separatorBuilder: (context, index) => const Divider(height: 1),
-  //                 itemBuilder: (context, index) {
-  //                   final item = _mockPayouts[index];
-  //                   return Padding(
-  //                     padding: const EdgeInsets.all(16),
-  //                     child: Column(
-  //                       crossAxisAlignment: CrossAxisAlignment.start,
-  //                       children: [
-  //                         Row(
-  //                           crossAxisAlignment: CrossAxisAlignment.start,
-  //                           children: [
-  //                             Container(
-  //                               width: 44,
-  //                               height: 44,
-  //                               decoration: BoxDecoration(color: bgLight, borderRadius: BorderRadius.circular(10)),
-  //                               child: const Icon(Icons.account_balance, color: primaryTeal),
-  //                             ),
-  //                             const SizedBox(width: 16),
-  //                             Expanded(
-  //                               child: Column(
-  //                                 crossAxisAlignment: CrossAxisAlignment.start,
-  //                                 children: [
-  //                                   Row(
-  //                                     children: [
-  //                                       Text(item["vendor"], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textDark)),
-  //                                       const SizedBox(width: 8),
-  //                                       Container(
-  //                                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-  //                                         decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(4)),
-  //                                         child: Text(item["id"], style: TextStyle(fontSize: 8, color: Colors.grey.shade700, fontWeight: FontWeight.bold)),
-  //                                       ),
-  //                                     ],
-  //                                   ),
-  //                                   const SizedBox(height: 4),
-  //                                   Text(item["amount"], style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryTeal)),
-  //                                   const SizedBox(height: 4),
-  //                                   Text("Request Date: ${item['date']} • Method: ${item['method']}", style: const TextStyle(fontSize: 9, color: Colors.grey)),
-  //                                 ],
-  //                               ),
-  //                             ),
-  //                           ],
-  //                         ),
-  //                         const SizedBox(height: 12),
-  //                         Row(
-  //                           children: [
-  //                             Expanded(
-  //                               child: SizedBox(
-  //                                 height: 36,
-  //                                 child: OutlinedButton(
-  //                                   style: OutlinedButton.styleFrom(
-  //                                     side: const BorderSide(color: outlineVariant),
-  //                                     foregroundColor: primaryTeal,
-  //                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-  //                                     padding: EdgeInsets.zero,
-  //                                   ),
-  //                                   onPressed: () {
-  //                                     Navigator.push(
-  //                                       context,
-  //                                       MaterialPageRoute(
-  //                                         builder: (_) => ChatScreen(
-  //                                           user: ChatUser(
-  //                                             id: item["id"],
-  //                                             name: item["vendor"],
-  //                                             lastMessage: "",
-  //                                             time: "",
-  //                                             avatarUrl: "",
-  //                                           ),
-  //                                         ),
-  //                                       ),
-  //                                     );
-  //                                   },
-  //                                   child: const Text("Contact", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-  //                                 ),
-  //                               ),
-  //                             ),
-  //                             const SizedBox(width: 8),
-  //                             Expanded(
-  //                               child: SizedBox(
-  //                                 height: 36,
-  //                                 child: ElevatedButton(
-  //                                   style: ElevatedButton.styleFrom(
-  //                                     backgroundColor: const Color(0xFFFFEBEE), // Soft pinkish red
-  //                                     foregroundColor: const Color(0xFFC62828), // Crimson red
-  //                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-  //                                     padding: EdgeInsets.zero,
-  //                                     elevation: 0,
-  //                                   ),
-  //                                   onPressed: () {
-  //                                     setState(() {
-  //                                       _mockPayouts.removeAt(index);
-  //                                     });
-  //                                     _showSuccess("Payout request disapproved.");
-  //                                   },
-  //                                   child: const Text("Disapprove", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-  //                                 ),
-  //                               ),
-  //                             ),
-  //                             const SizedBox(width: 8),
-  //                             Expanded(
-  //                               child: SizedBox(
-  //                                 height: 36,
-  //                                 child: ElevatedButton(
-  //                                   style: ElevatedButton.styleFrom(
-  //                                     backgroundColor: primaryTeal,
-  //                                     foregroundColor: Colors.white,
-  //                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-  //                                     padding: EdgeInsets.zero,
-  //                                     elevation: 0,
-  //                                   ),
-  //                                   onPressed: () {
-  //                                     setState(() {
-  //                                       _mockPayouts.removeAt(index);
-  //                                     });
-  //                                     _showSuccess("Payout approved successfully!");
-  //                                   },
-  //                                   child: const Text("Approve", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-  //                                 ),
-  //                               ),
-  //                             ),
-  //                           ],
-  //                         ),
-  //                       ],
-  //                     ),
-  //                   );
-  //                 },
-  //               )
-  //             ],
-  //           ),
-  //         ),
-  //         const SizedBox(height: 28),
-  //
-  //         // 4. Live Stream: Recent Orders Header
-  //         Row(
-  //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //           children: [
-  //             const Text("Live Stream: Recent Orders", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
-  //             TextButton(
-  //               style: TextButton.styleFrom(foregroundColor: primaryTeal),
-  //               onPressed: () => setState(() => _currentIndex = 11),
-  //               child: Row(
-  //                 children: const [
-  //                   Text("View Ledger", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-  //                   SizedBox(width: 4),
-  //                   Icon(Icons.arrow_forward, size: 14),
-  //                 ],
-  //               ),
-  //             )
-  //           ],
-  //         ),
-  //         const SizedBox(height: 8),
-  //
-  //         // Orders Horizontal Card
-  //         Container(
-  //           width: double.infinity,
-  //           decoration: _dashboardCardDecoration(),
-  //           padding: const EdgeInsets.all(16),
-  //           child: Row(
-  //             crossAxisAlignment: CrossAxisAlignment.start,
-  //             children: [
-  //               Container(
-  //                 width: 48,
-  //                 height: 48,
-  //                 decoration: BoxDecoration(
-  //                   color: Colors.grey.shade100,
-  //                   borderRadius: BorderRadius.circular(10),
-  //                 ),
-  //                 child: const Icon(Icons.headphones, color: primaryTeal),
-  //               ),
-  //               const SizedBox(width: 16),
-  //               Expanded(
-  //                 child: Column(
-  //                   crossAxisAlignment: CrossAxisAlignment.start,
-  //                   children: [
-  //                     Row(
-  //                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                       children: [
-  //                         const Expanded(
-  //                           child: Text(
-  //                             "Zen Series Wireless Earbuds",
-  //                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-  //                             maxLines: 1,
-  //                             overflow: TextOverflow.ellipsis,
-  //                           ),
-  //                         ),
-  //                         const SizedBox(width: 8),
-  //                         Container(
-  //                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-  //                           decoration: BoxDecoration(color: selectedBg, borderRadius: BorderRadius.circular(8)),
-  //                           child: const Text("Fulfilled", style: TextStyle(color: primaryTeal, fontSize: 9, fontWeight: FontWeight.bold)),
-  //                         )
-  //                       ],
-  //                     ),
-  //                     const SizedBox(height: 2),
-  //                     const Text("ID: #ORD-22910", style: TextStyle(fontSize: 10, color: Colors.grey)),
-  //                     const SizedBox(height: 8),
-  //                     Wrap(
-  //                       spacing: 16,
-  //                       runSpacing: 4,
-  //                       crossAxisAlignment: WrapCrossAlignment.center,
-  //                       children: [
-  //                         Row(
-  //                           mainAxisSize: MainAxisSize.min,
-  //                           children: const [
-  //                             Icon(Icons.store, color: Colors.grey, size: 14),
-  //                             SizedBox(width: 4),
-  //                             Text("Seller: ", style: TextStyle(fontSize: 11, color: textLight)),
-  //                             Text("Urban Electronics", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textDark)),
-  //                           ],
-  //                         ),
-  //                         Row(
-  //                           mainAxisSize: MainAxisSize.min,
-  //                           children: const [
-  //                             Icon(Icons.person, color: Colors.grey, size: 14),
-  //                             SizedBox(width: 4),
-  //                             Text("Buyer: ", style: TextStyle(fontSize: 11, color: textLight)),
-  //                             Text("Sarah Jenkins", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textDark)),
-  //                           ],
-  //                         ),
-  //                       ],
-  //                     ),
-  //                     const Divider(height: 24),
-  //                     Row(
-  //                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                       children: [
-  //                         const Text("₹18,900.00", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
-  //                         TextButton(
-  //                           style: TextButton.styleFrom(foregroundColor: primaryTeal, padding: EdgeInsets.zero, minimumSize: Size.zero),
-  //                           onPressed: () {},
-  //                           child: const Text("Contact Seller", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-  //                         )
-  //                       ],
-  //                     )
-  //                   ],
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //         const SizedBox(height: 28),
-  //
-  //         // 5. Curated Queue: Listing Approvals
-  //         Row(
-  //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //           children: [
-  //             const Text("Curated Queue: Listing Approvals", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
-  //             Container(
-  //               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-  //               decoration: BoxDecoration(color: const Color(0xFFFFEBEE), borderRadius: BorderRadius.circular(8)),
-  //               child: const Text("12 New", style: TextStyle(color: Color(0xFFC62828), fontSize: 9, fontWeight: FontWeight.bold)),
-  //             )
-  //           ],
-  //         ),
-  //         const SizedBox(height: 12),
-  //
-  //         LayoutBuilder(
-  //           builder: (context, constraints) {
-  //             final isNarrow = constraints.maxWidth < 500;
-  //             final cards = [
-  //               // Card 1: Soundbar Pro
-  //               Container(
-  //                 decoration: _dashboardCardDecoration(),
-  //                 padding: const EdgeInsets.all(12),
-  //                 child: Column(
-  //                   crossAxisAlignment: CrossAxisAlignment.start,
-  //                   children: [
-  //                     Container(
-  //                       height: 100,
-  //                       decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
-  //                       alignment: Alignment.center,
-  //                       child: const Icon(Icons.speaker, color: primaryTeal, size: 36),
-  //                     ),
-  //                     const SizedBox(height: 8),
-  //                     const Text("Premium Soundbar Pro", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
-  //                     const Text("Requested by: TechNexus", style: TextStyle(fontSize: 10, color: Colors.grey)),
-  //                     const SizedBox(height: 12),
-  //                     SizedBox(
-  //                       height: 38,
-  //                       child: Row(
-  //                         children: [
-  //                           Expanded(
-  //                             child: ElevatedButton(
-  //                               style: ElevatedButton.styleFrom(
-  //                                 backgroundColor: const Color(0xFFFFEBEE), // Soft pinkish red
-  //                                 foregroundColor: const Color(0xFFC62828), // Crimson red
-  //                                 elevation: 0,
-  //                                 padding: const EdgeInsets.symmetric(vertical: 8),
-  //                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-  //                               ),
-  //                               onPressed: () => _showSuccess("Soundbar Pro listing rejected."),
-  //                               child: const Text("Reject", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-  //                             ),
-  //                           ),
-  //                           const SizedBox(width: 8),
-  //                           Expanded(
-  //                             child: ElevatedButton(
-  //                               style: ElevatedButton.styleFrom(
-  //                                 backgroundColor: primaryTeal,
-  //                                 foregroundColor: Colors.white,
-  //                                 elevation: 0,
-  //                                 padding: const EdgeInsets.symmetric(vertical: 8),
-  //                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-  //                               ),
-  //                               onPressed: () => _showSuccess("Soundbar Pro listing approved!"),
-  //                               child: const Text("Approve", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-  //                             ),
-  //                           )
-  //                         ],
-  //                       ),
-  //                     )
-  //                   ],
-  //                 ),
-  //               ),
-  //               // Card 2: Brand Strategy Workshop
-  //               Container(
-  //                 decoration: _dashboardCardDecoration(),
-  //                 padding: const EdgeInsets.all(12),
-  //                 child: Column(
-  //                   crossAxisAlignment: CrossAxisAlignment.start,
-  //                   children: [
-  //                     Container(
-  //                       height: 100,
-  //                       decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
-  //                       alignment: Alignment.center,
-  //                       child: const Icon(Icons.brush, color: primaryTeal, size: 36),
-  //                     ),
-  //                     const SizedBox(height: 8),
-  //                     const Text("Brand Strategy Workshop", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
-  //                     const Text("Requested by: Creative Labs", style: TextStyle(fontSize: 10, color: Colors.grey)),
-  //                     const SizedBox(height: 12),
-  //                     SizedBox(
-  //                       height: 38,
-  //                       child: Row(
-  //                         children: [
-  //                           Expanded(
-  //                             child: ElevatedButton(
-  //                               style: ElevatedButton.styleFrom(
-  //                                 backgroundColor: const Color(0xFFFFEBEE), // Soft pinkish red
-  //                                 foregroundColor: const Color(0xFFC62828), // Crimson red
-  //                                 elevation: 0,
-  //                                 padding: const EdgeInsets.symmetric(vertical: 8),
-  //                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-  //                               ),
-  //                               onPressed: () => _showSuccess("Workshop listing rejected."),
-  //                               child: const Text("Reject", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-  //                             ),
-  //                           ),
-  //                           const SizedBox(width: 8),
-  //                           Expanded(
-  //                             child: ElevatedButton(
-  //                               style: ElevatedButton.styleFrom(
-  //                                 backgroundColor: primaryTeal,
-  //                                 foregroundColor: Colors.white,
-  //                                 elevation: 0,
-  //                                 padding: const EdgeInsets.symmetric(vertical: 8),
-  //                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-  //                               ),
-  //                               onPressed: () => _showSuccess("Workshop listing approved!"),
-  //                               child: const Text("Approve", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-  //                             ),
-  //                           )
-  //                         ],
-  //                       ),
-  //                     )
-  //                   ],
-  //                 ),
-  //               ),
-  //             ];
-  //
-  //             return isNarrow
-  //                 ? Column(
-  //                     children: [
-  //                       cards[0],
-  //                       const SizedBox(height: 16),
-  //                       cards[1],
-  //                     ],
-  //                   )
-  //                 : Row(
-  //                     children: [
-  //                       Expanded(child: cards[0]),
-  //                       const SizedBox(width: 16),
-  //                       Expanded(child: cards[1]),
-  //                     ],
-  //                   );
-  //           },
-  //         ),
-  //         const SizedBox(height: 28),
-  //
-  //         // 6. News & Insights
-  //         const Text("News & Global Insights", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
-  //         const SizedBox(height: 12),
-  //         Container(
-  //           decoration: _dashboardCardDecoration(),
-  //           clipBehavior: Clip.antiAlias,
-  //           child: Column(
-  //             crossAxisAlignment: CrossAxisAlignment.start,
-  //             children: [
-  //               Container(
-  //                 height: 140,
-  //                 color: primaryTeal.withOpacity(0.2),
-  //                 width: double.infinity,
-  //                 alignment: Alignment.center,
-  //                 child: const Icon(Icons.newspaper, color: primaryTeal, size: 48),
-  //               ),
-  //               Padding(
-  //                 padding: const EdgeInsets.all(16),
-  //                 child: Column(
-  //                   crossAxisAlignment: CrossAxisAlignment.start,
-  //                   children: const [
-  //                     Text("FUTURE-PROOFING COMMERCE", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: primaryTeal, letterSpacing: 0.5)),
-  //                     SizedBox(height: 4),
-  //                     Text("Future-proofing commerce: The rise of hybrid supply chains.", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textDark)),
-  //                   ],
-  //                 ),
-  //               )
-  //             ],
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
-  Widget _buildSliderCard({required Widget child, Color? color}) {
-    return SizedBox(
-      width: 260,
-      height: 155,
-      child: HoverableCard(
-        borderRadius: 20.0,
-        backgroundColor: color ?? Colors.white,
-        borderColor: const Color(0xff006565),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: child,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProgressRow(String label, String value, double pct) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textLight)),
-            Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: primaryTeal)),
-          ],
-        ),
-        const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: pct,
-            minHeight: 5,
-            color: primaryTeal,
-            backgroundColor: Colors.grey.shade100,
-          ),
-        )
-      ],
-    );
-  }
-
-  BoxDecoration _dashboardCardDecoration() {
-    return BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.grey.shade200),
-      boxShadow: [
-        BoxShadow(color: Colors.black.withOpacity(0.01), blurRadius: 10, offset: const Offset(0, 4)),
-      ],
-    );
-  }
-
-  // 2. Manage Users View
-  Widget _buildManageUsersView() {
-    final generalUsers = _mockUsers.where((u) => u['role'] == 'General').toList();
-    final businessUsers = _mockUsers.where((u) => u['role'] == 'Business').toList();
-
-    return DefaultTabController(
-      length: 2,
-      child: Column(
-        children: [
-          const TabBar(
-            labelColor: primaryTeal,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: primaryTeal,
-            tabs: [
-              Tab(text: "General Users"),
-              Tab(text: "Business Users"),
-            ],
-          ),
-          Expanded(
-            child: TabBarView(
-              children: [
-                _buildUsersList(generalUsers, "General"),
-                _buildUsersList(businessUsers, "Business"),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUsersList(List<Map<String, dynamic>> usersList, String role) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: usersList.length,
-      itemBuilder: (context, idx) {
-        final user = usersList[idx];
-        final name = user["name"];
-        final email = user["email"];
-        final status = user["status"];
-        final isActive = status == "Active";
-
-        return Card(
-          color: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.grey.shade100),
-          ),
-          margin: const EdgeInsets.only(bottom: 12),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: selectedBg,
-                  child: Text(name[0], style: const TextStyle(color: primaryTeal, fontWeight: FontWeight.bold)),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      Text(email, style: const TextStyle(color: textLight, fontSize: 11)),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: isActive ? Colors.green.withOpacity(0.1) : const Color(0xFFBA1A1A).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              status,
-                              style: TextStyle(color: isActive ? Colors.green : const Color(0xFFBA1A1A), fontSize: 9, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ],
-                      )
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chat_bubble_outline_rounded, color: primaryTeal),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ChatScreen(
-                          user: ChatUser(
-                            id: user["id"],
-                            name: name,
-                            lastMessage: "",
-                            time: "",
-                            avatarUrl: "",
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.info_outline_rounded, color: Colors.grey),
-                  onPressed: () => _showUserDetailsDialog(user),
-                )
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showUserDetailsDialog(Map<String, dynamic> user) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(user["name"], style: const TextStyle(fontWeight: FontWeight.bold, color: darkTeal)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("User ID: ${user['id']}"),
-            const SizedBox(height: 6),
-            Text("Email: ${user['email']}"),
-            const SizedBox(height: 6),
-            Text("Role Level: ${user['role']} User"),
-            const SizedBox(height: 6),
-            Text("Status: ${user['status']}"),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Close", style: TextStyle(color: primaryTeal)),
-          )
-        ],
-      ),
-    );
-  }
-
   // 3. Jobs Board View (Rich mockup)
   Widget _buildJobsView() {
     return DefaultTabController(
@@ -2588,35 +1481,6 @@ class _SuperAdminDashboard extends State<SuperAdminDashboard> {
           )
         ],
       ),
-    );
-  }
-
-  // 9. Financials -> Bank Details View
-  Widget _buildBankDetailsView() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _mockBankDetails.length,
-      itemBuilder: (context, idx) {
-        final bank = _mockBankDetails[idx];
-        return Card(
-          color: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.grey.shade100),
-          ),
-          margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            leading: const CircleAvatar(
-              backgroundColor: selectedBg,
-              child: Icon(Icons.account_balance_rounded, color: primaryTeal),
-            ),
-            title: Text(bank["vendor"], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            subtitle: Text("Bank: ${bank['bank']} • Account: ${bank['account']}"),
-            trailing: Text("IFSC: ${bank['ifsc']}", style: const TextStyle(fontSize: 10, color: textLight)),
-          ),
-        );
-      },
     );
   }
 
@@ -2876,103 +1740,8 @@ class _SuperAdminDashboard extends State<SuperAdminDashboard> {
     );
   }
 
-  // void _showEditAddressDialog(Map<String, dynamic> addr) {
-  //   final labelCtrl = TextEditingController(text: addr["label"]);
-  //   final addrCtrl = TextEditingController(text: addr["address"]);
-  //   final phoneCtrl = TextEditingController(text: addr["phone"]);
-  //
-  //   showDialog(
-  //     context: context,
-  //     builder: (_) => AlertDialog(
-  //       title: const Text("Edit Address", style: TextStyle(fontWeight: FontWeight.bold, color: darkTeal)),
-  //       content: Column(
-  //         mainAxisSize: MainAxisSize.min,
-  //         children: [
-  //           TextField(controller: labelCtrl, decoration: const InputDecoration(labelText: "Label")),
-  //           const SizedBox(height: 12),
-  //           TextField(controller: addrCtrl, decoration: const InputDecoration(labelText: "Address")),
-  //           const SizedBox(height: 12),
-  //           TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: "Phone")),
-  //         ],
-  //       ),
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () => Navigator.pop(context),
-  //           child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
-  //         ),
-  //         SizedBox(
-  //           height: 36,
-  //           child: ElevatedButton(
-  //             style: ElevatedButton.styleFrom(backgroundColor: primaryTeal, elevation: 0),
-  //             onPressed: () {
-  //               setState(() {
-  //                 addr["label"] = labelCtrl.text;
-  //                 addr["address"] = addrCtrl.text;
-  //                 addr["phone"] = phoneCtrl.text;
-  //               });
-  //               Navigator.pop(context);
-  //               _showSuccess("Address updated successfully!");
-  //             },
-  //             child: const Text("Save", style: TextStyle(color: Colors.white)),
-  //           ),
-  //         )
-  //       ],
-  //     ),
-  //   );
-  // }
-
-  // void _showAddAddressDialog() {
-  //   final labelCtrl = TextEditingController();
-  //   final addrCtrl = TextEditingController();
-  //   final phoneCtrl = TextEditingController();
-  //
-  //   showDialog(
-  //     context: context,
-  //     builder: (_) => AlertDialog(
-  //       title: const Text("Add New Address", style: TextStyle(fontWeight: FontWeight.bold, color: darkTeal)),
-  //       content: Column(
-  //         mainAxisSize: MainAxisSize.min,
-  //         children: [
-  //           TextField(controller: labelCtrl, decoration: const InputDecoration(labelText: "Label")),
-  //           const SizedBox(height: 12),
-  //           TextField(controller: addrCtrl, decoration: const InputDecoration(labelText: "Address")),
-  //           const SizedBox(height: 12),
-  //           TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: "Phone")),
-  //         ],
-  //       ),
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () => Navigator.pop(context),
-  //           child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
-  //         ),
-  //         SizedBox(
-  //           height: 36,
-  //           child: ElevatedButton(
-  //             style: ElevatedButton.styleFrom(backgroundColor: primaryTeal, elevation: 0),
-  //             onPressed: () {
-  //               setState(() {
-  //                 _mockAddresses.add({
-  //                   "id": (DateTime.now().millisecondsSinceEpoch).toString(),
-  //                   "label": labelCtrl.text,
-  //                   "address": addrCtrl.text,
-  //                   "phone": phoneCtrl.text,
-  //                 });
-  //               });
-  //               Navigator.pop(context);
-  //               _showSuccess("New address added successfully!");
-  //             },
-  //             child: const Text("Add", style: TextStyle(color: Colors.white)),
-  //           ),
-  //         )
-  //       ],
-  //     ),
-  //   );
-  // }
 }
 
-// ══════════════════════════════════════════════════════════
-// CUSTOM SPARKLINE PAINTER (FOR REVENUE CHART)
-// ══════════════════════════════════════════════════════════
 class SparklinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

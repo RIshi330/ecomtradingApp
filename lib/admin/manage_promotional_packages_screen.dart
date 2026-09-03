@@ -3,6 +3,9 @@ import 'package:trading_ecommerce_admin/core/theme/app_theme.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:trading_ecommerce_admin/admin/community_monetization_screen.dart';
 
+import '../services/auth_User_and_Business_Session.dart';
+import '../widgets/app_text_styles.dart';
+
 class ManagePromotionalPackagesScreen extends StatefulWidget {
   final bool isEmbedded;
   const ManagePromotionalPackagesScreen({super.key, this.isEmbedded = false});
@@ -93,6 +96,7 @@ class _ManagePromotionalPackagesScreenState extends State<ManagePromotionalPacka
   }
 
   Future<void> _fetchPackages() async {
+
     if (!mounted) return;
     setState(() {
       _isLoading = true;
@@ -102,6 +106,7 @@ class _ManagePromotionalPackagesScreenState extends State<ManagePromotionalPacka
       final response = await Database().getData({
         'action': 'get_packages',
         'search': _searchQuery,
+        'vendor_id': UserSessionSet.instance.vendorId,
       }, endpoint: 'new_apis/promotion_package_api.php');
 
       if (!mounted) return;
@@ -227,11 +232,6 @@ class _ManagePromotionalPackagesScreenState extends State<ManagePromotionalPacka
 
               const Text(
                 "Active Deployments",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1C1C),
-                ),
               ),
               const SizedBox(height: 12),
 

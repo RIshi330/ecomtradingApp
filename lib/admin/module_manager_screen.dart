@@ -3,6 +3,7 @@ import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 import '../Database/Database.dart';
 import '../model/module_model.dart';
 import '../core/theme/app_theme.dart';
+import '../services/auth_User_and_Business_Session.dart';
 
 class ModuleManagerScreen extends StatefulWidget {
   const ModuleManagerScreen({super.key});
@@ -34,7 +35,8 @@ class _ModuleManagerScreenState
     try {
       final db = Database();
       final res = await db.getData(
-        {"action": "get_modules"},
+        {"action": "get_modules",        'vendor_id': UserSessionSet.instance.vendorId,
+        },
         endpoint: "new_apis/module_manager_api.php",
       );
 

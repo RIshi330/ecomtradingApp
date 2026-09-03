@@ -5,6 +5,7 @@ import '../Database/Database.dart';
 import '../app_constants.dart';
 import '../core/theme/app_theme.dart';
 import '../normaluser/cart.dart';
+import '../services/auth_User_and_Business_Session.dart';
 
 // CHANGED: relative endpoint path only -- Database.getJsonData() builds the
 // request itself as `$baseUrl?endpoint=$endpoint` (same pattern as
@@ -41,6 +42,8 @@ class _LuxeHeaderState extends State<LuxeHeader> {
       // CartPage).
       final response = await db.getJsonData({
         'action': 'updateHeader',
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: _cartApiEndpoint);
 
       if (response['success'] == true && response['data'] != null) {

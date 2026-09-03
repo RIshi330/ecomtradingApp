@@ -1,11 +1,12 @@
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart'; // Add file_picker package to pubspec.yaml
-import '../Database/Database.dart'; // Adjust path according to your project structure
+import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../Database/Database.dart';
+import '../services/auth_User_and_Business_Session.dart';
 
-/// API Endpoint for Resume Operations
-const String resumesEndpoint = 'new_apis/resumes_API.php'; // Adjust path if needed
+const String resumesEndpoint = 'new_apis/resumes_API.php';
 
 class AppColors {
   static const Color primary = Color(0xFF006565);
@@ -22,7 +23,6 @@ class AppColors {
   static const Color error = Color(0xFFBA1A1A);
 }
 
-/// Resume Data Model matching PHP response
 class ResumeItem {
   final String id;
   final String title;
@@ -80,7 +80,7 @@ class _MyResumesScreenState extends State<MyResumesScreen> {
     super.dispose();
   }
 
-  /// 1. Fetch Resumes from Backend (action: list_resumes)
+  /// 1. Fetch Resumes List
   Future<void> _fetchResumes() async {
     setState(() {
       _isLoading = true;
@@ -89,7 +89,8 @@ class _MyResumesScreenState extends State<MyResumesScreen> {
 
     try {
       final response = await _db.getJsonData(
-        {'action': 'list_resumes'},
+        {'action': 'list_resumes',        'vendor_id': UserSessionSet.instance.vendorId,
+        },
         endpoint: resumesEndpoint,
       );
 
@@ -101,7 +102,6 @@ class _MyResumesScreenState extends State<MyResumesScreen> {
           _isLoading = false;
         });
 
-        // Re-apply search filter if user already typed something
         if (_searchController.text.isNotEmpty) {
           _filterLocalResumes(_searchController.text);
         }
@@ -119,7 +119,7 @@ class _MyResumesScreenState extends State<MyResumesScreen> {
     }
   }
 
-  /// 2. Search Resume in API (action: search)
+  /// 2. Perform API Search
   Future<void> _performApiSearch(String searchText) async {
     final query = searchText.trim();
     if (query.isEmpty) return;
@@ -131,23 +131,20 @@ class _MyResumesScreenState extends State<MyResumesScreen> {
         {
           'action': 'search',
           'text': query,
+          'vendor_id': UserSessionSet.instance.vendorId,
+
         },
         endpoint: resumesEndpoint,
       );
 
-      if (response['success'] == true) {
-        final bool exists = response['data']?['exists'] == true;
-        if (!exists) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('No exact match found on server for "$query"'),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
+      if (response['success'] == true && response['data']?['items'] is List) {
+        final List rawItems = response['data']['items'];
+        setState(() {
+          _filteredResumes = rawItems.map((e) => ResumeItem.fromJson(e as Map<String, dynamic>)).toList();
+        });
       }
     } catch (e) {
-      // Handle network issue quietly or via notification
+      _showErrorSnackBar('Search error: $e');
     } finally {
       if (mounted) {
         setState(() => _isSearching = false);
@@ -155,7 +152,6 @@ class _MyResumesScreenState extends State<MyResumesScreen> {
     }
   }
 
-  /// Filter local list & trigger API search
   void _onSearchChanged(String query) {
     _filterLocalResumes(query);
     if (query.trim().isNotEmpty) {
@@ -181,7 +177,7 @@ class _MyResumesScreenState extends State<MyResumesScreen> {
     _filterLocalResumes('');
   }
 
-  /// 3. Delete Resume (action: delete_resume)
+  /// 3. Delete Resume
   Future<void> _deleteResume(String resumeId) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -209,6 +205,8 @@ class _MyResumesScreenState extends State<MyResumesScreen> {
         {
           'action': 'delete_resume',
           'resume_id': resumeId,
+          'vendor_id': UserSessionSet.instance.vendorId,
+
         },
         endpoint: resumesEndpoint,
       );
@@ -217,7 +215,7 @@ class _MyResumesScreenState extends State<MyResumesScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Resume deleted successfully.')),
         );
-        _fetchResumes(); // Refresh list
+        _fetchResumes();
       } else {
         _showErrorSnackBar(response['message']?.toString() ?? 'Failed to delete resume.');
       }
@@ -226,7 +224,26 @@ class _MyResumesScreenState extends State<MyResumesScreen> {
     }
   }
 
-  /// 4. Upload File Handler (action: unique & upload)
+  /// 4. Download / Open File
+  Future<void> _downloadResume(ResumeItem item) async {
+    if (item.url.isEmpty) {
+      _showErrorSnackBar('Download URL not found.');
+      return;
+    }
+
+    try {
+      final Uri uri = Uri.parse(item.url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        _showErrorSnackBar('Could not open resume link.');
+      }
+    } catch (e) {
+      _showErrorSnackBar('Download error: $e');
+    }
+  }
+
+  /// 5. Pick & Upload File
   Future<void> _pickAndUploadFile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -241,10 +258,12 @@ class _MyResumesScreenState extends State<MyResumesScreen> {
     final String? customTitle = await _showTitleInputDialog(defaultTitle: fileName);
     if (customTitle == null || customTitle.trim().isEmpty) return;
 
-    // Check file uniqueness on server
+    // Check unique file name
     final uniqueCheck = await _db.getJsonData(
       {
         'action': 'unique',
+        'vendor_id': UserSessionSet.instance.vendorId,
+
         'nameResume': fileName,
       },
       endpoint: resumesEndpoint,
@@ -255,7 +274,7 @@ class _MyResumesScreenState extends State<MyResumesScreen> {
       return;
     }
 
-    // Perform Upload
+    // Execute Upload
     try {
       final uploadRes = await _db.uploadFile(
         endpoint: resumesEndpoint,
@@ -263,6 +282,8 @@ class _MyResumesScreenState extends State<MyResumesScreen> {
         body: {
           'action': 'upload',
           'newResumeTitle': customTitle.trim(),
+          'vendor_id': UserSessionSet.instance.vendorId,
+
         },
       );
 
@@ -352,11 +373,9 @@ class _MyResumesScreenState extends State<MyResumesScreen> {
                   _buildMarketplaceBanner(context, isTablet),
                   const SizedBox(height: 20),
 
-                  // --- Search Section Widget ---
                   _buildSearchBar(),
                   const SizedBox(height: 24),
 
-                  // --- Header Row ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -373,38 +392,24 @@ class _MyResumesScreenState extends State<MyResumesScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IntrinsicWidth(
-                            child: OutlinedButton.icon(
-                              onPressed: _pickAndUploadFile,
-                              icon: const Icon(Icons.upload_file, size: 18),
-                              label: Text(isTablet ? 'Upload New' : 'Upload'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.primary,
-                                minimumSize: const Size(0, 40),
-                                side: const BorderSide(
-                                  color: AppColors.primary,
-                                  width: 2,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                              ),
-                            ),
+                      OutlinedButton.icon(
+                        onPressed: _pickAndUploadFile,
+                        icon: const Icon(Icons.upload_file, size: 18),
+                        label: Text(isTablet ? 'Upload New' : 'Upload'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          minimumSize: const Size(0, 40),
+                          side: const BorderSide(color: AppColors.primary, width: 2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        ],
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
 
-                  // --- Dynamic Resume Documents List ---
                   if (_isLoading)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 40),
@@ -451,9 +456,7 @@ class _MyResumesScreenState extends State<MyResumesScreen> {
                             uploadDate: resume.agoTime,
                             isPdf: resume.isPdf,
                             onDelete: () => _deleteResume(resume.id),
-                            onDownload: () {
-                              // Implement File download / Open URL logic here
-                            },
+                            onDownload: () => _downloadResume(resume),
                           );
                         },
                       ),
@@ -472,7 +475,6 @@ class _MyResumesScreenState extends State<MyResumesScreen> {
     );
   }
 
-  /// Search Bar UI Component
   Widget _buildSearchBar() {
     return Container(
       decoration: BoxDecoration(

@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../app_constants.dart';
 import '../common/header.dart';
 import '../core/theme/app_theme.dart';
+import '../services/auth_User_and_Business_Session.dart';
 import 'Branding_details_page.dart';
 
 
@@ -64,7 +65,8 @@ class _BrandingMarketplaceScreenState extends State<BrandingMarketplaceScreen> {
       final response = await http.post(
         Uri.parse(apiUrl),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'action': 'get_branding_categories'}),
+        body: jsonEncode({'action': 'get_branding_categories',        'vendor_id': UserSessionSet.instance.vendorId,
+        }),
       );
 
       if (response.statusCode == 200) {
@@ -102,6 +104,8 @@ class _BrandingMarketplaceScreenState extends State<BrandingMarketplaceScreen> {
         'sort': _selectedSort,
         'category_id': categoryId,
         'sub_category_id': 0,
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       };
 
       final response = await http.post(
@@ -152,6 +156,8 @@ class _BrandingMarketplaceScreenState extends State<BrandingMarketplaceScreen> {
         body: jsonEncode({
           'action': 'add_brand_to_wishlist',
           'brand_id': product['id'],
+          'vendor_id': UserSessionSet.instance.vendorId,
+
         }),
       );
 

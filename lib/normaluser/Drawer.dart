@@ -6,6 +6,7 @@ import '../admin/explore_communities_screen.dart';
 import '../admin/membership_plans_screen.dart';
 import '../admin/my-network.dart';
 import '../admin/wallet_admin_screen.dart';
+import '../common/logout.dart';
 import '../common/offers_screen.dart';
 import '../user/seller_bank_accounts_screen.dart';
 import '../widgets/personalize_feed_dialog.dart';
@@ -125,7 +126,7 @@ class CustomCommonDrawer extends StatelessWidget {
                     Navigator.pop(context); // close the drawer first
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const MyActivity()),
+                      MaterialPageRoute(builder: (_) => const MyActivity(isEmbedded: false,)),
                     );
                   },
                 ),
@@ -176,7 +177,7 @@ class CustomCommonDrawer extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => const WalletAdminScreen()),
+                              builder: (_) => const WalletAdminScreen(isEmbedded:false,)),
                         );
                       },
                     ),
@@ -221,11 +222,11 @@ class CustomCommonDrawer extends StatelessWidget {
                       dense: true,
                       onTap: () {
                         Navigator.pop(context); // close the drawer first
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => PersonalizeFeedDialog()),
-                        );
+                        // Navigator.push(
+                        //   context,
+                        //   MaterialPageRoute(
+                        //       builder: (_) => PersonalizeFeedDialog()),
+                        // );
                       },
                     ),
                     _DrawerItem(
@@ -295,6 +296,8 @@ class CustomCommonDrawer extends StatelessWidget {
             labelColor: Colors.redAccent,
             onTap: () {
               Navigator.pop(context);
+              showLogoutConfirmationDialog(context)   ;
+
               // TODO: wire up your real logout logic (clear session, etc.)
               // then navigate to the login/root route, e.g.:
               // Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);

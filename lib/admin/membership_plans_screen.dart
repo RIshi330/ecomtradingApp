@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../Database/Database.dart';
+import '../common/payment_screen.dart';
+import '../model/module_model.dart';
 import '../screens/membership_payment_modal.dart';
+import '../services/auth_User_and_Business_Session.dart';
 
 class MembershipPlansScreen extends StatefulWidget {
   final bool isEmbedded;
@@ -34,6 +37,8 @@ class _MembershipPlansScreenState extends State<MembershipPlansScreen> {
       final db = Database();
       final res = await db.getJsonData({
         'action': 'membership_list',
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/membership_plans_API.php');
 
       if (res['success'] == true && res['data'] != null) {
@@ -467,7 +472,27 @@ class MembershipCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                onPressed: isPurchased ? null : onBuyPressed,
+                onPressed: isPurchased ? null : () {
+                  final selectedModule = ModuleModel(
+                    id: plan['id'].toString(),
+                    title: planName,
+                    price: oldPrice.isNotEmpty ? oldPrice : newPrice,
+                    discountPrice: newPrice,
+                    icon: Icons.card_giftcard,
+                    badge: highlighted ? 'BESTSELLER' : '',
+                    category: plan['category']?.toString() ?? 'Membership',
+                    features: features,
+                    iconName: 'school',
+                    installs: '0',
+                    rating: '0',
+                  );
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PaymentScreen(module: selectedModule),
+                    ),
+                  );
+                },
                 child: Text(
                   isPurchased ? "Active Plan" : "Buy Now",
                   style: const TextStyle(

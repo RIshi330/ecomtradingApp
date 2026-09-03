@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 import '../screens/digital_product_payment_modal.dart';
 import '../screens/digital_orders_installation_screen.dart';
+import '../services/auth_User_and_Business_Session.dart';
 import '../services/auth_service.dart';
 
 class DigitalProductDetailsScreen extends StatefulWidget {
@@ -36,7 +37,7 @@ class _DigitalProductDetailsScreenState extends State<DigitalProductDetailsScree
       // 1. Fetch details
       final detailResponse = await db.getData({
         'action': 'fetch_product_detail',
-        'item_id': widget.productId.toString(),
+        'item_id': widget.productId.toString(),'vendor_id': UserSessionSet.instance.vendorId,
       }, endpoint: 'new_apis/digital_product_api.php');
 
       if (detailResponse['success'] == true && detailResponse['data'] != null) {
@@ -45,7 +46,8 @@ class _DigitalProductDetailsScreenState extends State<DigitalProductDetailsScree
         // 2. Fetch gallery
         final galleryResponse = await db.getData({
           'action': 'fetch_product_gallery',
-          'item_id': widget.productId.toString(),
+          'item_id': widget.productId.toString()
+            ,'vendor_id': UserSessionSet.instance.vendorId,
         }, endpoint: 'new_apis/digital_product_api.php');
 
         if (galleryResponse['success'] == true && galleryResponse['data'] != null) {
@@ -63,8 +65,7 @@ class _DigitalProductDetailsScreenState extends State<DigitalProductDetailsScree
             final moreResponse = await db.getData({
               'action': 'fetch_vendor_more_products',
               'item_id': widget.productId.toString(),
-              'vendor_id': vendorId,
-              'cat_id': catId,
+              'cat_id': catId,'vendor_id': UserSessionSet.instance.vendorId,
             }, endpoint: 'new_apis/digital_product_api.php');
 
             if (moreResponse['success'] == true && moreResponse['data'] != null) {
@@ -690,9 +691,9 @@ class _DigitalProductDetailsScreenState extends State<DigitalProductDetailsScree
               future: () async {
                 final int? activeVendorId = await AuthService.getVendorId();
                 return Database().getData({
-                  'action': 'fetch_client_list',
-                  'vendor_id': activeVendorId?.toString() ?? '',
-                }, endpoint: 'new_apis/digital_product_api.php');
+                  'action': 'fetch_client_list'
+                    ,'vendor_id': UserSessionSet.instance.vendorId,
+                    }, endpoint: 'new_apis/digital_product_api.php');
               }(),
               builder: (context, snapshot) {
                 List<dynamic> clients = [];
@@ -941,9 +942,8 @@ class _DigitalProductDetailsScreenState extends State<DigitalProductDetailsScree
                                     'user_email': emailController.text,
                                     'user_mobile': mobileController.text,
                                     'user_address': addressController.text,
-                                    'user_type': selectedType,
-                                    'vendor_id': activeVendorId,
-                                  }, endpoint: 'new_apis/user_manager_API.php');
+                                    'user_type': selectedType
+                                      ,'vendor_id': UserSessionSet.instance.vendorId,                                  }, endpoint: 'new_apis/user_manager_API.php');
 
                                   Navigator.pop(context); // Close spinner
 
@@ -1127,9 +1127,8 @@ class _DigitalProductDetailsScreenState extends State<DigitalProductDetailsScree
                       final res = await Database().getJsonData({
                         'action': 'pay_on_behalf_of_client',
                         'target': targetId,
-                        'service_charge': 0,
-                        'vendor_id': activeVendorId,
-                      }, endpoint: 'new_apis/digital_product_api.php');
+                        'service_charge': 0
+                          ,'vendor_id': UserSessionSet.instance.vendorId,                      }, endpoint: 'new_apis/digital_product_api.php');
 
                       Navigator.pop(context); // Close spinner
 
@@ -1242,8 +1241,7 @@ class _DigitalProductDetailsScreenState extends State<DigitalProductDetailsScree
                               final res = await Database().getJsonData({
                                 'action': 'generate_payment_link',
                                 'target': targetId,
-                                'service_charge': charge,
-                                'vendor_id': activeVendorId,
+                                'service_charge': charge,'vendor_id': UserSessionSet.instance.vendorId,
                               }, endpoint: 'new_apis/digital_product_api.php');
 
                               Navigator.pop(context); // Close spinner

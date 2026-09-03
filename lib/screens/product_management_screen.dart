@@ -11,7 +11,8 @@ class ProductManagementScreen extends StatefulWidget {
   const ProductManagementScreen({
     super.key,
     this.initialTab = 0,
-    this.isEmbedded = false,
+    required
+    this.isEmbedded ,
   });
 
   @override

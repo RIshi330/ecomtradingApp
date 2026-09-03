@@ -3,6 +3,7 @@ import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:trading_ecommerce_admin/services/auth_service.dart';
 import 'package:trading_ecommerce_admin/index.dart';
 
+import '../services/auth_User_and_Business_Session.dart';
 import 'manage_my_commu.dart';
 
 class ExploreCommunitiesScreen extends StatefulWidget {
@@ -67,6 +68,10 @@ class _ExploreCommunitiesScreenState extends State<ExploreCommunitiesScreen> wit
       "icon": Icons.psychology_rounded,
     }
   ];
+  List<dynamic> _discoverCommunities = [];
+  List<dynamic> _forYouCommunities = [];
+  bool _isLoadingDiscover = false;
+  bool _isLoadingForYou = false;
 
   @override
   void initState() {
@@ -74,7 +79,92 @@ class _ExploreCommunitiesScreenState extends State<ExploreCommunitiesScreen> wit
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() => setState(() {}));
     _fetchMyCommunities();
+    _fetchDiscoverCommunities();
+    _fetchForYouCommunities();
   }
+  Future<void> _fetchDiscoverCommunities() async {
+    setState(() => _isLoadingDiscover = true);
+    try {
+      final response = await Database().getData({
+        'action': 'search_communities',
+        'vendor_id': UserSessionSet.instance.vendorId,
+        'page': 1,
+        'limit': 20,
+      }, endpoint: 'new_apis/create_community_API.php');
+
+      if (response != null && response['success'] == true) {
+        setState(() {
+          // Fix: Check if data is directly a List or nested inside a Map
+          if (response['data'] is List) {
+            _discoverCommunities = response['data'] ?? [];
+          } else if (response['data'] is Map) {
+            _discoverCommunities = response['data']['communities'] ?? [];
+          } else {
+            _discoverCommunities = [];
+          }
+        });
+      }
+    } catch (e) {
+      print("Error fetching discover communities: $e");
+    } finally {
+      if (mounted) setState(() => _isLoadingDiscover = false);
+    }
+  }
+
+  Future<void> _fetchForYouCommunities() async {
+    setState(() => _isLoadingForYou = true);
+    try {
+      final response = await Database().getData({
+        'action': 'communities_for_you',
+        'vendor_id': UserSessionSet.instance.vendorId,
+        'page': 1,
+        'limit': 20,
+      }, endpoint: 'new_apis/create_community_API.php');
+
+      if (response != null && response['success'] == true) {
+        setState(() {
+          // Fix: Safely handle both List and Map response structures
+          if (response['data'] is List) {
+            _forYouCommunities = response['data'] ?? [];
+          } else if (response['data'] is Map) {
+            _forYouCommunities = response['data']['communities'] ?? [];
+          } else {
+            _forYouCommunities = [];
+          }
+        });
+      }
+    } catch (e) {
+      print("Error fetching for-you communities: $e");
+    } finally {
+      if (mounted) setState(() => _isLoadingForYou = false);
+    }
+  }
+
+  Future<void> _joinCommunity(int groupId) async {
+    try {
+      final response = await Database().getData({
+        'action': 'join_community',
+        'vendor_id': UserSessionSet.instance.vendorId,
+        'group_id': groupId,
+      }, endpoint: 'new_apis/create_community_API.php');
+      if (response != null && response['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response['message'] ?? 'Request sent')),
+        );
+        _fetchDiscoverCommunities();
+        _fetchForYouCommunities();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response?['message'] ?? 'Failed to join')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
+
 
   @override
   void dispose() {
@@ -89,7 +179,7 @@ class _ExploreCommunitiesScreenState extends State<ExploreCommunitiesScreen> wit
     });
     try {
       final response = await Database().getData({
-        'action': 'fetch_own_communities',
+        'action': 'fetch_own_communities','vendor_id': UserSessionSet.instance.vendorId,
       }, endpoint: 'new_apis/create_community_API.php');
       if (response != null && (response['success'] == true || response.containsKey('data'))) {
         setState(() {
@@ -372,7 +462,7 @@ class _ExploreCommunitiesScreenState extends State<ExploreCommunitiesScreen> wit
                       ElevatedButton(
                         onPressed: () {
                           Navigator.push(context, MaterialPageRoute(builder: (
-                              context) => CommunityIntelApp(),));
+                              context) => AdminDashboardScreen(),));
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF006565),
@@ -400,17 +490,36 @@ class _ExploreCommunitiesScreenState extends State<ExploreCommunitiesScreen> wit
 
   // Section 2: Discover Tab view
   Widget _buildDiscoverSection() {
+    if (_isLoadingDiscover) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF006565), strokeWidth: 3));
+    }
+
+    final filtered = _discoverCommunities.where((c) {
+      final name = (c['title'] ?? '').toString().toLowerCase();
+      return name.contains(_searchQuery);
+    }).toList();
+
+    if (filtered.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.0),
+          child: Text("No communities to discover right now.",
+              style: TextStyle(color: Color(0xFF3E4949), fontSize: 14, fontFamily: 'Inter')),
+        ),
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      itemCount: _trendingCommunities.length,
+      itemCount: filtered.length,
       itemBuilder: (context, index) {
-        final c = _trendingCommunities[index];
-        final String title = c['title'];
-        final String cat = c['category'];
-        final String members = c['members'];
-        final String desc = c['description'];
-        final String image = c['image'];
-        final IconData icon = c['icon'];
+        final c = filtered[index];
+        final String title = c['title'] ?? 'Community';
+        final String cat = (c['industries'] ?? c['type'] ?? 'GENERAL').toString().split(',').first.toUpperCase();
+        final String members = "${c['members_count'] ?? 0} Members";
+        final String desc = c['description'] ?? '';
+        final String image = c['cover_image'] ?? c['logo'] ?? '';
+        final int groupId = int.tryParse(c['id'].toString()) ?? 0;
 
         return Container(
           margin: const EdgeInsets.only(bottom: 24),
@@ -418,13 +527,7 @@ class _ExploreCommunitiesScreenState extends State<ExploreCommunitiesScreen> wit
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: const Color(0xFFBDC9C8).withOpacity(0.3)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 16, offset: const Offset(0, 6))],
           ),
           clipBehavior: Clip.antiAlias,
           child: Column(
@@ -435,53 +538,36 @@ class _ExploreCommunitiesScreenState extends State<ExploreCommunitiesScreen> wit
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.network(
-                      image,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: const Color(0xFFEEEEED),
-                        child: Icon(icon, size: 40, color: const Color(0xFF006565).withOpacity(0.3)),
-                      ),
-                    ),
+                    image.isNotEmpty
+                        ? Image.network(image, fit: BoxFit.cover,
+                        errorBuilder: (c, e, s) => Container(
+                            color: const Color(0xFFEEEEED),
+                            child: const Icon(Icons.groups_rounded, size: 40, color: Color(0x4D006565))))
+                        : Container(color: const Color(0xFFEEEEED),
+                        child: const Icon(Icons.groups_rounded, size: 40, color: Color(0x4D006565))),
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [Colors.black.withOpacity(0.6), Colors.transparent],
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
+                          begin: Alignment.bottomCenter, end: Alignment.topCenter,
                         ),
                       ),
                     ),
                     Positioned(
-                      bottom: 14,
-                      left: 16,
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF006565),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              cat,
-                              style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 0.5, fontFamily: 'Inter'),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              members,
-                              style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Inter'),
-                            ),
-                          ),
-                        ],
-                      ),
+                      bottom: 14, left: 16,
+                      child: Row(children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(color: const Color(0xFF006565), borderRadius: BorderRadius.circular(6)),
+                          child: Text(cat, style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 0.5, fontFamily: 'Inter')),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(6)),
+                          child: Text(members, style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
+                        ),
+                      ]),
                     ),
                   ],
                 ),
@@ -491,36 +577,18 @@ class _ExploreCommunitiesScreenState extends State<ExploreCommunitiesScreen> wit
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1A1C1C), fontFamily: 'Manrope', letterSpacing: -0.3),
-                          ),
-                        ),
-                        Icon(icon, color: const Color(0xFF008080), size: 22),
-                      ],
-                    ),
+                    Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1A1C1C), fontFamily: 'Manrope', letterSpacing: -0.3)),
                     const SizedBox(height: 8),
-                    Text(
-                      desc,
-                      style: const TextStyle(color: Color(0xFF3E4949), fontSize: 14, height: 1.5, fontFamily: 'Inter'),
-                    ),
+                    Text(desc, style: const TextStyle(color: Color(0xFF3E4949), fontSize: 14, height: 1.5, fontFamily: 'Inter')),
                     const SizedBox(height: 20),
                     ElevatedButton.icon(
-                      onPressed: () {},
+                      onPressed: groupId > 0 ? () => _joinCommunity(groupId) : null,
                       icon: const Icon(Icons.login_rounded, size: 18),
                       label: const Text("JOIN NETWORK", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5, fontFamily: 'Inter')),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF006565),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
+                        backgroundColor: const Color(0xFF006565), foregroundColor: Colors.white, elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
                     ),
                   ],
@@ -532,7 +600,6 @@ class _ExploreCommunitiesScreenState extends State<ExploreCommunitiesScreen> wit
       },
     );
   }
-
   // Section 3: For You Tab view (Recommendations)
   Widget _buildForYouSection() {
     return ListView.builder(

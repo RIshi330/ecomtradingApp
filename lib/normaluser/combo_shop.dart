@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../app_constants.dart';
 import '../common/header.dart';
 import '../core/theme/app_theme.dart';
+import '../services/auth_User_and_Business_Session.dart';
 import 'B2B_HomeScreen.dart';
 
 
@@ -56,7 +57,8 @@ class _ComboMarketplaceScreenState extends State<ComboMarketplaceScreena> {
       final response = await http.post(
         Uri.parse(apiUrl),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'action': 'get_categories'}),
+        body: jsonEncode({'action': 'get_categories','vendor_id': UserSessionSet.instance.vendorId,
+        }),
       );
 
       if (response.statusCode == 200) {
@@ -83,6 +85,8 @@ class _ComboMarketplaceScreenState extends State<ComboMarketplaceScreena> {
         'page': 1,
         'limit': 20,
         'sort': _selectedSort, // Add sort parameter
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       };
 
       if (_selectedCategories.isNotEmpty) {
@@ -126,6 +130,8 @@ class _ComboMarketplaceScreenState extends State<ComboMarketplaceScreena> {
         body: jsonEncode({
           'action': 'addToCart',
           'product_id': productId,
+          'vendor_id': UserSessionSet.instance.vendorId,
+
         }),
       );
 

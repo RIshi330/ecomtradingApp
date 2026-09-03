@@ -198,10 +198,10 @@ class SettingsScreen extends StatelessWidget {
   }
 
   static void _openIndustriesScreen(BuildContext ctx) {
-    Navigator.push(
-      ctx,
-      MaterialPageRoute(builder: (_) => const TopicSelectionScreen2()),
-    );
+    // Navigator.push(
+    //   ctx,
+    //   MaterialPageRoute(builder: (_) => const TopicSelectionScreen2()),
+    // );
   }
 
   static void _openTermsSheet(BuildContext ctx) {

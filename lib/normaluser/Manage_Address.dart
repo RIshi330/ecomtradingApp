@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../Database/Database.dart';
+import '../services/auth_User_and_Business_Session.dart';
 
 // Set this to whatever this PHP file is actually named/routed as on your
 // server (it's passed straight through to Database.getData as `endpoint`,
@@ -36,7 +37,8 @@ class _ManageAddressScreenState extends State<ManageAddressScreen> {
     // Calls Database.getData directly — action + endpoint passed from here,
     // no new method added to database.dart.
     final result = await _db.getData(
-      {'action': 'get_all_address'},
+      {'action': 'get_all_address',        'vendor_id': UserSessionSet.instance.vendorId,
+      },
       endpoint: kAddressEndpoint,
     );
 
@@ -476,6 +478,8 @@ class _AddAddressBottomSheetState extends State<AddAddressBottomSheet> {
         'zip_code': _pinCodeCtrl.text.trim(),
         'mobile': _mobileCtrl.text.trim(),
         'default_add': _isDefaultAddress ? '1' : '0',
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       },
       endpoint: kAddressEndpoint,
     );

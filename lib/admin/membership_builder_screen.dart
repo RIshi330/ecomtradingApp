@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../Database/Database.dart';
 import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 
+import '../services/auth_User_and_Business_Session.dart';
+
 class MembershipBuilderScreen extends StatefulWidget {
   final bool isEmbedded;
   const MembershipBuilderScreen({super.key, this.isEmbedded = false});
@@ -44,7 +46,8 @@ class _MembershipBuilderScreenState
     try {
       final db = Database();
       final res = await db.getData(
-        {"action": "membership_list"},
+        {"action": "membership_list",        'vendor_id': UserSessionSet.instance.vendorId,
+        },
         endpoint: "new_apis/membership_builder_api.php",
       );
 
@@ -86,6 +89,8 @@ class _MembershipBuilderScreenState
           "action": "change_membership_status",
           "membership_id": id,
           "status": status,
+          'vendor_id': UserSessionSet.instance.vendorId,
+
         },
         endpoint: "new_apis/membership_builder_api.php",
       );
@@ -132,6 +137,8 @@ class _MembershipBuilderScreenState
         {
           "action": "delete_membership",
           "membership_id": id,
+          'vendor_id': UserSessionSet.instance.vendorId,
+
         },
         endpoint: "new_apis/membership_builder_api.php",
       );
@@ -961,6 +968,8 @@ class _AddMembershipBottomSheetState
             websiteIncluded ? (int.tryParse(_websitesController.text) ?? 0) : 0,
         "website_validity": websiteIncluded ? validity : 0,
         "vendorTypes": [vendorTypeId],
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       };
 
       if (widget.editPlan != null) {

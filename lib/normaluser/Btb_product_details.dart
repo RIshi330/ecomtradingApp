@@ -2014,6 +2014,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../app_constants.dart';
+import '../services/auth_User_and_Business_Session.dart';
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2126,6 +2127,8 @@ class BtbApiService {
       // value was supplied at review-creation time (defaults to 0), NOT the
       // product's own vendor_id. Default to 0 unless you track this value.
       'product_vendor_id': productVendorId,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
   }
 
@@ -2148,6 +2151,8 @@ class BtbApiService {
       'item_type': itemType,
       'marketplace_id': marketplaceId,
       'qty': qty,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
   }
 
@@ -2168,6 +2173,8 @@ class BtbApiService {
       'selected_items_vendor_id': selectedItemsVendorId,
       'item_type': itemType,
       'marketplace_id': marketplaceId,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
   }
 
@@ -2185,6 +2192,8 @@ class BtbApiService {
       'action': 'is_delivery_services',
       'logistic_id': logisticId,
       'pincode': pincode,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
   }
 
@@ -2205,6 +2214,8 @@ class BtbApiService {
       'product_vendor_id': productVendorId,
       'rating': rating,
       'review': review,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
   }
 }

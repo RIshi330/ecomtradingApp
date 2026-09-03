@@ -7,7 +7,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../Database/Database.dart';
-import '../app_constants.dart'; // for baseUrl, appId — adjust path if these live elsewhere
+import '../app_constants.dart';
+import '../services/auth_User_and_Business_Session.dart'; // for baseUrl, appId — adjust path if these live elsewhere
 
 /// ---------------------------------------------------------------------
 /// TYPED MODELS
@@ -116,7 +117,7 @@ class SeekerService {
   Future<Seeker> getSeekerDetails(String seekerId) async {
     final res = await _db.getData({
       'action': 'get_seeker_details',
-      'seeker_id': seekerId,
+      'seeker_id': seekerId,'vendor_id': UserSessionSet.instance.vendorId,
     });
     if (res['success'] != true) {
       throw Exception(res['message'] ?? 'Failed to load candidate details');
@@ -142,7 +143,7 @@ class SeekerService {
       'college_name': collegeName,
       'skills': skills,
       'seeker_email': seekerEmail,
-      'mob_no': mobNo,
+      'mob_no': mobNo,'vendor_id': UserSessionSet.instance.vendorId,
     });
     if (res['success'] != true) {
       throw Exception(res['message'] ?? 'Failed to register candidate');
@@ -172,7 +173,7 @@ class SeekerService {
       'seeker_name': seekerName,
       'college_name': collegeName,
       'skills': skills,
-      'mob_no': mobNo,
+      'mob_no': mobNo,'vendor_id': UserSessionSet.instance.vendorId,
     });
     if (res['success'] != true) {
       throw Exception(res['message'] ?? 'Failed to update candidate');
@@ -264,7 +265,7 @@ class SeekerService {
     final res = await _db.getData({
       'action': 'shareJobs',
       'shareJobs': jobIds.join(','),
-      'seeker': seekerId,
+      'seeker': seekerId,'vendor_id': UserSessionSet.instance.vendorId,
     });
     return res['success'] == true;
   }
@@ -274,7 +275,7 @@ class SeekerService {
     final res = await _db.getData({
       'action': 'shareIndividualProfile',
       'shareIndividualProfile': profileId,
-      'job_ids': jobIds.join(','),
+      'job_ids': jobIds.join(','),'vendor_id': UserSessionSet.instance.vendorId,
     });
     return res['success'] == true;
   }
@@ -295,7 +296,7 @@ class SeekerService {
       'action': 'share_profile',
       'seeker_id': seekerId,
       'email': targetEmail,
-      'user_ids': userIds,
+      'user_ids': userIds,'vendor_id': UserSessionSet.instance.vendorId,
     });
     return res['success'] == true;
   }

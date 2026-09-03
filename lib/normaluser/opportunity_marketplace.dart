@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../Database/Database.dart'; // adjust import path to match your project
+import '../Database/Database.dart';
+import '../services/auth_User_and_Business_Session.dart'; // adjust import path to match your project
 
 /// ============================================================
 /// API ENDPOINT
@@ -170,7 +171,8 @@ class _OpportunitiesMarketplaceScreenState
   Future<void> _loadFilters() async {
     try {
       final result = await _db.getData(
-        {'action': 'get_opportunity_filters'},
+        {'action': 'get_opportunity_filters',        'vendor_id': UserSessionSet.instance.vendorId,
+        },
         endpoint: opportunityEndpoint,
       );
 
@@ -217,6 +219,8 @@ class _OpportunitiesMarketplaceScreenState
         'category_id': _categoryId,
         'skill': _skill,
         'label': _label,
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       };
 
       final result = await _db.getJsonData(body, endpoint: opportunityEndpoint);

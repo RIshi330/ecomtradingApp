@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../Database/Database.dart';
 import '../common/payment_screen.dart';
 import '../model/module_model.dart';
+import '../services/auth_User_and_Business_Session.dart';
 import 'TranningScreen.dart';
 
 class TrainingDetailsScreen extends StatefulWidget {
@@ -44,6 +45,8 @@ class _TrainingDetailsScreenState extends State<TrainingDetailsScreen> {
       final Map<String, dynamic> body = {
         'action': 'getTrainingDetails',
         'id': widget.trainingId,
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       };
 
       final result = await _db.getJsonData(body, endpoint: trainingEndpoint);

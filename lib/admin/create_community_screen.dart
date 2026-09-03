@@ -5,6 +5,8 @@ import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:vsc_quill_delta_to_html/vsc_quill_delta_to_html.dart';
 
+import '../services/auth_User_and_Business_Session.dart';
+
 /// This endpoint (new_apis/create_community_API.php) is shared for every
 /// action used on this screen. Keeping it in one place avoids typos.
 const String _kCommunityApiEndpoint = 'new_apis/community_app_api_v6.php';
@@ -125,7 +127,9 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
 
     try {
       final industriesResp = await Database().getData(
-        {'action': 'get_job_industries'},
+        {'action': 'get_job_industries',
+            'vendor_id': UserSessionSet.instance.vendorId,
+        },
         endpoint: _kCommunityApiEndpoint,
       );
       if (industriesResp['success'] == true) {
@@ -141,7 +145,9 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
 
     try {
       final vendorResp = await Database().getData(
-        {'action': 'get_vendor_types'},
+        {'action': 'get_vendor_types',
+          'vendor_id': UserSessionSet.instance.vendorId,
+        },
         endpoint: _kCommunityApiEndpoint,
       );
       if (vendorResp['success'] == true) {
@@ -242,7 +248,7 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
       // $input. Anything not read by the PHP is intentionally left out so
       // the payload reflects what is actually persisted.
       final Map<String, dynamic> payload = {
-        'action': 'create_community',
+        'action': 'create_community','vendor_id': UserSessionSet.instance.vendorId,
         'title': _nameController.text.trim(),
         'description': _getHtmlFromQuill(_descriptionQuillController),
         'type': _selectedType,

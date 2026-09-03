@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 
+import '../services/auth_User_and_Business_Session.dart';
+
 void _log(String tag, String message) {
   if (kDebugMode) {
     debugPrint('[$tag] $message');
@@ -19,37 +21,27 @@ class VendorApiException implements Exception {
   String toString() => message;
 }
 
-/// Vendor API service.
-///
-/// CHANGED: this no longer builds its own http.Client, cookie jar, or
-/// session cache. Every other screen in the app (see
-/// BusinessUserProfileScreen) talks to the backend through the single
-/// shared `Database` class, which already owns SESSION_ID + raw cookie
-/// capture/replay and the 401 -> logout -> redirect flow. Having a second,
-/// parallel session mechanism here was the root cause of the flaky 401s:
-/// a cookie refresh captured by one class wasn't reliably visible to the
-/// other. Now this class is a thin wrapper: pass `action` (+ params) in
-/// the body, endpoint is the vendor API's relative path, and Database
-/// handles auth end-to-end.
+/// Vendor API service — unchanged from the working version.
 class VendorApiService {
   VendorApiService._internal();
   static final VendorApiService instance = VendorApiService._internal();
 
-  static const String _endpoint = 'new_apis/manage_vendor_api.php';
+  static const String _endpoint = '/new_apis/manage_vendor_api.php';
 
   final Database _db = Database();
 
+  dynamic get _adminId => UserSessionSet.instance.vendorId;
+
   Future<Map<String, dynamic>> _call(Map<String, dynamic> body) async {
-    _log('VendorApi', 'action=${body['action']} body=$body');
+    final fullBody = {'admin_id': _adminId, ...body};
 
-    final result = await _db.getData(body, endpoint: _endpoint);
+    _log('VendorApi', 'action=${fullBody['action']} body=$fullBody');
 
-    _log('VendorApi', 'response status=${result['status']} keys=${result.keys.toList()}');
+    final result = await _db.getData(fullBody, endpoint: _endpoint);
 
-    // Database() already handles empty-body / invalid-JSON / network errors
-    // by returning a Map with status: 300 and an 'error' key — surface that
-    // consistently as a VendorApiException instead of letting callers deal
-    // with raw Database error shapes.
+    _log('VendorApi',
+        'response status=${result['status']} keys=${result.keys.toList()}');
+
     if (result['status'] == 300) {
       throw VendorApiException(
         result['error']?.toString() ?? 'Unexpected server response',
@@ -63,7 +55,8 @@ class VendorApiService {
         result.containsKey('logged_out');
 
     if (looksUnauthorized) {
-      _log('VendorApi', 'Session looks expired/unauthorized for action=${body['action']}');
+      _log('VendorApi',
+          'Session looks expired/unauthorized for action=${fullBody['action']}');
       throw VendorApiException(
         result['message']?.toString() ?? 'Session expired, please log in again.',
         statusCode: 401,
@@ -101,18 +94,25 @@ class VendorApiService {
         'per_page': perPage,
       }).then((r) => Map<String, dynamic>.from(r['data'] ?? {}));
 
-  Future<Map<String, dynamic>> getVendorDetails(int vendorId) =>
-      _call({'action': 'get_vendor_details', 'vendor_id': vendorId})
-          .then((r) => Map<String, dynamic>.from(r['data'] ?? {}));
+  Future<Map<String, dynamic>> getVendorDetails(int vendorId) => _call({
+    'action': 'get_vendor_details',
+    'vendor_id': vendorId,
+  }).then((r) => Map<String, dynamic>.from(r['data'] ?? {}));
 
-  Future<void> approveVendor(int vendorId) =>
-      _call({'action': 'approve_vendor', 'vendor_id': vendorId});
+  Future<void> approveVendor(int vendorId) => _call({
+    'action': 'approve_vendor',
+    'vendor_id': vendorId,
+  });
 
-  Future<void> rejectVendor(int vendorId) =>
-      _call({'action': 'reject_vendor', 'vendor_id': vendorId});
+  Future<void> rejectVendor(int vendorId) => _call({
+    'action': 'reject_vendor',
+    'vendor_id': vendorId,
+  });
 
-  Future<void> suspendVendor(int vendorId) =>
-      _call({'action': 'suspend_vendor', 'vendor_id': vendorId});
+  Future<void> suspendVendor(int vendorId) => _call({
+    'action': 'suspend_vendor',
+    'vendor_id': vendorId,
+  });
 
   Future<void> contactVendor(int vendorId, String message) => _call({
     'action': 'contact_vendor',
@@ -151,11 +151,15 @@ class VendorApiService {
     return res['data']['count'] as int;
   }
 
-  Future<void> grantWebsitePermission(int vendorId) =>
-      _call({'action': 'grant_website_permission', 'vendor_id': vendorId});
+  Future<void> grantWebsitePermission(int vendorId) => _call({
+    'action': 'grant_website_permission',
+    'vendor_id': vendorId,
+  });
 
-  Future<void> revokeWebsitePermission(int vendorId) =>
-      _call({'action': 'revoke_website_permission', 'vendor_id': vendorId});
+  Future<void> revokeWebsitePermission(int vendorId) => _call({
+    'action': 'revoke_website_permission',
+    'vendor_id': vendorId,
+  });
 
   Future<int> notifyMembership(List<int> vendorIds, String message) async {
     final res = await _call({
@@ -207,6 +211,13 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
   String? _dashboardError;
   String? _vendorsError;
 
+  /// Vendor ids that currently have an in-flight action (approve / reject /
+  /// suspend / re-activate). Used to render a per-row / per-card spinner
+  /// instead of blanking the whole screen while an action is running.
+  final Set<int> _busyVendorIds = {};
+
+  bool _isBusy(dynamic id) => _busyVendorIds.contains(id as int);
+
   @override
   void initState() {
     super.initState();
@@ -222,40 +233,61 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
     super.dispose();
   }
 
-  Future<void> _loadDashboard() async {
-    _log('ManageVendorsScreen', '_loadDashboard start');
-    setState(() {
-      _loadingDashboard = true;
-      _dashboardError = null;
-    });
+  /// [silent] = true refetches data in the background and swaps it in once
+  /// ready, without flipping the full-screen loading flag (so the list the
+  /// user is looking at doesn't disappear). Used after row-level actions and
+  /// pull-to-refresh. [silent] = false is used for the very first load and
+  /// for explicit "Retry" taps on an error banner.
+  Future<void> _loadDashboard({bool silent = false}) async {
+    _log('ManageVendorsScreen', '_loadDashboard start (silent=$silent)');
+    if (!silent) {
+      setState(() {
+        _loadingDashboard = true;
+        _dashboardError = null;
+      });
+    }
     try {
       final data = await _api.getDashboardStats();
       final pending = List<Map<String, dynamic>>.from(data['pending_vendors'] ?? []);
       final types = List<Map<String, dynamic>>.from(data['vendor_types'] ?? []);
       _log('ManageVendorsScreen',
           '_loadDashboard OK — pending=${pending.length} types=${types.length}');
+      if (!mounted) return;
       setState(() {
         _pendingReviews = pending;
         _vendorTypes = types;
+        if (!silent) _dashboardError = null;
       });
     } on VendorApiException catch (e) {
       _log('ManageVendorsScreen', '_loadDashboard FAILED: ${e.message}');
-      setState(() => _dashboardError = e.message);
+      if (!mounted) return;
+      if (!silent) {
+        setState(() => _dashboardError = e.message);
+      } else {
+        _triggerAction('Could not refresh dashboard: ${e.message}', isError: true);
+      }
     } catch (e, st) {
       _log('ManageVendorsScreen', '_loadDashboard UNEXPECTED ERROR: $e\n$st');
-      setState(() => _dashboardError = 'Unexpected error: $e');
+      if (!mounted) return;
+      if (!silent) {
+        setState(() => _dashboardError = 'Unexpected error: $e');
+      }
     } finally {
-      setState(() => _loadingDashboard = false);
+      if (!silent && mounted) {
+        setState(() => _loadingDashboard = false);
+      }
     }
   }
 
-  Future<void> _loadVendors() async {
+  Future<void> _loadVendors({bool silent = false}) async {
     _log('ManageVendorsScreen',
-        '_loadVendors start — search="$_search" type=$_typeFilter status=$_statusFilter page=$_page');
-    setState(() {
-      _loadingVendors = true;
-      _vendorsError = null;
-    });
+        '_loadVendors start — search="$_search" type=$_typeFilter status=$_statusFilter page=$_page (silent=$silent)');
+    if (!silent) {
+      setState(() {
+        _loadingVendors = true;
+        _vendorsError = null;
+      });
+    }
     try {
       final data = await _api.getVendors(
         search: _search,
@@ -267,6 +299,7 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
       final vendors = List<Map<String, dynamic>>.from(data['vendors'] ?? []);
       _log('ManageVendorsScreen',
           '_loadVendors OK — count=${vendors.length} total_pages=${data['total_pages']}');
+      if (!mounted) return;
       setState(() {
         _vendors = vendors;
         _totalPages = (data['total_pages'] ?? 1) is int
@@ -274,13 +307,24 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
             : int.tryParse(data['total_pages'].toString()) ?? 1;
       });
     } on VendorApiException catch (e) {
-      _log('ManageVendorsScreen', '_loadVendors FAILED: ${e.message} (status ${e.statusCode})');
-      setState(() => _vendorsError = e.message);
+      _log('ManageVendorsScreen',
+          '_loadVendors FAILED: ${e.message} (status ${e.statusCode})');
+      if (!mounted) return;
+      if (!silent) {
+        setState(() => _vendorsError = e.message);
+      } else {
+        _triggerAction('Could not refresh vendors: ${e.message}', isError: true);
+      }
     } catch (e, st) {
       _log('ManageVendorsScreen', '_loadVendors UNEXPECTED ERROR: $e\n$st');
-      setState(() => _vendorsError = 'Unexpected error: $e');
+      if (!mounted) return;
+      if (!silent) {
+        setState(() => _vendorsError = 'Unexpected error: $e');
+      }
     } finally {
-      setState(() => _loadingVendors = false);
+      if (!silent && mounted) {
+        setState(() => _loadingVendors = false);
+      }
     }
   }
 
@@ -295,13 +339,19 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
     });
   }
 
-  void _refreshAll() {
-    _log('ManageVendorsScreen', 'manual refresh triggered');
-    _loadDashboard();
-    _loadVendors();
+  /// Background refresh — used after actions and pull-to-refresh. Never
+  /// shows the full-page spinner; the RefreshIndicator (if any) or the
+  /// per-row busy spinner is the only loading UI the user sees.
+  Future<void> _refreshAll({bool silent = true}) async {
+    _log('ManageVendorsScreen', 'refresh triggered (silent=$silent)');
+    await Future.wait([
+      _loadDashboard(silent: silent),
+      _loadVendors(silent: silent),
+    ]);
   }
 
   void _triggerAction(String msg, {bool isError = false}) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -324,27 +374,107 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
     );
   }
 
-  Future<void> _runAction(Future<void> Function() call, String successMsg) async {
+  /// Runs [call] for [vendorId], showing a per-item busy state for its
+  /// duration (rendered by the row/card that owns this id) instead of a
+  /// full-screen spinner, then silently refreshes lists in the background.
+  Future<void> _runAction(
+      int vendorId,
+      Future<void> Function() call,
+      String successMsg,
+      ) async {
+    if (_busyVendorIds.contains(vendorId)) return; // ignore double taps
+    setState(() => _busyVendorIds.add(vendorId));
     try {
       await call();
       if (!mounted) return;
       _triggerAction(successMsg);
-      _refreshAll();
+      unawaited(_refreshAll(silent: true));
     } on VendorApiException catch (e) {
       if (!mounted) return;
       _triggerAction(e.message, isError: true);
+    } finally {
+      if (mounted) {
+        setState(() => _busyVendorIds.remove(vendorId));
+      }
     }
   }
 
   void _approvePending(Map<String, dynamic> review) {
     final id = review['id'] as int;
-    _runAction(() => _api.approveVendor(id),
+    _runAction(id, () => _api.approveVendor(id),
         'Approved: ${review['name']} added to directory');
   }
 
+  /// Reject now asks for confirmation first (it permanently deletes the
+  /// vendor application server-side), matching the suspend confirmation.
   void _rejectPending(Map<String, dynamic> review) {
-    _runAction(() => _api.rejectVendor(review['id'] as int),
-        'Application for ${review['name']} rejected');
+    final id = review['id'] as int;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: surfaceWhite,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                    color: errorColor.withOpacity(0.1), shape: BoxShape.circle),
+                child: const Icon(Icons.warning_amber_rounded,
+                    color: errorColor, size: 32),
+              ),
+              const SizedBox(height: 16),
+              const Text('Reject Application?',
+                  style: TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold, color: textDark)),
+              const SizedBox(height: 8),
+              Text(
+                'Are you sure you want to reject ${review['name']}\'s application? '
+                    'This cannot be undone.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12, color: textLight),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8))),
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('CANCEL',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: errorColor,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _runAction(id, () => _api.rejectVendor(id),
+                            'Application for ${review['name']} rejected');
+                      },
+                      child: const Text('REJECT',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _onboardNewVendor() {
@@ -368,7 +498,8 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                 constraints: const BoxConstraints(maxWidth: 420),
                 child: onboardingSuccess
                     ? Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -404,7 +535,8 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                         ),
                         onPressed: () => Navigator.pop(context),
                         child: const Text('DONE',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            style: TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
@@ -413,10 +545,12 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 16),
                       decoration: const BoxDecoration(
                         color: primaryTeal,
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                        borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(16)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -428,7 +562,8 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                                   fontWeight: FontWeight.bold,
                                   fontFamily: 'Manrope')),
                           IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                            icon: const Icon(Icons.close,
+                                color: Colors.white, size: 20),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                             onPressed: () => Navigator.pop(context),
@@ -454,8 +589,8 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                               decoration: const InputDecoration(
                                 hintText: 'Enter name...',
                                 border: OutlineInputBorder(),
-                                contentPadding:
-                                EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -463,7 +598,8 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                    CrossAxisAlignment.start,
                                     children: [
                                       const Text('EMAIL',
                                           style: TextStyle(
@@ -474,12 +610,15 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                                       TextField(
                                         controller: emailCtrl,
                                         style: const TextStyle(fontSize: 13),
-                                        keyboardType: TextInputType.emailAddress,
+                                        keyboardType:
+                                        TextInputType.emailAddress,
                                         decoration: const InputDecoration(
                                           hintText: 'email@example.com',
                                           border: OutlineInputBorder(),
-                                          contentPadding: EdgeInsets.symmetric(
-                                              horizontal: 12, vertical: 10),
+                                          contentPadding:
+                                          EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 10),
                                         ),
                                       ),
                                     ],
@@ -488,7 +627,8 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                    CrossAxisAlignment.start,
                                     children: [
                                       const Text('MOBILE NO',
                                           style: TextStyle(
@@ -503,8 +643,10 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                                         decoration: const InputDecoration(
                                           hintText: '+1...',
                                           border: OutlineInputBorder(),
-                                          contentPadding: EdgeInsets.symmetric(
-                                              horizontal: 12, vertical: 10),
+                                          contentPadding:
+                                          EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 10),
                                         ),
                                       ),
                                     ],
@@ -527,7 +669,8 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                                 const Expanded(
                                   child: Text(
                                     'Activate account immediately (else stays pending)',
-                                    style: TextStyle(fontSize: 11, color: textLight),
+                                    style: TextStyle(
+                                        fontSize: 11, color: textLight),
                                   ),
                                 ),
                               ],
@@ -536,7 +679,8 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 8),
                                 child: Text(formError!,
-                                    style: const TextStyle(fontSize: 11, color: errorColor)),
+                                    style: const TextStyle(
+                                        fontSize: 11, color: errorColor)),
                               ),
                             ],
                             Row(
@@ -544,13 +688,19 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                                 Expanded(
                                   child: OutlinedButton(
                                     style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12),
                                       shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8)),
+                                          borderRadius:
+                                          BorderRadius.circular(8)),
                                     ),
-                                    onPressed: submitting ? null : () => Navigator.pop(context),
+                                    onPressed: submitting
+                                        ? null
+                                        : () => Navigator.pop(context),
                                     child: const Text('CANCEL',
-                                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold)),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -559,17 +709,19 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: primaryTeal,
                                       foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12),
                                       shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8)),
+                                          borderRadius:
+                                          BorderRadius.circular(8)),
                                     ),
                                     onPressed: submitting
                                         ? null
                                         : () async {
                                       if (nameCtrl.text.trim().isEmpty ||
                                           emailCtrl.text.trim().isEmpty) {
-                                        setModalState(() =>
-                                        formError = 'Name and Email are required.');
+                                        setModalState(() => formError =
+                                        'Name and Email are required.');
                                         return;
                                       }
                                       setModalState(() {
@@ -587,7 +739,10 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                                           submitting = false;
                                           onboardingSuccess = true;
                                         });
-                                        _refreshAll();
+                                        // New vendor — safe to do a
+                                        // full silent refresh.
+                                        unawaited(
+                                            _refreshAll(silent: true));
                                       } on VendorApiException catch (e) {
                                         setModalState(() {
                                           submitting = false;
@@ -600,11 +755,13 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                                       width: 16,
                                       height: 16,
                                       child: CircularProgressIndicator(
-                                          strokeWidth: 2, color: Colors.white),
+                                          strokeWidth: 2,
+                                          color: Colors.white),
                                     )
                                         : const Text('CREATE ACCOUNT',
                                         style: TextStyle(
-                                            fontSize: 11, fontWeight: FontWeight.bold)),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold)),
                                   ),
                                 ),
                               ],
@@ -639,10 +796,12 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                       decoration: const BoxDecoration(
                         color: primaryTeal,
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                        borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(16)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -654,7 +813,8 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                                   fontWeight: FontWeight.bold,
                                   fontFamily: 'Manrope')),
                           IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                            icon: const Icon(Icons.close,
+                                color: Colors.white, size: 20),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                             onPressed: () => Navigator.pop(context),
@@ -675,7 +835,8 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                           final msg = snapshot.error is VendorApiException
                               ? (snapshot.error as VendorApiException).message
                               : 'Failed to load vendor details';
-                          return Text(msg, style: const TextStyle(color: errorColor, fontSize: 13));
+                          return Text(msg,
+                              style: const TextStyle(color: errorColor, fontSize: 13));
                         }
                         final v = snapshot.data ?? {};
                         return Column(
@@ -689,7 +850,8 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                                   decoration: BoxDecoration(
                                     color: bgLight,
                                     borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: borderTeal.withOpacity(0.5)),
+                                    border:
+                                    Border.all(color: borderTeal.withOpacity(0.5)),
                                   ),
                                   child: const Icon(Icons.storefront_rounded,
                                       color: primaryTeal, size: 30),
@@ -718,9 +880,13 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                             const SizedBox(height: 20),
                             Row(
                               children: [
-                                Expanded(child: _statTile('EMAIL', v['email']?.toString() ?? '—')),
+                                Expanded(
+                                    child: _statTile(
+                                        'EMAIL', v['email']?.toString() ?? '—')),
                                 const SizedBox(width: 12),
-                                Expanded(child: _statTile('MOBILE', v['mobile']?.toString() ?? '—')),
+                                Expanded(
+                                    child: _statTile(
+                                        'MOBILE', v['mobile']?.toString() ?? '—')),
                               ],
                             ),
                             const SizedBox(height: 12),
@@ -730,16 +896,20 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                                   child: _statTile(
                                     'LOCATION',
                                     [v['city'], v['state']]
-                                        .where((e) => e != null && e.toString().isNotEmpty)
+                                        .where((e) =>
+                                    e != null && e.toString().isNotEmpty)
                                         .join(', ')
                                         .isEmpty
                                         ? '—'
-                                        : [v['city'], v['state']].where((e) => e != null).join(', '),
+                                        : [v['city'], v['state']]
+                                        .where((e) => e != null)
+                                        .join(', '),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
-                                  child: _statTile('TXN CHARGE', '${v['transaction_charge'] ?? '0'}%'),
+                                  child: _statTile('TXN CHARGE',
+                                      '${v['transaction_charge'] ?? '0'}%'),
                                 ),
                               ],
                             ),
@@ -749,11 +919,13 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                                 backgroundColor: primaryTeal,
                                 foregroundColor: Colors.white,
                                 minimumSize: const Size(double.infinity, 44),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8)),
                               ),
                               onPressed: () => Navigator.pop(context),
                               child: const Text('CLOSE PROFILE',
-                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                  style: TextStyle(
+                                      fontSize: 11, fontWeight: FontWeight.bold)),
                             ),
                           ],
                         );
@@ -772,14 +944,18 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
   Widget _statTile(String label, String value) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: bgLight, borderRadius: BorderRadius.circular(8)),
+      decoration:
+      BoxDecoration(color: bgLight, borderRadius: BorderRadius.circular(8)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 9, color: textLight, fontWeight: FontWeight.bold)),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 9, color: textLight, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
           Text(value,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textDark),
+              style: const TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.bold, color: textDark),
               overflow: TextOverflow.ellipsis),
         ],
       ),
@@ -787,6 +963,7 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
   }
 
   void _openSuspendModal(Map<String, dynamic> vendor) {
+    final id = vendor['id'] as int;
     showDialog(
       context: context,
       builder: (context) {
@@ -799,12 +976,15 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
               Container(
                 width: 56,
                 height: 56,
-                decoration: BoxDecoration(color: errorColor.withOpacity(0.1), shape: BoxShape.circle),
-                child: const Icon(Icons.warning_amber_rounded, color: errorColor, size: 32),
+                decoration: BoxDecoration(
+                    color: errorColor.withOpacity(0.1), shape: BoxShape.circle),
+                child: const Icon(Icons.warning_amber_rounded,
+                    color: errorColor, size: 32),
               ),
               const SizedBox(height: 16),
               const Text('Suspend Vendor?',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDark)),
+                  style: TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold, color: textDark)),
               const SizedBox(height: 8),
               Text(
                 'Are you sure you want to suspend ${vendor['name']}? They will lose access immediately.',
@@ -817,7 +997,8 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                   Expanded(
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8))),
                       onPressed: () => Navigator.pop(context),
                       child: const Text('KEEP ACTIVE',
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
@@ -829,11 +1010,13 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: errorColor,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
                       ),
                       onPressed: () {
                         Navigator.pop(context);
-                        _runAction(() => _api.suspendVendor(vendor['id'] as int), 'Vendor suspended');
+                        _runAction(
+                            id, () => _api.suspendVendor(id), 'Vendor suspended');
                       },
                       child: const Text('SUSPEND NOW',
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
@@ -866,7 +1049,8 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                     decoration: const BoxDecoration(
                       color: containerTeal,
                       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -895,18 +1079,28 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text('RECIPIENT',
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textLight)),
+                            style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: textLight)),
                         const SizedBox(height: 6),
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(color: bgLight, borderRadius: BorderRadius.circular(8)),
+                          decoration: BoxDecoration(
+                              color: bgLight, borderRadius: BorderRadius.circular(8)),
                           child: Text(vendor['name']?.toString() ?? '',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textDark)),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: textDark)),
                         ),
                         const SizedBox(height: 16),
                         const Text('MESSAGE',
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textLight)),
+                            style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: textLight)),
                         const SizedBox(height: 6),
                         TextField(
                           controller: msgCtrl,
@@ -927,10 +1121,12 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                             Expanded(
                               child: OutlinedButton(
                                 style: OutlinedButton.styleFrom(
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8))),
                                 onPressed: sending ? null : () => Navigator.pop(context),
                                 child: const Text('CLOSE',
-                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                    style: TextStyle(
+                                        fontSize: 11, fontWeight: FontWeight.bold)),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -940,13 +1136,15 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                                   backgroundColor: primaryTeal,
                                   foregroundColor: Colors.white,
                                   padding: const EdgeInsets.symmetric(vertical: 12),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8)),
                                 ),
                                 onPressed: sending
                                     ? null
                                     : () async {
                                   if (msgCtrl.text.trim().isEmpty) {
-                                    setModalState(() => error = 'Message cannot be empty.');
+                                    setModalState(
+                                            () => error = 'Message cannot be empty.');
                                     return;
                                   }
                                   setModalState(() {
@@ -969,11 +1167,13 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                                     ? const SizedBox(
                                   width: 14,
                                   height: 14,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white),
                                 )
                                     : const Icon(Icons.send_rounded, size: 14),
                                 label: const Text('SEND MESSAGE',
-                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                    style: TextStyle(
+                                        fontSize: 11, fontWeight: FontWeight.bold)),
                               ),
                             ),
                           ],
@@ -997,7 +1197,9 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
 
     Widget mainContent = RefreshIndicator(
       color: primaryTeal,
-      onRefresh: () async => _refreshAll(),
+      // Pull-to-refresh: silent, so the RefreshIndicator spinner is the only
+      // loading UI — the list underneath stays visible while it refetches.
+      onRefresh: () => _refreshAll(silent: true),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(20),
@@ -1009,9 +1211,14 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Manage Vendors',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
+                    style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: textDark,
+                        fontFamily: 'Manrope')),
                 const SizedBox(height: 6),
-                const Text('Oversee strategic partnerships and manage your professional network dossier.',
+                const Text(
+                    'Oversee strategic partnerships and manage your professional network dossier.',
                     style: TextStyle(fontSize: 12, color: textLight)),
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
@@ -1023,7 +1230,8 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                   ),
                   onPressed: _onboardNewVendor,
                   icon: const Icon(Icons.add_rounded, size: 20),
-                  label: const Text('Onboard New Vendor', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  label: const Text('Onboard New Vendor',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
               ],
             )
@@ -1036,12 +1244,21 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: const [
                       Text('VIRTUAL DIRECTORY',
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: primaryTeal, letterSpacing: 1.5)),
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: primaryTeal,
+                              letterSpacing: 1.5)),
                       SizedBox(height: 4),
                       Text('Manage Vendors',
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
+                          style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: textDark,
+                              fontFamily: 'Manrope')),
                       SizedBox(height: 6),
-                      Text('Oversee strategic partnerships and manage your professional network dossier.',
+                      Text(
+                          'Oversee strategic partnerships and manage your professional network dossier.',
                           style: TextStyle(fontSize: 12, color: textLight)),
                     ],
                   ),
@@ -1056,22 +1273,29 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                   ),
                   onPressed: _onboardNewVendor,
                   icon: const Icon(Icons.add_rounded, size: 20),
-                  label: const Text('Onboard New Vendor', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  label: const Text('Onboard New Vendor',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
             const SizedBox(height: 24),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Pending Reviews',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: textDark,
+                        fontFamily: 'Manrope')),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(color: primaryTeal.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(
+                      color: primaryTeal.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12)),
                   child: Text('${_pendingReviews.length} New',
-                      style: const TextStyle(fontSize: 9, color: primaryTeal, fontWeight: FontWeight.bold)),
+                      style: const TextStyle(
+                          fontSize: 9, color: primaryTeal, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -1082,7 +1306,7 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                 child: Center(child: CircularProgressIndicator(color: primaryTeal)),
               )
             else if (_dashboardError != null)
-              _errorBox(_dashboardError!, _loadDashboard)
+              _errorBox(_dashboardError!, () => _loadDashboard())
             else if (_pendingReviews.isEmpty)
                 Container(
                   width: double.infinity,
@@ -1094,23 +1318,30 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                   ),
                   child: const Center(
                     child: Text('No pending reviews remaining for this period.',
-                        style: TextStyle(fontSize: 13, color: textLight, fontStyle: FontStyle.italic)),
+                        style: TextStyle(
+                            fontSize: 13, color: textLight, fontStyle: FontStyle.italic)),
                   ),
                 )
               else
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
-                  child: Row(children: _pendingReviews.map((rev) => _buildPendingCard(rev)).toList()),
+                  child: Row(
+                      children:
+                      _pendingReviews.map((rev) => _buildPendingCard(rev)).toList()),
                 ),
             const SizedBox(height: 24),
-
             Container(
               decoration: BoxDecoration(
                 color: surfaceWhite,
                 border: Border.all(color: borderTeal),
                 borderRadius: BorderRadius.circular(8),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.01), blurRadius: 4, offset: const Offset(0, 2))],
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.01),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2))
+                ],
               ),
               child: TextField(
                 controller: _searchCtrl,
@@ -1133,9 +1364,12 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
               ],
             ),
             const SizedBox(height: 24),
-
             const Text('Active Vendors',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textDark, fontFamily: 'Manrope')),
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: textDark,
+                    fontFamily: 'Manrope')),
             const SizedBox(height: 12),
             if (_loadingVendors)
               const Padding(
@@ -1143,7 +1377,7 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                 child: Center(child: CircularProgressIndicator(color: primaryTeal)),
               )
             else if (_vendorsError != null)
-              _errorBox(_vendorsError!, _loadVendors)
+              _errorBox(_vendorsError!, () => _loadVendors())
             else if (_vendors.isEmpty)
                 Container(
                   width: double.infinity,
@@ -1155,7 +1389,8 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                   ),
                   child: const Center(
                     child: Text('No vendors found matching your query.',
-                        style: TextStyle(fontSize: 13, color: textLight, fontStyle: FontStyle.italic)),
+                        style: TextStyle(
+                            fontSize: 13, color: textLight, fontStyle: FontStyle.italic)),
                   ),
                 )
               else ...[
@@ -1164,13 +1399,19 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                       color: surfaceWhite,
                       border: Border.all(color: borderTeal),
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.01), blurRadius: 4, offset: const Offset(0, 2))],
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.black.withOpacity(0.01),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2))
+                      ],
                     ),
                     child: ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: _vendors.length,
-                      itemBuilder: (context, idx) => _buildVendorRow(_vendors[idx], idx == _vendors.length - 1),
+                      itemBuilder: (context, idx) =>
+                          _buildVendorRow(_vendors[idx], idx == _vendors.length - 1),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -1186,11 +1427,14 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
     return Scaffold(
       backgroundColor: bgLight,
       appBar: AppBar(
-        title: const Text('Manage Vendors', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text('Manage Vendors',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: secondaryTeal,
         foregroundColor: Colors.white,
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _refreshAll),
+          IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () => _refreshAll(silent: true)),
         ],
       ),
       body: SafeArea(child: mainContent),
@@ -1270,7 +1514,8 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
           value: _statusFilter,
           isExpanded: true,
           items: options.entries
-              .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(fontSize: 12))))
+              .map((e) =>
+              DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(fontSize: 12))))
               .toList(),
           onChanged: (val) {
             if (val == null) return;
@@ -1315,10 +1560,12 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
   }
 
   Widget _buildVendorRow(Map<String, dynamic> vendor, bool isLast) {
+    final int id = vendor['id'] as int;
     final int status = int.tryParse(vendor['status'].toString()) ?? 0;
     final bool isSuspended = status == 2;
     final bool isVerified = (int.tryParse(vendor['verified'].toString()) ?? 0) == 1;
     final String tier = (vendor['type_names'] as List?)?.join(', ') ?? '';
+    final bool busy = _isBusy(id);
 
     return Container(
       decoration: BoxDecoration(
@@ -1372,7 +1619,19 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          PopupMenuButton<String>(
+          // While an action is in flight for this vendor, show a small
+          // inline spinner in place of the menu button instead of
+          // reloading/blanking the whole list.
+          busy
+              ? const SizedBox(
+            width: 36,
+            height: 36,
+            child: Padding(
+              padding: EdgeInsets.all(8),
+              child: CircularProgressIndicator(strokeWidth: 2, color: primaryTeal),
+            ),
+          )
+              : PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded, color: textLight),
             itemBuilder: (context) => [
               const PopupMenuItem(value: 'profile', child: Text('View Profile', style: TextStyle(fontSize: 13))),
@@ -1393,7 +1652,8 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                 _openContactModal(vendor);
               } else if (action == 'suspend') {
                 if (isSuspended) {
-                  _runAction(() => _api.approveVendor(vendor['id'] as int), 'Vendor re-activated successfully');
+                  _runAction(id, () => _api.approveVendor(id),
+                      'Vendor re-activated successfully');
                 } else {
                   _openSuspendModal(vendor);
                 }
@@ -1406,6 +1666,9 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
   }
 
   Widget _buildPendingCard(Map<String, dynamic> review) {
+    final int id = review['id'] as int;
+    final bool busy = _isBusy(id);
+
     return Container(
       width: 280,
       margin: const EdgeInsets.only(right: 16, bottom: 4),
@@ -1413,7 +1676,9 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
         color: surfaceWhite,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderTeal.withOpacity(0.6)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.01), blurRadius: 4, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.01), blurRadius: 4, offset: const Offset(0, 2))
+        ],
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -1452,8 +1717,14 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       padding: EdgeInsets.zero,
                     ),
-                    onPressed: () => _approvePending(review),
-                    child: const Text('Approve', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    onPressed: busy ? null : () => _approvePending(review),
+                    child: busy
+                        ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                        : const Text('Approve', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ),
@@ -1463,7 +1734,7 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                 height: 32,
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(padding: EdgeInsets.zero, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                  onPressed: () => _openContactModal(review),
+                  onPressed: busy ? null : () => _openContactModal(review),
                   child: const Icon(Icons.mail_outline_rounded, color: textLight, size: 16),
                 ),
               ),
@@ -1478,8 +1749,14 @@ class _ManageVendorsScreenState extends State<ManageVendorsScreen> {
                     side: const BorderSide(color: borderTeal),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  onPressed: () => _rejectPending(review),
-                  child: const Icon(Icons.close_rounded, color: errorColor, size: 16),
+                  onPressed: busy ? null : () => _rejectPending(review),
+                  child: busy
+                      ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: errorColor),
+                  )
+                      : const Icon(Icons.close_rounded, color: errorColor, size: 16),
                 ),
               ),
             ],

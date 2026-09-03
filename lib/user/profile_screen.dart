@@ -9,6 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../services/auth_User_and_Business_Session.dart';
+
 const _kPrimary = Color(0xFF006565); // Teal Primary
 const _kBorder = AppTheme.border;
 const _kMuted = AppTheme.muted;
@@ -162,7 +164,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       // Call Database.getData with profile action and vendor_id
       final response = await database.getData({
         'action': 'profile',
-        'vendor_id': _vendorId, // ✅ Dynamic vendor ID
+        'vendor_id': UserSessionSet.instance.vendorId,
       });
 
       if (!mounted) return;
@@ -308,7 +310,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       // Create request body for update_profile
       final requestBody = {
         'action': 'update_profile',
-        'vendor_id': _vendorId, // ✅ Dynamic vendor ID
+        'vendor_id': UserSessionSet.instance.vendorId,
         'name': name ?? _name,
         'bio': bio ?? _bio1,
         'city': city ?? _location,

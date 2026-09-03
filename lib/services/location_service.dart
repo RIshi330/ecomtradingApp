@@ -1,7 +1,10 @@
+
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:trading_ecommerce_admin/services/auth_service.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
+
+import 'auth_User_and_Business_Session.dart';
 
 /// LocationService - Handles real-time location permission and fetching
 /// Requests permission on login and stores location in DB + locally
@@ -121,13 +124,15 @@ class LocationService {
 
       final response = await database.getData({
         'action': 'update_location',
-        'vendor_id': vendorId,
         'latitude': locationData['latitude'].toString(),
         'longitude': locationData['longitude'].toString(),
         'address': locationData['address'].toString(),
         'city': locationData['city'].toString(),
         'state': locationData['state'].toString(),
         'country': locationData['country'].toString(),
+        'vendor_id': UserSessionSet.instance.vendorId,
+
+
       },
       endpoint: 'new_apis/checkout_address_API.php',
       );

@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 
+import '../services/auth_User_and_Business_Session.dart';
+
 class WalletAdminScreen extends StatefulWidget {
   final bool isEmbedded;
-  const WalletAdminScreen({super.key, this.isEmbedded = false});
+  const WalletAdminScreen({super.key, required this.isEmbedded});
 
   @override
   State<WalletAdminScreen> createState() => _WalletAdminScreenState();
@@ -45,11 +47,15 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
       // 1. Fetch wallet summary (balances + all transactions) from wallet_API.php
       final walletRes = await db.getData({
         'action': 'get_wallet',
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       });
 
       // 2. Fetch withdrawal requests history
       final withdrawRes = await db.getData({
         'action': 'getWithdrawRequests',
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/withdrawl_request_api.php');
 
       if (!mounted) return;
@@ -96,7 +102,7 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
         }
 
         // Parse withdrawal requests
-        if (withdrawRes['success'] == true || withdrawRes['status'] == 200 || withdrawRes.containsKey('data')) {
+        if (withdrawRes != null && (withdrawRes['success'] == true || withdrawRes['status'] == 200 || withdrawRes.containsKey('data'))) {
           _withdrawalRequests = withdrawRes['data'] ?? [];
 
           // Override pending from withdrawal requests if available
@@ -114,7 +120,7 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
         }
       });
     } catch (e) {
-      print("Error fetching wallet data: $e");
+      debugPrint("Error fetching wallet data: $e");
     } finally {
       if (mounted) {
         setState(() {
@@ -136,6 +142,8 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
         'requestedAmount': amount,
         'description': description,
         'receiveTo': receiveTo,
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/withdrawl_request_api.php');
 
       if (res.containsKey('code') || res.containsKey('data')) {
@@ -148,6 +156,7 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
           _showErrorDialog(res['message']?.toString() ?? res['data']?['message']?.toString() ?? "Failed to request withdrawal.");
         }
       } else if (res['success'] == true || res['status'] == 200) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Withdrawal request submitted successfully!"),
@@ -160,7 +169,7 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
         _showErrorDialog(res['error']?.toString() ?? "Failed to request withdrawal.");
       }
     } catch (e) {
-      print("Error submitting withdrawal request: $e");
+      debugPrint("Error submitting withdrawal request: $e");
       _showErrorDialog("Connection error: unable to submit request.");
     } finally {
       if (mounted) {
@@ -181,9 +190,12 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
       final res = await db.getData({
         'action': 'cancelRequest',
         'transaction_id': transactionId,
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/withdrawl_request_api.php');
 
       if (res['success'] == true || res['status'] == 200) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Withdrawal request cancelled successfully!"),
@@ -193,6 +205,7 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
         );
         _fetchAllWalletData();
       } else {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(res['error']?.toString() ?? "Failed to cancel withdrawal request."),
@@ -202,7 +215,7 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
         );
       }
     } catch (e) {
-      print("Error cancelling withdrawal request: $e");
+      debugPrint("Error cancelling withdrawal request: $e");
     } finally {
       if (mounted) {
         setState(() {
@@ -230,6 +243,142 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
     );
   }
 
+  PreferredSizeWidget _buildHeader() {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(72),
+      child: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 1.0,
+        shadowColor: Colors.black.withValues(alpha: 0.08),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            color: Colors.black.withValues(alpha: 0.04),
+            height: 1,
+          ),
+        ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xff006565).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.storefront,
+                color: Color(0xff006565),
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Flexible(
+              child: Text(
+                "Seller Central",
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: TextStyle(
+                  color: Color(0xff006565),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.02),
+              shape: BoxShape.circle,
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(
+                    Icons.notifications_none_rounded,
+                    color: Colors.black87,
+                  ),
+                ),
+                Positioned(
+                  right: 12,
+                  top: 12,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                  ),
+                )
+              ],
+            ),
+          ),
+          if (MediaQuery.of(context).size.width >= 600) ...[
+            const SizedBox(width: 4),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                const Text(
+                  "Store Owner",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: Colors.black87,
+                  ),
+                ),
+                Text(
+                  "Premier Seller",
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.teal.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          InkWell(
+            borderRadius: BorderRadius.circular(22),
+            onTap: () {
+              Navigator.of(context, rootNavigator: true)
+                  .pushNamed('/user/profile');
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xff006565).withValues(alpha: 0.2),
+                    width: 2,
+                  ),
+                ),
+                child: const CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Color(0xffe5f7f7),
+                  backgroundImage: NetworkImage(
+                    "https://i.pravatar.cc/150?img=33",
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments;
@@ -237,115 +386,72 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-
-      appBar: widget.isEmbedded ? null : AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: Navigator.canPop(context)
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: Color(0xff006565)),
-                onPressed: () => Navigator.pop(context),
-              )
-            : IconButton(
-                icon: const Icon(Icons.menu, color: Color(0xff006565)),
-                onPressed: () {},
-              ),
-        title: const Text(
-          "Financial Wallet",
-          style: TextStyle(
-            color: Color(0xff006565),
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Color(0xff006565)),
-            onPressed: _fetchAllWalletData,
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: () {
-              Navigator.pushNamed(context, '/user/bank-accounts');
-            },
-            child: const CircleAvatar(
-              radius: 16,
-              backgroundColor: Color(0xff006565),
-              child: Icon(Icons.account_balance_rounded, color: Colors.white, size: 18),
-            ),
-          ),
-          const SizedBox(width: 16),
-        ],
-      ),
-
+      appBar: null,
       floatingActionButton: FloatingActionButton.small(
         backgroundColor: const Color(0xff006565),
         onPressed: _showWithdrawSheet,
         child: const Icon(Icons.add, color: Colors.white),
       ),
-
       bottomNavigationBar: widget.isEmbedded
           ? null
           : BottomNavigationBar(
-              currentIndex: isFromAdmin ? 3 : 4, // Wallet is 3 for Admin, More is 4 for Business
-              onTap: (index) {
-                if (isFromAdmin) {
-                  if (index == 3) {
-                    // Already on wallet
-                  } else if (index == 4) {
-                    // Navigate back to Admin Dashboard and trigger drawer
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      '/admin/dashboard',
-                      (route) => false,
-                      arguments: 4, // More/Drawer
-                    );
-                  } else {
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      '/admin/dashboard',
-                      (route) => false,
-                      arguments: index,
-                    );
-                  }
-                } else {
-                  if (index == 4) {
-                    // Already on more
-                  } else {
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      '/business/dashboard',
-                      (route) => false,
-                      arguments: index,
-                    );
-                  }
-                }
-              },
-              backgroundColor: Colors.white,
-              type: BottomNavigationBarType.fixed,
-              selectedItemColor: const Color(0xff006565),
-              unselectedItemColor: Colors.grey,
-              showSelectedLabels: true,
-              showUnselectedLabels: true,
-              selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-              unselectedLabelStyle: const TextStyle(fontSize: 11),
-              items: isFromAdmin
-                  ? const [
-                      BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: "Dashboard"),
-                      BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: "Orders"),
-                      BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_rounded), label: "Products"),
-                      BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_rounded), label: "Wallet"),
-                      BottomNavigationBarItem(icon: Icon(Icons.menu_rounded), label: "More"),
-                    ]
-                  : const [
-                      BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: "Home"),
-                      BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: "Orders"),
-                      BottomNavigationBarItem(icon: Icon(Icons.business_center_rounded), label: "Opportunities"),
-                      BottomNavigationBarItem(icon: Icon(Icons.settings_rounded), label: "Settings"),
-                      BottomNavigationBarItem(icon: Icon(Icons.menu_rounded), label: "More"),
-                    ],
-            ),
-
+        currentIndex: isFromAdmin ? 3 : 4,
+        onTap: (index) {
+          if (isFromAdmin) {
+            if (index == 3) {
+              // Already on wallet
+            } else if (index == 4) {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/admin/dashboard',
+                    (route) => false,
+                arguments: 4,
+              );
+            } else {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/admin/dashboard',
+                    (route) => false,
+                arguments: index,
+              );
+            }
+          } else {
+            if (index == 4) {
+              // Already on more
+            } else {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/business/dashboard',
+                    (route) => false,
+                arguments: index,
+              );
+            }
+          }
+        },
+        backgroundColor: Colors.white,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: const Color(0xff006565),
+        unselectedItemColor: Colors.grey,
+        showSelectedLabels: true,
+        showUnselectedLabels: true,
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+        unselectedLabelStyle: const TextStyle(fontSize: 11),
+        items: isFromAdmin
+            ? const [
+          BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: "Dashboard"),
+          BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: "Orders"),
+          BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_rounded), label: "Products"),
+          BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_rounded), label: "Wallet"),
+          BottomNavigationBarItem(icon: Icon(Icons.menu_rounded), label: "More"),
+        ]
+            : const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: "Home"),
+          BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: "Orders"),
+          BottomNavigationBarItem(icon: Icon(Icons.business_center_rounded), label: "Opportunities"),
+          BottomNavigationBarItem(icon: Icon(Icons.settings_rounded), label: "Settings"),
+          BottomNavigationBarItem(icon: Icon(Icons.menu_rounded), label: "More"),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: _fetchAllWalletData,
         child: SingleChildScrollView(
@@ -353,7 +459,6 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-
               // Stats Cards — computed from real transaction data
               SizedBox(
                 height: 120,
@@ -409,15 +514,24 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
 
               const SizedBox(height: 24),
 
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "E-Wallet Overview",
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "E-Wallet Overview",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
+                  IconButton(
+                    icon: const Icon(Icons.account_balance_rounded, color: Color(0xff006565)),
+                    tooltip: "Manage Bank Accounts",
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/user/bank-accounts');
+                    },
+                  ),
+                ],
               ),
 
               const SizedBox(height: 16),
@@ -517,8 +631,8 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
               _isLoading
                   ? const Center(child: CircularProgressIndicator(color: Color(0xff006565)))
                   : _txnTabIndex == 0
-                      ? _buildAllTransactionsList()
-                      : _buildWithdrawalRequestsList(),
+                  ? _buildAllTransactionsList()
+                  : _buildWithdrawalRequestsList(),
 
               const SizedBox(height: 20),
 
@@ -601,7 +715,6 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
           sourceLabel = transactFrom;
         }
 
-        // Format date
         String formattedDate = '';
         if (dateStr.isNotEmpty) {
           final dt = DateTime.tryParse(dateStr);
@@ -939,8 +1052,6 @@ class _WalletAdminScreenState extends State<WalletAdminScreen> {
   }
 }
 
-
-
 class WalletCard extends StatelessWidget {
   final String title;
   final String amount;
@@ -1013,7 +1124,7 @@ class TransactionTile extends StatelessWidget {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor:
-              success ? Colors.green.shade50 : Colors.red.shade50,
+          success ? Colors.green.shade50 : Colors.red.shade50,
           child: Icon(
             success ? Icons.arrow_downward : Icons.arrow_upward,
             color: success ? Colors.green : Colors.red,

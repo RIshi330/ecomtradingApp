@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../Database/Database.dart';
 import '../screens/membership_payment_modal.dart';
+import '../services/auth_User_and_Business_Session.dart';
 
 class MembershipScreen extends StatefulWidget {
   const MembershipScreen({super.key});
@@ -35,6 +36,8 @@ class _MembershipScreenState extends State<MembershipScreen> {
       final db = Database();
       final res = await db.getJsonData({
         'action': 'membership_list',
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/membership_plans_API.php');
 
       if (res['success'] == true && res['data'] != null) {

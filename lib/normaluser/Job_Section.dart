@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../Database/Database.dart';
+import '../services/auth_User_and_Business_Session.dart';
 import 'job_details_screen.dart';
 
 /// ============================================================
@@ -74,6 +75,12 @@ class JobItem {
 /// MAIN JOB SECTION SCREEN
 /// ------------------------------------------------------------
 class SereneJobsScreen extends StatefulWidget {
+  // The id of the currently logged-in user/vendor. JobDetailScreen needs
+  // this to submit applications under the right account (see the fix
+  // applied to job_details_screen.dart - it no longer accepts a hardcoded
+  // id). Pass in whatever your app's auth/session layer holds for the
+  // logged-in user when you push this screen.
+
   const SereneJobsScreen({super.key});
 
   @override
@@ -138,10 +145,14 @@ class _SereneJobsScreenState extends State<SereneJobsScreen> {
   /// Load filter options directly from backend API endpoints
   Future<void> _loadFilters() async {
     try {
-      final catRes = await _db.getJsonData({'action': 'getCategories'}, endpoint: jobsEndpoint);
-      final posRes = await _db.getJsonData({'action': 'getPositions'}, endpoint: jobsEndpoint);
-      final typeRes = await _db.getJsonData({'action': 'getWorkTypes'}, endpoint: jobsEndpoint);
-      final locRes = await _db.getJsonData({'action': 'getLocations'}, endpoint: jobsEndpoint);
+      final catRes = await _db.getJsonData({'action': 'getCategories',        'vendor_id': UserSessionSet.instance.vendorId,
+      }, endpoint: jobsEndpoint);
+      final posRes = await _db.getJsonData({'action': 'getPositions',        'vendor_id': UserSessionSet.instance.vendorId,
+      }, endpoint: jobsEndpoint);
+      final typeRes = await _db.getJsonData({'action': 'getWorkTypes',        'vendor_id': UserSessionSet.instance.vendorId,
+      }, endpoint: jobsEndpoint);
+      final locRes = await _db.getJsonData({'action': 'getLocations',        'vendor_id': UserSessionSet.instance.vendorId,
+      }, endpoint: jobsEndpoint);
 
       if (mounted) {
         setState(() {
@@ -580,7 +591,14 @@ class _SereneJobsScreenState extends State<SereneJobsScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
+                                      // FIX: was `currentUserId: ,` - a syntax
+                                      // error left over from wiring the
+                                      // required param on JobDetailScreen.
+                                      // Uses this screen's own currentUserId
+                                      // (see the widget field added above),
+                                      // instead of the old hardcoded id.
                                       builder: (context) => JobDetailScreen(
+                                        currentUserId: '12',
                                         jobId: job.id, // Passes job.id to the detail API
                                       ),
                                     ),
@@ -709,7 +727,10 @@ class _SereneJobsScreenState extends State<SereneJobsScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
+                            // FIX: same syntax-error/hardcoding issue as the
+                            // featured carousel button above.
                             builder: (context) => JobDetailScreen(
+                              currentUserId: '12',
                               jobId: job.id, // Passes job.id to the detail API
                             ),
                           ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../Database/Database.dart';
+import '../services/auth_User_and_Business_Session.dart';
 
 class PromotionsPaymentModal extends StatefulWidget {
   final int packageId;
@@ -75,11 +76,15 @@ class _PromotionsPaymentModalState extends State<PromotionsPaymentModal> {
       // Fetch E-Banking (E-Cash) Balance
       final ecashRes = await db.getData({
         'get_available_ebanking_balance': '1',
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/buy_promotion_package_api.php');
 
       // Fetch E-Wallet Balance
       final ewalletRes = await db.getData({
         'get_available_ewallet_balance': '1',
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/buy_promotion_package_api.php');
 
       setState(() {
@@ -142,6 +147,8 @@ class _PromotionsPaymentModalState extends State<PromotionsPaymentModal> {
         'package_id': widget.packageId.toString(),
         'payFromEwallet': ewalletUsed.toString(),
         'payFromEbanking': ecashUsed.toString(),
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/buy_promotion_package_api.php');
 
       if (buyRes['status'] == 'success') {
@@ -210,6 +217,8 @@ class _PromotionsPaymentModalState extends State<PromotionsPaymentModal> {
       final db = Database();
       final res = await db.getData({
         'verifyPayment': '1',
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/buy_promotion_package_api.php');
 
       if (!mounted) return;
@@ -272,6 +281,8 @@ class _PromotionsPaymentModalState extends State<PromotionsPaymentModal> {
                 final db = Database();
                 final res = await db.getData({
                   'verifyPayment': '1',
+                  'vendor_id': UserSessionSet.instance.vendorId,
+
                 }, endpoint: 'new_apis/buy_promotion_package_api.php');
 
                 if (!mounted) return;

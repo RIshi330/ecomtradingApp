@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/widgets/stat_card.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 
+import '../services/auth_User_and_Business_Session.dart';
+
 class ManageItemsScreen extends StatefulWidget {
   final bool isEmbedded;
   const ManageItemsScreen({super.key, this.isEmbedded = false});
@@ -39,7 +41,7 @@ class _ManageItemsScreenState extends State<ManageItemsScreen> {
 
       // Fetch categories
       final catRes = await Database().getData({
-        'action': 'get_categories',
+        'action': 'get_categories','vendor_id': UserSessionSet.instance.vendorId,
       }, endpoint: 'new_apis/items_api.php');
       if (catRes != null && catRes['success'] == true) {
         _mainCategories = catRes['data']['categories'] ?? [];
@@ -64,7 +66,7 @@ class _ManageItemsScreenState extends State<ManageItemsScreen> {
         'action': 'get_all_items',
         'search': _searchQuery,
         'page': 1,
-        'per_page': 50,
+        'per_page': 50,'vendor_id': UserSessionSet.instance.vendorId,
       }, endpoint: 'new_apis/items_api.php');
 
       if (res != null && res['success'] == true) {
@@ -120,7 +122,7 @@ class _ManageItemsScreenState extends State<ManageItemsScreen> {
     try {
       final res = await Database().getData({
         'action': 'delete_item',
-        'id': id,
+        'id': id,'vendor_id': UserSessionSet.instance.vendorId,
       }, endpoint: 'new_apis/items_api.php');
 
       if (res != null && res['success'] == true) {
@@ -907,7 +909,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
     try {
       final res = await _db.getData({
         'action': 'get_subcategories',
-        'category': categoryName,
+        'category': categoryName,'vendor_id': UserSessionSet.instance.vendorId,
       }, endpoint: 'new_apis/items_api.php');
       if (res != null && res['success'] == true) {
         final List<dynamic> list = res['data']['subcategories'] ?? [];
@@ -929,7 +931,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
     try {
       final res = await _db.getData({
         'action': 'get_child_categories',
-        'subcategory': subCategoryName,
+        'subcategory': subCategoryName,'vendor_id': UserSessionSet.instance.vendorId,
       }, endpoint: 'new_apis/items_api.php');
       if (res != null && res['success'] == true) {
         final List<dynamic> list = res['data']['child_categories'] ?? [];
@@ -1253,7 +1255,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                         'category': _selectedCategory,
                         'subcategory': _selectedSubCategory ?? '',
                         'childcategory': _selectedChildCategory ?? '',
-                        'variants': activeVariants,
+                        'variants': activeVariants,'vendor_id': UserSessionSet.instance.vendorId,
                       }, endpoint: 'new_apis/items_api.php');
 
                       if (addRes != null && addRes['success'] == true) {

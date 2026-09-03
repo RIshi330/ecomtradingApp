@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:trading_ecommerce_admin/admin/schedule_campaign_screen.dart';
 
+import '../services/auth_User_and_Business_Session.dart';
+
 class PromotionalPackageOrdersScreen extends StatefulWidget {
   final bool isEmbedded;
   const PromotionalPackageOrdersScreen({super.key, this.isEmbedded = false});
@@ -83,6 +85,8 @@ class _PromotionalPackageOrdersScreenState extends State<PromotionalPackageOrder
         'action': 'get_package_orders',
         'search': _searchQuery,
         'status': _selectedStatus == 'All' ? '' : _selectedStatus.toUpperCase(),
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/promotion_package_api.php');
 
       if (!mounted) return;
@@ -126,6 +130,8 @@ class _PromotionalPackageOrdersScreenState extends State<PromotionalPackageOrder
           future: Database().getData({
             'action': 'get_campaign_content',
             'order_id': order.id.toString(),
+            'vendor_id': UserSessionSet.instance.vendorId,
+
           }, endpoint: 'new_apis/submit_content_api.php'),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {

@@ -3,6 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 
+import '../common/chat_screen.dart';
+import '../screens/create_opportunity_screen.dart';
+import 'opportunity_detail_screen.dart';
+
 /// Models mirroring the JSON shapes returned by the marketplace_opportunity
 /// PHP API (get_opportunity_filters, get_featured_opportunities,
 /// get_opportunity_categories, get_opportunity_skills,
@@ -158,6 +162,12 @@ class MarketplaceOpportunity {
   final MarketplaceMedia media;
   final Map<String, dynamic> raw;
 
+  /// The full, untouched API item: { opportunity, vendor, compensation,
+  /// application, media }. Kept around so we can hand it straight to
+  /// OpportunityDetailScreen, which reads these exact keys out of
+  /// ModalRoute arguments.
+  final Map<String, dynamic> apiItem;
+
   MarketplaceOpportunity({
     required this.id,
     this.title,
@@ -178,6 +188,7 @@ class MarketplaceOpportunity {
     MarketplaceCompensation? compensation,
     MarketplaceMedia? media,
     this.raw = const {},
+    this.apiItem = const {},
   })  : vendor = vendor ?? MarketplaceVendor(),
         compensation = compensation ?? MarketplaceCompensation(),
         media = media ?? MarketplaceMedia();
@@ -222,6 +233,7 @@ class MarketplaceOpportunity {
       media: MarketplaceMedia.fromJson(
           item['media'] != null ? Map<String, dynamic>.from(item['media']) : null),
       raw: opp,
+      apiItem: item,
     );
   }
 
@@ -243,6 +255,29 @@ class MarketplaceOpportunity {
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     if (diff.inDays < 30) return '${diff.inDays}d ago';
     return '${(diff.inDays / 30).floor()}mo ago';
+  }
+
+  /// Builds the exact arguments map OpportunityDetailScreen expects from
+  /// ModalRoute.of(context)!.settings.arguments — i.e. the same shape the
+  /// API returns per item: { opportunity, vendor, compensation,
+  /// application, media }. Falls back to empty maps for any missing piece
+  /// so the detail screen's `?? {}` fallbacks never blow up.
+  Map<String, dynamic> toDetailArguments() {
+    return {
+      'opportunity': raw,
+      'vendor': apiItem['vendor'] != null
+          ? Map<String, dynamic>.from(apiItem['vendor'])
+          : <String, dynamic>{},
+      'compensation': apiItem['compensation'] != null
+          ? Map<String, dynamic>.from(apiItem['compensation'])
+          : <String, dynamic>{},
+      'application': apiItem['application'] != null
+          ? Map<String, dynamic>.from(apiItem['application'])
+          : <String, dynamic>{},
+      'media': apiItem['media'] != null
+          ? Map<String, dynamic>.from(apiItem['media'])
+          : <String, dynamic>{},
+    };
   }
 }
 
@@ -290,6 +325,7 @@ class MarketplaceFilters {
     );
   }
 }
+
 /// Flutter implementation of the Marketplace Opportunities screen.
 /// Calls the marketplace_opportunity API the same way
 /// BusinessUserProfileScreen calls community_admin_profile.php —
@@ -336,6 +372,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   int _currentPage = 1;
   int _totalPages = 1;
   int _totalRecords = 0;
+
+  // Dummy image URL (using a placeholder service)
+  static const String _dummyImageUrl = 'https://cdn.pixabay.com/photo/2016/09/14/08/26/web-1668927_1280.jpg';
 
   @override
   void initState() {
@@ -478,10 +517,73 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     _loadOpportunities(reset: true);
   }
 
+  /// Single place that owns the navigation to the detail screen so both the
+  /// Featured carousel and the All Opportunities list behave identically.
+  void _openDetail(MarketplaceOpportunity item) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const OpportunityDetailScreen(),
+        settings: RouteSettings(arguments: item.toDetailArguments()),
+      ),
+    );
+  }
+
+  // Helper method to get image URL with fallback to dummy
+  String _getImageUrl(String? imageUrl) {
+    if (imageUrl != null && imageUrl.trim().isNotEmpty) {
+      return imageUrl;
+    }
+    return _dummyImageUrl;
+  }
+
+  // Helper method to build image widget with fallback
+  Widget _buildOpportunityImage(String? imageUrl, {required double height, required double width, BoxFit fit = BoxFit.cover}) {
+    final String url = _getImageUrl(imageUrl);
+    return Image.network(
+      url,
+      height: height,
+      width: width,
+      fit: fit,
+      errorBuilder: (context, error, stackTrace) {
+        // If the image fails to load, show the dummy image
+        return Image.network(
+          _dummyImageUrl,
+          height: height,
+          width: width,
+          fit: fit,
+          errorBuilder: (context, error, stackTrace) {
+            // If even dummy image fails, show a colored container with icon
+            return Container(
+              height: height,
+              width: width,
+              color: const Color(0xFF008080).withOpacity(0.2),
+              child: const Icon(
+                Icons.image_not_supported,
+                color: Color(0xFF008080),
+                size: 40,
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF7FAFC),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF008080),
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => OpportunityFormScreen(),));
+        },
+        child: const Icon(
+          Icons.add,
+          color: Colors.white,
+        ),
+      ),
       body: SafeArea(
         child: Stack(
           children: [
@@ -511,6 +613,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
+  // ---------------------- Top App Bar ----------------------
+
   // ---------------------- Search Bar ----------------------
   Widget _buildSearchBar() {
     return Padding(
@@ -519,11 +623,11 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFFBDC9C8)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withOpacity(0.04),
               offset: const Offset(0, 2),
               blurRadius: 4,
             ),
@@ -531,7 +635,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         ),
         child: Row(
           children: [
-            const Icon(Icons.search, color: Color(0xFF6E7979), size: 20),
+            const Icon(Icons.search, color: Color(0xFFBDC9C8), size: 20),
             const SizedBox(width: 8),
             Expanded(
               child: TextField(
@@ -555,8 +659,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 child: Icon(
                   Icons.tune,
                   color: (_selectedCategoryId != null || _selectedLabel != null)
-                      ? const Color(0xFF008080)
-                      : const Color(0xFF6E7979),
+                      ? const Color(0xFF006565)
+                      : const Color(0xFF3E4949),
                 ),
               ),
             ),
@@ -575,11 +679,38 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'Featured',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Color(0xFF181C1E)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Featured',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF181C1E),
+                  fontFamily: 'Manrope',
+                ),
+              ),
+              TextButton(
+                onPressed: () {},
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF006565),
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text(
+                  'View all',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 8),
@@ -602,12 +733,16 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   }
 
   Widget _buildFeaturedCard(MarketplaceOpportunity item) {
+    // Determine label color based on type
+    Color labelColor = const Color(0xFF008080);
+    if (item.labelName?.toLowerCase().contains('sponsored') ?? false) {
+      labelColor = const Color(0xFFD97706);
+    } else if (item.labelName?.toLowerCase().contains('premium') ?? false) {
+      labelColor = const Color(0xFF7C3AED);
+    }
+
     return GestureDetector(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Tapped: ${item.title ?? 'Opportunity'}')),
-        );
-      },
+      onTap: () => _openDetail(item),
       child: Container(
         width: 280,
         decoration: BoxDecoration(
@@ -622,27 +757,34 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  child: item.media.coverImage != null
-                      ? Image.network(
-                    item.media.coverImage!,
+                  child: _buildOpportunityImage(
+                    item.media.coverImage,
                     height: 160,
                     width: 280,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _imagePlaceholder(160, 280),
-                  )
-                      : _imagePlaceholder(160, 280),
+                  ),
                 ),
+                // Left accent bar
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 4,
+                    color: labelColor,
+                  ),
+                ),
+                // Label badge
                 Positioned(
                   top: 8,
                   right: 8,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF008080),
-                      borderRadius: BorderRadius.circular(16),
+                      color: const Color(0xFFD6E0F6),
+                      borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
+                          color: Colors.black.withOpacity(0.1),
                           offset: const Offset(0, 2),
                           blurRadius: 4,
                         ),
@@ -650,14 +792,18 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.star, color: Colors.white, size: 14),
+                        Icon(
+                          Icons.star,
+                          color: const Color(0xFF596376),
+                          size: 14,
+                        ),
                         const SizedBox(width: 4),
                         Text(
-                          item.labelName ?? 'Featured',
+                          item.labelName?.toUpperCase() ?? 'Featured',
                           style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                            color: Color(0xFF596376),
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -674,10 +820,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 children: [
                   Text(
                     item.displayCategory.toUpperCase(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF006565),
+                      color: labelColor,
                       letterSpacing: 1,
                     ),
                   ),
@@ -686,7 +832,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     item.title ?? 'Untitled opportunity',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF181C1E)),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF181C1E),
+                      fontFamily: 'Manrope',
+                    ),
                   ),
                 ],
               ),
@@ -707,9 +858,14 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'All Opportunities',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Color(0xFF181C1E)),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF181C1E),
+                  fontFamily: 'Manrope',
+                ),
               ),
               Text(
                 '$_totalRecords Results',
@@ -757,136 +913,204 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   }
 
   Widget _buildOpportunityCard(MarketplaceOpportunity item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    // Determine label color based on type
+    Color labelColor = const Color(0xFF008080);
+    if (item.labelName?.toLowerCase().contains('sponsored') ?? false) {
+      labelColor = const Color(0xFFD97706);
+    } else if (item.labelName?.toLowerCase().contains('premium') ?? false) {
+      labelColor = const Color(0xFF7C3AED);
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFBDC9C8)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        onTap: () => _openDetail(item),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFBDC9C8)),
+          ),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: item.media.coverImage != null
-                    ? Image.network(
-                  item.media.coverImage!,
-                  width: 80,
-                  height: 80,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _imagePlaceholder(80, 80),
-                )
-                    : _imagePlaceholder(80, 80),
+              // Left accent bar
+              Container(
+                height: 4,
+                width: double.infinity,
+                color: labelColor,
+                margin: const EdgeInsets.only(bottom: 12),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFD9E3F9),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            item.displayCategory,
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF006565)),
-                          ),
-                        ),
-                        if (item.timeAgo != null)
-                          Text(
-                            item.timeAgo!,
-                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: Color(0xFF3E4949)),
-                          ),
-                      ],
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: _buildOpportunityImage(
+                      item.media.coverImage,
+                      height: 80,
+                      width: 80,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item.title ?? 'Untitled opportunity',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF181C1E)),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CircleAvatar(
-                          radius: 10,
-                          backgroundColor: const Color(0xFFE0E3E5),
-                          backgroundImage:
-                          item.vendor.avatarUrl != null ? NetworkImage(item.vendor.avatarUrl!) : null,
-                          onBackgroundImageError: (_, __) {},
-                          child: item.vendor.avatarUrl == null
-                              ? const Icon(Icons.person, size: 12, color: Color(0xFF6E7979))
-                              : null,
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text.rich(
-                            TextSpan(
-                              text: 'Posted by ',
-                              style: const TextStyle(fontSize: 14, color: Color(0xFF3E4949)),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
                               children: [
-                                TextSpan(
-                                  text: item.vendor.displayName,
-                                  style: const TextStyle(fontWeight: FontWeight.w500, color: Color(0xFF181C1E)),
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: labelColor,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  item.displayCategory.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: labelColor,
+                                    letterSpacing: 0.5,
+                                  ),
                                 ),
                               ],
                             ),
-                            overflow: TextOverflow.ellipsis,
+                            if (item.timeAgo != null)
+                              Text(
+                                item.timeAgo!,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF3E4949),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item.title ?? 'Untitled opportunity',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF181C1E),
+                            fontFamily: 'Manrope',
                           ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              width: 20,
+                              height: 20,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                              ),
+                              child: ClipOval(
+                                child: item.vendor.avatarUrl != null
+                                    ? Image.network(
+                                  item.vendor.avatarUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: const Color(0xFFE0E3E5),
+                                    child: const Icon(Icons.person, size: 12, color: Color(0xFF6E7979)),
+                                  ),
+                                )
+                                    : Container(
+                                  color: const Color(0xFFE0E3E5),
+                                  child: const Icon(Icons.person, size: 12, color: Color(0xFF6E7979)),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Posted by ',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                                color: const Color(0xFF3E4949),
+                              ),
+                            ),
+                            Text(
+                              item.vendor.displayName,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF181C1E),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Divider(color: Color(0xFFBDC9C8), height: 1),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.group, size: 18, color: Color(0xFF6E7979)),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${item.totalApplications} Applicants',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF181C1E)),
                   ),
                 ],
               ),
-              if (item.compensation.label != null)
-                Flexible(
-                  child: Text(
-                    item.compensation.label!,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF006565)),
+              const SizedBox(height: 12),
+              Divider(color: const Color(0xFFBDC9C8), height: 1),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.group, size: 18, color: Color(0xFF6E7979)),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${item.totalApplications} Applicants',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF181C1E),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+                  Row(
+                    children: [
+                      _buildActionButton(Icons.visibility_outlined, '45'),
+                      const SizedBox(width: 16),
+                      _buildActionButton(Icons.favorite_border, '12'),
+                      const SizedBox(width: 16),
+                      _buildActionButton(Icons.bookmark_border, '8'),
+                    ],
+                  ),
+                ],
+              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _imagePlaceholder(double height, double width) {
-    return Container(
-      height: height,
-      width: width,
-      color: const Color(0xFFE0E3E5),
-      child: const Icon(Icons.broken_image, color: Color(0xFF6E7979)),
+  Widget _buildActionButton(IconData icon, String label) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: const Color(0xFF3E4949),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF3E4949),
+          ),
+        ),
+      ],
     );
   }
 
@@ -927,7 +1151,14 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Filters', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+                            Text(
+                              'Filters',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Manrope',
+                              ),
+                            ),
                             IconButton(
                               onPressed: () => setState(() => _isFilterVisible = false),
                               icon: const Icon(Icons.close),
@@ -976,7 +1207,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                               ),
                               const SizedBox(height: 24),
                               const Text(
-                                'LABEL',
+                                'POSTED WITHIN',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
@@ -990,19 +1221,20 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                                 runSpacing: 8,
                                 children: [
                                   _buildFilterChip(
-                                    'All',
+                                    'Last 24 Hours',
                                     _selectedLabel == null,
                                         () => setModalState(() => _selectedLabel = null),
                                   ),
-                                  ..._filters.labels.map((lbl) {
-                                    final id = lbl['id']?.toString() ?? '';
-                                    final name = lbl['name']?.toString() ?? '';
-                                    return _buildFilterChip(
-                                      name,
-                                      _selectedLabel == id,
-                                          () => setModalState(() => _selectedLabel = id),
-                                    );
-                                  }),
+                                  _buildFilterChip(
+                                    'Last 7 Days',
+                                    _selectedLabel == '7',
+                                        () => setModalState(() => _selectedLabel = '7'),
+                                  ),
+                                  _buildFilterChip(
+                                    'Last 30 Days',
+                                    _selectedLabel == '30',
+                                        () => setModalState(() => _selectedLabel = '30'),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 32),
@@ -1066,8 +1298,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       selected: selected,
       onSelected: (_) => onTap(),
       backgroundColor: Colors.white,
-      selectedColor: const Color(0xFF008080).withOpacity(0.2),
-      side: BorderSide(color: selected ? const Color(0xFF008080) : const Color(0xFFBDC9C8)),
+      selectedColor: selected ? const Color(0xFF008080).withOpacity(0.2) : Colors.transparent,
+      side: BorderSide(
+        color: selected ? const Color(0xFF008080) : const Color(0xFFBDC9C8),
+      ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       labelStyle: TextStyle(
         fontSize: 14,

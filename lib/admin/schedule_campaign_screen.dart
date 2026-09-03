@@ -4,6 +4,8 @@ import 'package:trading_ecommerce_admin/core/theme/app_theme.dart';
 import 'package:trading_ecommerce_admin/index.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 
+import '../services/auth_User_and_Business_Session.dart';
+
 class ScheduleCampaignScreen extends StatefulWidget {
   final bool isEmbedded;
   final int? initialOrderId;
@@ -102,6 +104,8 @@ class _ScheduleCampaignScreenState extends State<ScheduleCampaignScreen> {
       final response = await db.getData({
         'action': 'get_campaign_content',
         'order_id': orderId.toString(),
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/submit_content_api.php');
 
       if (response['success'] == true && response['data'] != null) {
@@ -151,6 +155,8 @@ class _ScheduleCampaignScreenState extends State<ScheduleCampaignScreen> {
     try {
       final response = await Database().getData({
         'action': 'fetch_vendor_orders',
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/schedule_campaign_api.php');
 
       if (response['success'] == true && response['data'] != null) {
@@ -239,6 +245,8 @@ class _ScheduleCampaignScreenState extends State<ScheduleCampaignScreen> {
         'target_segments': jsonEncode(_selectedTargetSegments.toList()),
         'target_region': 'North America, European Union',
         'status': statusValue, // 1 for active/published, 0 for draft
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/schedule_campaign_api.php');
 
       if (response['success'] == true) {

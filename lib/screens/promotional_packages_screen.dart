@@ -4,6 +4,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:trading_ecommerce_admin/screens/promotions_payment_modal.dart';
 
+import '../services/auth_User_and_Business_Session.dart';
+
 // Package Model representing the promotional offerings
 class PromoPackage {
   final String title;
@@ -75,6 +77,7 @@ class _PromotionalPackagesScreenState extends State<PromotionalPackagesScreen> {
       final response = await db.getData({
         'action': 'get_packages',
         'status': '1',
+        'vendor_id': UserSessionSet.instance.vendorId,
       }, endpoint: 'new_apis/promotion_package_api.php');
 
       if (response['success'] == true) {
@@ -203,14 +206,14 @@ class _PromotionalPackagesScreenState extends State<PromotionalPackagesScreen> {
       appBar: widget.isEmbedded
           ? null
           : AppBar(
-              title: const Text("Promo Market", style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
-              backgroundColor: Colors.white,
-              elevation: 0,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: primaryColor),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
+        title: const Text("Promo Market", style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: primaryColor),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -310,20 +313,20 @@ class _PromotionalPackagesScreenState extends State<PromotionalPackagesScreen> {
           Expanded(
             child: _isLoadingPackages
                 ? const Center(
-                    child: CircularProgressIndicator(color: primaryColor),
-                  )
+              child: CircularProgressIndicator(color: primaryColor),
+            )
                 : filteredPackages.isEmpty
-                    ? const Center(
-                        child: Text("No packages found", style: TextStyle(color: Colors.grey)),
-                      )
-                    : ListView.builder(
-                    padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24),
-                    itemCount: filteredPackages.length,
-                    itemBuilder: (context, index) {
-                      final pkg = filteredPackages[index];
-                      return _buildPackageCard(pkg);
-                    },
-                  ),
+                ? const Center(
+              child: Text("No packages found", style: TextStyle(color: Colors.grey)),
+            )
+                : ListView.builder(
+              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24),
+              itemCount: filteredPackages.length,
+              itemBuilder: (context, index) {
+                final pkg = filteredPackages[index];
+                return _buildPackageCard(pkg);
+              },
+            ),
           ),
         ],
       ),
@@ -865,7 +868,7 @@ class _PromotionalPackageDetailsScreenState extends State<PromotionalPackageDeta
                       const Text("Includes strategy & creation", style: TextStyle(color: Colors.grey, fontSize: 11)),
                     ],
                   ),
-                   ElevatedButton(
+                  ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
                       minimumSize: const Size(0, 48),
@@ -1244,24 +1247,24 @@ class _SubmitCampaignContentScreenState extends State<SubmitCampaignContentScree
                         ),
                         child: _uploadedFilePath != null
                             ? ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Image.file(
-                                  File(_uploadedFilePath!),
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                  fit: BoxFit.cover,
-                                ),
-                              )
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(
+                            File(_uploadedFilePath!),
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        )
                             : Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.add_a_photo, color: Colors.grey.shade600, size: 36),
-                                  const SizedBox(height: 8),
-                                  const Text("+ Add Content", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 14)),
-                                  const SizedBox(height: 4),
-                                  Text("MP4, JPG or PNG up to 50MB", style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
-                                ],
-                              ),
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_a_photo, color: Colors.grey.shade600, size: 36),
+                            const SizedBox(height: 8),
+                            const Text("+ Add Content", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 14)),
+                            const SizedBox(height: 4),
+                            Text("MP4, JPG or PNG up to 50MB", style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -1390,14 +1393,14 @@ class _SubmitCampaignContentScreenState extends State<SubmitCampaignContentScree
                             ),
                             child: _uploadedFilePath != null
                                 ? ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                                    child: Image.file(
-                                      File(_uploadedFilePath!),
-                                      width: double.infinity,
-                                      height: double.infinity,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  )
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                              child: Image.file(
+                                File(_uploadedFilePath!),
+                                width: double.infinity,
+                                height: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                            )
                                 : const Center(child: Icon(Icons.photo, color: Colors.grey, size: 48)),
                           ),
                           Padding(
@@ -1517,6 +1520,7 @@ class _SubmitCampaignContentScreenState extends State<SubmitCampaignContentScree
         'status': '1',
         'comment': _instructionsController.text.trim(),
         'attachments[]': _uploadedFileName ?? 'default_attachment.png',
+        'vendor_id': UserSessionSet.instance.vendorId,
       }, endpoint: 'new_apis/submit_content_api.php');
 
       if (!mounted) return;

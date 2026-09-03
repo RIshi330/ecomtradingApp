@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/normaluser/tranning_details_screen.dart';
 import '../Database/Database.dart';
+import '../services/auth_User_and_Business_Session.dart';
 
 /// ============================================================
 /// API ENDPOINT
@@ -214,7 +215,8 @@ class _TranningSectionState extends State<TranningSection> {
   Future<void> _loadFilters() async {
     try {
       final result = await _db.getData(
-        {'action': 'getFilters'},
+        {'action': 'getFilters',        'vendor_id': UserSessionSet.instance.vendorId,
+        },
         endpoint: trainingEndpoint,
       );
       if (result['success'] == true) {

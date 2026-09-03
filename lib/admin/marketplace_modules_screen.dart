@@ -1,7 +1,63 @@
 import 'package:flutter/material.dart';
+
 import '../Database/Database.dart';
-import '../model/module_model.dart';
 import '../core/theme/app_theme.dart';
+import '../services/auth_User_and_Business_Session.dart';
+
+class ModuleModel {
+  final String id;
+  final String title;
+  final String category;
+  final String rating;
+  final List<String> features;
+  final String price;
+  final String originalPrice;
+  final IconData icon;
+
+  ModuleModel({
+    required this.id,
+    required this.title,
+    required this.category,
+    required this.rating,
+    required this.features,
+    required this.price,
+    required this.originalPrice,
+    required this.icon,
+  });
+
+  factory ModuleModel.fromJson(Map<String, dynamic> json) {
+    // Parse features safely whether string or list
+    List<String> parsedFeatures = [];
+    if (json['features'] != null) {
+      if (json['features'] is List) {
+        parsedFeatures = List<String>.from(json['features']);
+      } else if (json['features'] is String && json['features'].toString().isNotEmpty) {
+        parsedFeatures = (json['features'] as String)
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
+      }
+    }
+
+    final double rawPrice = double.tryParse(json['price']?.toString() ?? '0') ?? 0.0;
+    final double finalPrice = double.tryParse(json['final_price']?.toString() ?? '0') ?? rawPrice;
+
+    return ModuleModel(
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? json['name']?.toString() ?? 'Module #${json['id']}',
+      category: json['marketplace_id'] != null
+          ? 'Marketplace #${json['marketplace_id']}'
+          : 'General',
+      rating: json['rating']?.toString() ?? '4.5',
+      features: parsedFeatures,
+      price: '₹${finalPrice.toStringAsFixed(2)}',
+      originalPrice: rawPrice > finalPrice ? '₹${rawPrice.toStringAsFixed(2)}' : '₹${finalPrice.toStringAsFixed(2)}',
+      icon: Icons.extension,
+    );
+  }
+}
+
 
 class MarketplaceModulesScreen extends StatefulWidget {
   final bool isEmbedded;
@@ -12,8 +68,7 @@ class MarketplaceModulesScreen extends StatefulWidget {
       _MarketplaceModulesScreenState();
 }
 
-class _MarketplaceModulesScreenState
-    extends State<MarketplaceModulesScreen> {
+class _MarketplaceModulesScreenState extends State<MarketplaceModulesScreen> {
   int selectedCategory = 0;
   bool _isLoading = false;
   List<Map<String, dynamic>> _marketplaces = [];
@@ -35,24 +90,36 @@ class _MarketplaceModulesScreenState
     try {
       final db = Database();
       final res = await db.getData(
-        {"action": "get_marketplaces"},
+        {"action": "get_marketplaces",        'vendor_id': UserSessionSet.instance.vendorId,
+        },
         endpoint: "new_apis/module_marketplace_api.php",
       );
 
-      if (res['success'] == true || res['status'] == 200 || res.containsKey('data')) {
-        final rawList = res['data'] ?? res['marketplaces'] ?? [];
-        if (rawList is List) {
-          _marketplaces = rawList.map((e) => Map<String, dynamic>.from(e)).toList();
-        }
+      if (res['success'] == true) {
+        final rawList = (res['data'] as List? ?? [])
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+
+        // Extract marketplace_id as returned by your PHP SQL statement
+        _marketplaces = rawList.map((row) {
+          final mId = row['marketplace_id']?.toString() ?? '';
+          return {
+            'id': mId,
+            'name': 'Marketplace $mId',
+          };
+        }).toList();
+      } else {
+        _marketplaces = [];
+        _errorMessage = res['message']?.toString() ?? "Failed to load marketplaces";
       }
 
       await _fetchModules();
     } catch (e) {
-      setState(() {
-        _errorMessage = "Failed to load marketplaces: $e";
-      });
-      // Load fallback mock modules if network fails
-      _modulesList = _getMockModules();
+      if (mounted) {
+        setState(() {
+          _errorMessage = "Failed to load data: $e";
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -63,89 +130,72 @@ class _MarketplaceModulesScreenState
   }
 
   Future<void> _fetchModules() async {
-    if (_marketplaces.isEmpty) {
-      _modulesList = _getMockModules();
-      return;
-    }
-
-    String selectedId = '';
-    if (selectedCategory > 0 && selectedCategory <= _marketplaces.length) {
-      selectedId = _marketplaces[selectedCategory - 1]['id']?.toString() ?? '';
-    } else {
-      selectedId = _marketplaces.first['id']?.toString() ?? '';
-    }
+    final db = Database();
 
     try {
-      final db = Database();
-      final res = await db.getData(
-        {
-          "action": "get_marketplace_modules",
-          "marketplace_id": selectedId,
-        },
-        endpoint: "new_apis/module_marketplace_api.php",
-      );
+      if (selectedCategory == 0) {
+        // "All Modules" selected: Fetch from all available marketplace_ids in parallel
+        if (_marketplaces.isEmpty) {
+          _modulesList = [];
+          return;
+        }
 
-      if (res['success'] == true || res['status'] == 200 || res.containsKey('data') || res.containsKey('modules')) {
-        final rawModules = res['data'] ?? res['modules'] ?? [];
-        if (rawModules is List) {
-          _modulesList = rawModules.map((e) => ModuleModel.fromJson(Map<String, dynamic>.from(e))).toList();
+        final futures = _marketplaces.map((m) {
+          return db.getData(
+            {
+              "action": "get_marketplace_modules",
+              "marketplace_id": m['id'],
+              'vendor_id': UserSessionSet.instance.vendorId,
+
+            },
+            endpoint: "new_apis/module_marketplace_api.php",
+          );
+        }).toList();
+
+        final results = await Future.wait(futures);
+        List<ModuleModel> combinedModules = [];
+
+        for (var res in results) {
+          if (res['success'] == true) {
+            final rawModules = res['data'] as List? ?? [];
+            combinedModules.addAll(
+              rawModules.map((e) => ModuleModel.fromJson(Map<String, dynamic>.from(e))),
+            );
+          }
+        }
+        _modulesList = combinedModules;
+      } else {
+        // Single marketplace selected
+        String selectedId = _marketplaces[selectedCategory - 1]['id'] ?? '';
+        final res = await db.getData(
+          {
+            "action": "get_marketplace_modules",
+            "marketplace_id": selectedId,
+            'vendor_id': UserSessionSet.instance.vendorId,
+
+          },
+          endpoint: "new_apis/module_marketplace_api.php",
+        );
+
+        if (res['success'] == true) {
+          final rawModules = res['data'] as List? ?? [];
+          _modulesList = rawModules
+              .map((e) => ModuleModel.fromJson(Map<String, dynamic>.from(e)))
+              .toList();
         } else {
           _modulesList = [];
         }
-      } else {
-        _modulesList = [];
       }
     } catch (e) {
-      print("Error fetching modules: $e");
-      _modulesList = _getMockModules();
+      debugPrint("Error fetching modules: $e");
+      _modulesList = [];
     }
-  }
-
-  List<ModuleModel> _getMockModules() {
-    return [
-      ModuleModel(
-        id: "1",
-        title: "E-com Marketplace Engine",
-        price: "₹3,999/mo",
-        rating: "4.9",
-        installs: "2.4k Installs",
-        badge: "20% OFF",
-        icon: Icons.shopping_cart,
-        iconName: "shopping_cart",
-        features: ["Multi-vendor", "UPI/Cards Sync", "SEO Ready", "Admin Panel"],
-        category: "E-commerce",
-      ),
-      ModuleModel(
-        id: "2",
-        title: "Job Portal Pro",
-        price: "₹2,499/mo",
-        rating: "4.8",
-        installs: "1.8k Installs",
-        badge: "15% OFF",
-        icon: Icons.work,
-        iconName: "work",
-        features: ["Resume Parsing", "ATS Integration", "Email Alerts", "Bulk Import"],
-        category: "Job Board",
-      ),
-      ModuleModel(
-        id: "3",
-        title: "Event Hub Connect",
-        price: "₹1,999/mo",
-        rating: "5.0",
-        installs: "940 Installs",
-        badge: "NEW",
-        icon: Icons.event,
-        iconName: "event",
-        features: ["QR Ticketing", "Live Stream", "Zoom Sync", "Analytics"],
-        category: "Events",
-      ),
-    ];
   }
 
   List<String> get categoriesList {
     return [
       "All Modules",
-      ..._marketplaces.map((m) => m['name']?.toString() ?? ''),
+      ..._marketplaces.map((m) => m['name'] as String),
     ];
   }
 
@@ -153,7 +203,9 @@ class _MarketplaceModulesScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
-      appBar: widget.isEmbedded ? null : AppBar(
+      appBar: widget.isEmbedded
+          ? null
+          : AppBar(
         title: const Text(
           "ModuleMarket",
           style: TextStyle(
@@ -192,6 +244,7 @@ class _MarketplaceModulesScreenState
                 margin: const EdgeInsets.all(16),
                 padding: const EdgeInsets.all(24),
                 height: 180,
+                width: double.infinity,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                   gradient: const LinearGradient(
@@ -278,14 +331,17 @@ class _MarketplaceModulesScreenState
                         ),
                         showCheckmark: false,
                         onSelected: (_) async {
+                          if (selectedCategory == index) return;
                           setState(() {
                             selectedCategory = index;
                             _isLoading = true;
                           });
                           await _fetchModules();
-                          setState(() {
-                            _isLoading = false;
-                          });
+                          if (mounted) {
+                            setState(() {
+                              _isLoading = false;
+                            });
+                          }
                         },
                       ),
                     );
@@ -336,29 +392,31 @@ class _MarketplaceModulesScreenState
                   ),
                 )
               else if (_modulesList.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
-                  child: Center(
-                    child: Text("No modules found in this category.", style: TextStyle(color: AppTheme.textSecondary)),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: Text("No modules found in this category.", style: TextStyle(color: AppTheme.textSecondary)),
+                    ),
+                  )
+                else
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _modulesList.length,
+                    itemBuilder: (context, index) {
+                      return ModuleCard(
+                        module: _modulesList[index],
+                      );
+                    },
                   ),
-                )
-              else
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _modulesList.length,
-                  itemBuilder: (context, index) {
-                    return ModuleCard(
-                      module: _modulesList[index],
-                    );
-                  },
-                ),
               const SizedBox(height: 100),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: widget.isEmbedded ? null : BottomNavigationBar(
+      bottomNavigationBar: widget.isEmbedded
+          ? null
+          : BottomNavigationBar(
         currentIndex: 0,
         selectedItemColor: AppTheme.primary,
         unselectedItemColor: AppTheme.textSecondary.withOpacity(0.6),
@@ -497,20 +555,20 @@ class ModuleCard extends StatelessWidget {
               children: module.features
                   .map(
                     (e) => Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceContainer,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        e,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppTheme.textSecondary,
-                        ),
-                      ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceContainer,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    e,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.textSecondary,
                     ),
-                  )
+                  ),
+                ),
+              )
                   .toList(),
             ),
             const SizedBox(height: 16),
@@ -520,7 +578,7 @@ class ModuleCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (module.originalPrice != module.discountPrice) ...[
+                  if (module.originalPrice != module.price) ...[
                     Text(
                       module.originalPrice,
                       style: const TextStyle(

@@ -3,6 +3,8 @@ import 'package:trading_ecommerce_admin/core/theme/app_theme.dart';
 import 'package:trading_ecommerce_admin/index.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 
+import '../services/auth_User_and_Business_Session.dart';
+
 class CampaignSchedulerScreen extends StatefulWidget {
   const CampaignSchedulerScreen({super.key});
 
@@ -41,7 +43,7 @@ class _CampaignSchedulerScreenState extends State<CampaignSchedulerScreen> {
       final response = await Database().getData({
         'action': 'fetch_calendar_month',
         'month': _currentCalendarDate.month,
-        'year': _currentCalendarDate.year,
+        'year': _currentCalendarDate.year,'vendor_id': UserSessionSet.instance.vendorId,
       }, endpoint: 'new_apis/campaign_schedular_api.php');
 
       if (response['success'] == true && response['data'] != null) {
@@ -72,7 +74,7 @@ class _CampaignSchedulerScreenState extends State<CampaignSchedulerScreen> {
     try {
       final response = await Database().getData({
         'action': 'fetch_daily_agenda',
-        'date': _selectedDateString!,
+        'date': _selectedDateString!,'vendor_id': UserSessionSet.instance.vendorId,
       }, endpoint: 'new_apis/campaign_schedular_api.php');
 
       if (response['success'] == true && response['data'] != null) {
@@ -107,7 +109,7 @@ class _CampaignSchedulerScreenState extends State<CampaignSchedulerScreen> {
     try {
       final response = await Database().getData({
         'action': 'fetch_campaign_modal_details',
-        'feed_id': feedId,
+        'feed_id': feedId,'vendor_id': UserSessionSet.instance.vendorId,
       }, endpoint: 'new_apis/campaign_schedular_api.php');
 
       Navigator.pop(context); // Close loading indicator

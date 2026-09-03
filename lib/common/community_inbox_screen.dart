@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:trading_ecommerce_admin/common/chat_screen.dart';
 
+import '../services/auth_User_and_Business_Session.dart';
+
 class CommunityInboxScreen extends StatefulWidget {
   final bool isStandalone;
 
@@ -36,6 +38,8 @@ class _CommunityInboxScreenState
       final response = await database.getData({
         'action': 'dm_senders_list',
         'search': _searchQuery,
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/chat_manager_api.php');
 
       if (response['success'] == true || response['status'] == 200) {

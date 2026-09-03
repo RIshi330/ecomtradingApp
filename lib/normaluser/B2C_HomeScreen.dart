@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../app_constants.dart';
 import '../common/header.dart';
 import '../core/theme/app_theme.dart';
+import '../services/auth_User_and_Business_Session.dart';
 import 'Product_details_page.dart';
 
 // Update your existing ProductModel with this factory mapping clean parsed logic
@@ -2060,6 +2061,8 @@ class MarketplaceApiService {
           "minPrice": minPrice,
           "maxPrice": maxPrice,
           "sortingTech": sortingTech,
+          'vendor_id': UserSessionSet.instance.vendorId,
+
         }),
       );
 
@@ -2091,6 +2094,8 @@ class MarketplaceApiService {
           "addToCart": encryptedProductId,
           "variant": encryptedVariantId,
           "quantity": quantity,
+          'vendor_id': UserSessionSet.instance.vendorId,
+
         }),
       );
 
@@ -2120,6 +2125,8 @@ class MarketplaceApiService {
           "action": "addToWishlist",
           "addToWishlist": productId,
           "variant": variantId,
+          'vendor_id': UserSessionSet.instance.vendorId,
+
         }),
       );
 
@@ -2148,6 +2155,8 @@ class MarketplaceApiService {
         body: jsonEncode({
           "action": "get_full_product_details",
           "product_id": productId,
+          'vendor_id': UserSessionSet.instance.vendorId,
+
           "variant_id": variantId,
         }),
       );

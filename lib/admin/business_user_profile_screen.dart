@@ -3,6 +3,7 @@ import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:trading_ecommerce_admin/services/auth_service.dart';
 import 'package:trading_ecommerce_admin/index.dart';
 
+import '../services/auth_User_and_Business_Session.dart';
 import 'otp_varification.dart';
 
 class BusinessUserProfileScreen extends StatefulWidget {
@@ -86,7 +87,7 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
     try {
       final vendorId = await AuthService.getVendorIdString();
       final response = await Database().getData({
-        'action': 'profile_tab',
+        'action': 'profile_tab','vendor_id': UserSessionSet.instance.vendorId,
       }, endpoint: 'new_apis/vendor_details_api.php');
 
       if (response['success'] == true && response['data'] != null) {
@@ -357,7 +358,7 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                                     setModalState(() => isSendingOtp = true);
                                     try {
                                       final response = await Database().getData({
-                                        'action': 'send_update_profile_otp',
+                                        'action': 'send_update_profile_otp','vendor_id': UserSessionSet.instance.vendorId,
                                       }, endpoint: _profileEndpoint);
 
                                       if (response['success'] == true) {
@@ -451,7 +452,7 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
           onVerify: (otp) async {
             final verifyRes = await Database().getData({
               'action': 'verify_update_profile_otp',
-              'otp': otp,
+              'otp': otp,'vendor_id': UserSessionSet.instance.vendorId,
             }, endpoint: _profileEndpoint);
 
             if (verifyRes['success'] != true) {
@@ -465,7 +466,7 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
               'bio': bioCtrl.text,
               'city': cityCtrl.text,
               'state': stateCtrl.text,
-              'country': countryCtrl.text,
+              'country': countryCtrl.text,'vendor_id': UserSessionSet.instance.vendorId,
             }, endpoint: _profileEndpoint);
 
             if (updateRes['success'] != true) {
@@ -501,7 +502,7 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
           },
           onResend: () async {
             final res = await Database().getData({
-              'action': 'send_update_profile_otp',
+              'action': 'send_update_profile_otp','vendor_id': UserSessionSet.instance.vendorId,
             }, endpoint: _profileEndpoint);
             if (res['success'] != true) {
               throw Exception(res['message']?.toString() ?? "Failed to resend OTP");
@@ -583,7 +584,7 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                         });
                         try {
                           final response = await Database().getData({
-                            'action': 'send_change_password_otp',
+                            'action': 'send_change_password_otp','vendor_id': UserSessionSet.instance.vendorId,
                           }, endpoint: _profileEndpoint);
 
                           if (response['success'] == true) {
@@ -678,7 +679,7 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                         });
                         try {
                           final response = await Database().getData({
-                            'action': 'send_change_password_otp',
+                            'action': 'send_change_password_otp','vendor_id': UserSessionSet.instance.vendorId,
                           }, endpoint: _profileEndpoint);
 
                           if (response['success'] == true) {
@@ -723,7 +724,7 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                           // 1. Verify OTP
                           final verifyRes = await Database().getData({
                             'action': 'verify_change_password_otp',
-                            'otp': otpCtrl.text,
+                            'otp': otpCtrl.text,'vendor_id': UserSessionSet.instance.vendorId,
                           }, endpoint: _profileEndpoint);
 
                           if (verifyRes['success'] != true) {
@@ -739,7 +740,7 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                           // 2. Change Password
                           final updateRes = await Database().getData({
                             'action': 'change_password',
-                            'new_password': newPassCtrl.text,
+                            'new_password': newPassCtrl.text,'vendor_id': UserSessionSet.instance.vendorId,
                           }, endpoint: _profileEndpoint);
 
                           if (updateRes['success'] == true) {
@@ -968,7 +969,7 @@ class _BusinessUserProfileScreenState extends State<BusinessUserProfileScreen> {
                               'action': 'requestWithdraw',
                               'requestedAmount': withdrawAmount.toString(),
                               'description': 'Dossier withdrawal request',
-                              'receiveTo': 'bank',
+                              'receiveTo': 'bank','vendor_id': UserSessionSet.instance.vendorId,
                             }, endpoint: 'new_apis/withdrawl_request_api.php');
 
                             if (res['success'] == true || res['status'] == 200) {

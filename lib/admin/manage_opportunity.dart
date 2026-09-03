@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 
+import '../services/auth_User_and_Business_Session.dart';
+
 /// OpportunityHub — manage listings, applicants, and offers.
 ///
 /// Fully wired to the marketplace_opportunity PHP API using the same
@@ -122,7 +124,10 @@ class _OpportunityHubScreenState extends State<manageopportunity> {
     setState(() => _isLoadingFilters = true);
     try {
       final res = await Database().getData(
-        {'action': 'get_opportunity_filters'},
+        {'action': 'get_opportunity_filters',
+            'vendor_id': UserSessionSet.instance.vendorId,
+
+        },
         endpoint: _endpoint,
       );
       if (res['success'] == true && res['data'] != null) {
@@ -160,7 +165,8 @@ class _OpportunityHubScreenState extends State<manageopportunity> {
         'opportunity_for': _selectedOpportunityFor,
         'category_id': _selectedCategoryId,
         'label': _selectedLabel,
-        'explore': _explore,
+        'vendor_id': UserSessionSet.instance.vendorId,
+        'explore': _explore
       }, endpoint: _endpoint);
 
       if (res['success'] == true && res['data'] != null) {
@@ -210,7 +216,7 @@ class _OpportunityHubScreenState extends State<manageopportunity> {
       final res = await Database().getData({
         'action': 'change_opportunity_status',
         'opportunity_id': opportunity['id'],
-        'status': newStatus,
+        'status': newStatus,'vendor_id': UserSessionSet.instance.vendorId,
       }, endpoint: _endpoint);
 
       if (res['success'] == true) {
@@ -248,7 +254,7 @@ class _OpportunityHubScreenState extends State<manageopportunity> {
         'opportunity_id': _activeOpportunity!['opportunity']['id'],
         'page': _applicantsPage,
         'limit': 10,
-        'status': _applicantStatusFilter,
+        'status': _applicantStatusFilter,'vendor_id': UserSessionSet.instance.vendorId,
       }, endpoint: _endpoint);
 
       if (res['success'] == true && res['data'] != null) {
@@ -286,7 +292,8 @@ class _OpportunityHubScreenState extends State<manageopportunity> {
       final res = await Database().getData({
         'action': 'update_application_status',
         'application_id': application['id'],
-        'status': status,
+        'status': status,'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: _endpoint);
 
       if (res['success'] == true) {

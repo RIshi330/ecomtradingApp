@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trading_ecommerce_admin/admin/Payment_for_Module.dart';
 import '../Database/Database.dart';
 import '../common/payment_screen.dart';
 import '../model/module_model.dart';
@@ -53,7 +54,7 @@ class ModuleDetailsScreen extends StatelessWidget {
 
       if (res['success'] == true || res['status'] == 200 || res.containsKey('razorpay_order_id') || res.containsKey('order_id')) {
         final String? orderId = res['razorpay_order_id']?.toString() ?? res['order_id']?.toString();
-        
+
         if (orderId != null) {
           if (context.mounted) {
             _showVerifyPurchaseDialog(context, orderId);
@@ -322,27 +323,12 @@ class ModuleDetailsScreen extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
-                      final selectedModule = ModuleModel(
-                        id: "_details!.id",
-                        title: "_details!.title",
-                        price: "₹100",
-                        discountPrice: "₹${100}",
-                        icon: Icons.school,
-                        badge: 'BESTSELLER',
-                        category: 'Training',
-                        features: const [],
-                        iconName: 'school',
-                        installs: '0',
-                        rating: "_details!.avgRating.toString(",
-                      );
-
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => PaymentScreen(module: selectedModule),
+                          builder: (context) => PaymentScreenadminforModule(module: module),
                         ),
                       );
-                      // Navigator.pushNamed(context, '/payment', arguments: module);
                     },
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,

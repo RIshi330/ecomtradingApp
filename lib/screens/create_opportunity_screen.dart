@@ -4,6 +4,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:vsc_quill_delta_to_html/vsc_quill_delta_to_html.dart';
 import '../Database/Database.dart';
 import '../index.dart';
+import '../services/auth_User_and_Business_Session.dart';
 
 class FinancialOffering {
   String value;
@@ -46,6 +47,13 @@ class _OpportunityFormScreenState
 
   bool showOtherField = false;
   bool _isSubmitting = false;
+  bool _isGeneratingDescription = false;
+
+  // Reusable smaller hint text style used across form fields
+  static const TextStyle hintTextStyle = TextStyle(
+    fontSize: 12,
+    color: Colors.grey,
+  );
 
   String _getHtmlFromQuill(QuillController controller) {
     try {
@@ -69,7 +77,7 @@ class _OpportunityFormScreenState
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey.shade400),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         color: Colors.white,
       ),
       child: Column(
@@ -122,6 +130,19 @@ class _OpportunityFormScreenState
                 autoFocus: false,
                 expands: true,
                 padding: EdgeInsets.zero,
+                // Smaller placeholder text
+                customStyles: DefaultStyles(
+                  placeHolder: DefaultTextBlockStyle(
+                    const TextStyle(
+                      fontSize: 15,
+                      color: Colors.grey,
+                    ),
+                    const HorizontalSpacing(0, 0),
+                    const VerticalSpacing(0, 0),
+                    const VerticalSpacing(0, 0),
+                    null,
+                  ),
+                ),
               ),
             ),
           ),
@@ -189,7 +210,7 @@ class _OpportunityFormScreenState
           result.files
               .map(
                 (e) => e.name,
-              )
+          )
               .toList(),
         );
       });
@@ -202,6 +223,78 @@ class _OpportunityFormScreenState
         FinancialOffering(),
       );
     });
+  }
+
+  /// Calls the backend AI endpoint to generate an Opportunity Description
+  /// based on the title / industry / offer type already filled in the form,
+  /// and injects the generated text into the description Quill editor.
+  Future<void> generateDescriptionWithAI() async {
+    if (titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please enter an Opportunity Title first"),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isGeneratingDescription = true;
+    });
+
+    try {
+      final postData = {
+        "action": "generate_opportunity_description",
+        "vendor_id": UserSessionSet.instance.vendorId,
+        "title": titleController.text.trim(),
+        "industry": selectedIndustries.isNotEmpty
+            ? selectedIndustries.join(', ')
+            : null,
+        "offer_type": selectedOfferTypes.isNotEmpty
+            ? selectedOfferTypes.join(', ')
+            : null,
+      };
+
+      final response = await Database().getJsonData(
+        postData,
+        endpoint: "new_apis/generate_description_api.php",
+      );
+
+      if (!mounted) return;
+
+      if (response['success'] == true &&
+          response['description'] != null &&
+          response['description'].toString().trim().isNotEmpty) {
+        final generatedText = response['description'].toString().trim();
+
+        setState(() {
+          detailsQuillController.document = Document()..insert(0, generatedText);
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Couldn't generate description: ${response['message'] ?? 'Unknown error'}",
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error: ${e.toString()}"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeneratingDescription = false;
+        });
+      }
+    }
   }
 
   Future<void> saveDraft() async {
@@ -229,7 +322,9 @@ class _OpportunityFormScreenState
       final prerequisiteHtml = _getHtmlFromQuill(prerequisiteQuillController);
 
       final postData = {
-        "action": isPublish ? "publish" : "draft",
+        "action": isPublish ? "publish_opportunity" : "save_draft",
+        'vendor_id': UserSessionSet.instance.vendorId,
+
         "title": titleController.text.trim(),
         "industry": selectedIndustries.isNotEmpty ? selectedIndustries.join(', ') : null,
         "offerType": selectedOfferTypes.isNotEmpty ? selectedOfferTypes.join(', ') : null,
@@ -247,24 +342,25 @@ class _OpportunityFormScreenState
         "eligibility_criteria": eligibilityHtml.trim(),
         "prerequisites": prerequisiteHtml.trim(),
         "financial_offerings": offerings
+
             .where((o) => o.value.trim().isNotEmpty)
             .map((o) => {
-                  "type": "CUSTOM",
-                  "amount": o.value.trim(),
-                  "unit": "",
-                })
+          "type": "CUSTOM",
+          "amount": o.value.trim(),
+          "unit": "",
+        })
             .toList(),
         "supporting_files": uploadedFiles
             .map((filename) => {
-                  "url": "http://127.0.0.1/SetupBackendCCBUL/uploads/$filename",
-                  "name": filename,
-                })
+          "url": "http://127.0.0.1/SetupBackendCCBUL/uploads/$filename",
+          "name": filename,
+        })
             .toList(),
       };
 
       final response = await Database().getJsonData(
         postData,
-        endpoint: "new_apis/oppFormAPI 1 (1).php",
+        endpoint: "new_apis/opportunity_form_api.php",
       );
 
       if (!mounted) return;
@@ -473,6 +569,7 @@ class _OpportunityFormScreenState
                 },
                 decoration: const InputDecoration(
                   hintText: "Strategic Expansion Partnership",
+                  hintStyle: hintTextStyle,
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 ),
@@ -519,7 +616,7 @@ class _OpportunityFormScreenState
 
               DropdownButtonFormField<String>(
                 initialValue: currentOfferTypeSelection,
-                hint: const Text("Select Offer Type"),
+                hint: const Text("Select Offer Type", style: hintTextStyle),
                 decoration: const InputDecoration(
                   labelText: "Offer Type",
                   border: OutlineInputBorder(),
@@ -593,13 +690,48 @@ class _OpportunityFormScreenState
                 ),
               ],
 
-
-              const Text(
-                "Opportunity Description",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Text(
+                    "Opportunity Description",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: _isGeneratingDescription ? null : generateDescriptionWithAI,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    icon: _isGeneratingDescription
+                        ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFF006565),
+                      ),
+                    )
+                        : const Icon(
+                      Icons.auto_awesome,
+                      size: 16,
+                      color: Color(0xFF006565),
+                    ),
+                    label: Text(
+                      _isGeneratingDescription ? "Generating..." : "Generate with AI",
+                      style: const TextStyle(
+                        color: Color(0xFF006565),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
               _buildQuillField(
@@ -633,6 +765,7 @@ class _OpportunityFormScreenState
                               },
                               decoration: const InputDecoration(
                                 hintText: "15% Equity Share",
+                                hintStyle: hintTextStyle,
                                 border: OutlineInputBorder(),
                                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                               ),
@@ -737,6 +870,7 @@ class _OpportunityFormScreenState
                           decoration: InputDecoration(
                             border: InputBorder.none,
                             hintText: selectedAudiences.isEmpty ? "Tech Founders, NGOs" : "",
+                            hintStyle: hintTextStyle,
                             contentPadding: EdgeInsets.zero,
                             isDense: true,
                           ),
@@ -782,7 +916,7 @@ class _OpportunityFormScreenState
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 initialValue: currentPreferredLocationSelection,
-                hint: const Text("Select Preferred Location"),
+                hint: const Text("Select Preferred Location", style: hintTextStyle),
                 decoration: const InputDecoration(
                   labelText: "Preferred Locations",
                   border: OutlineInputBorder(),
@@ -892,6 +1026,7 @@ class _OpportunityFormScreenState
                 controller: whoCanApplyController,
                 decoration: const InputDecoration(
                   hintText: "Type or Category",
+                  hintStyle: hintTextStyle,
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 ),
@@ -1003,7 +1138,7 @@ class _OpportunityFormScreenState
                       SizedBox(height: 6),
                       Text(
                         "Brochures, Pitch Decks",
-                        style: TextStyle(color: Colors.grey),
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
                       ),
                     ],
                   ),

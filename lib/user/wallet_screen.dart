@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../Database/Database.dart';
 import '../core/theme/app_theme.dart';
+import '../services/auth_User_and_Business_Session.dart';
 
 /* ================= MODEL ================= */
 
@@ -112,6 +113,8 @@ class _WalletScreenState extends State<WalletScreen> {
       "amount": amount,
       "description": "Wallet top-up",
       "addTo": "ewallet",
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
 
     if (res['status'] == 200) {
@@ -130,6 +133,8 @@ class _WalletScreenState extends State<WalletScreen> {
       "amount": amount,
       "description": description,
       "receiveTo": "bank",
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
 
     if (res['status'] == 200) {

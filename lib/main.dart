@@ -4,6 +4,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trading_ecommerce_admin/core/theme/app_theme.dart';
+import 'package:trading_ecommerce_admin/screens/create_opportunity_screen.dart';
+import 'package:trading_ecommerce_admin/services/auth_User_and_Business_Session.dart';
+import 'common/opportunity_Details_Screen.dart';
+import 'common/opportunity_From2.dart';
+import 'common/opportunity_marketplace_Screen.dart';
 import 'index.dart';
 
 class MyHttpOverrides extends HttpOverrides {
@@ -15,9 +20,16 @@ class MyHttpOverrides extends HttpOverrides {
 }
 
 void main() async {
-  HttpOverrides.global = MyHttpOverrides();
+  // WidgetsFlutterBinding.ensureInitialized() must be the very first
+  // call in main() — every plugin (secure_storage, shared_preferences,
+  // HttpOverrides) depends on the binding existing before it's used.
   WidgetsFlutterBinding.ensureInitialized();
+
+  HttpOverrides.global = MyHttpOverrides();
+
   await SharedPreferences.getInstance();
+  await UserSessionSet.instance.init();
+
   runApp(const App());
 }
 
@@ -39,6 +51,7 @@ class App extends StatelessWidget {
       supportedLocales: const [Locale('en', 'US')],
       initialRoute: AppRoutes.splash,
       routes: AppRoutes.routes,
+          // home: OpportunityMarketplaceScreen(),
     );
   }
 }

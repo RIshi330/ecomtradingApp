@@ -1,9 +1,8 @@
 import 'dart:convert';
 import 'package:trading_ecommerce_admin/app_constants.dart';
 import 'package:trading_ecommerce_admin/user/create_profile_screen.dart';
-import 'package:trading_ecommerce_admin/admin/Community_Admin_Dashboard.dart';
 import 'package:trading_ecommerce_admin/admin/business_user_dashboard_screen.dart';
-import 'package:trading_ecommerce_admin/admin/seller_dashboard_screen.dart';
+import 'package:trading_ecommerce_admin/businessDashboard/seller_dashboard_screen.dart';
 import 'package:trading_ecommerce_admin/services/auth_service.dart';
 import 'package:trading_ecommerce_admin/common/industries_screen.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
@@ -11,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:async';
+
+import 'businessDashboard/Seller_dashboard.dart';
 
 class OtpScreen extends StatefulWidget {
   final String email;
@@ -131,9 +132,9 @@ class _OtpScreenState extends State<OtpScreen> {
         if (vendorType != '500' && vendorType != '1') {
           Widget dashboardWidget;
           if (vendorType == '20') {
-            dashboardWidget = const SellerDashboardScreen();
+            dashboardWidget = const SellerDashboard();
           } else {
-            dashboardWidget = const CommunityAdminDashboard();
+            dashboardWidget = const SellerDashboard();
           }
           Navigator.pushAndRemoveUntil(
             context,
@@ -147,7 +148,7 @@ class _OtpScreenState extends State<OtpScreen> {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
-              builder: (_) => const CommunityAdminDashboard(),
+              builder: (_) => const SellerDashboard(),
             ),
             (route) => false,
           );

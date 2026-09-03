@@ -1,48 +1,13 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_quill/flutter_quill.dart';
-import 'package:trading_ecommerce_admin/admin/test.dart';
+import 'package:trading_ecommerce_admin/admin/vendor_from.dart';
+import 'package:trading_ecommerce_admin/businessDashboard/community%20Dashboard.dart';
+
 import 'package:trading_ecommerce_admin/index.dart';
-import 'package:trading_ecommerce_admin/services/auth_service.dart';
-import 'package:trading_ecommerce_admin/common/industries_screen.dart';
-import 'package:trading_ecommerce_admin/admin/Community_Admin_Dashboard.dart';
-import 'package:trading_ecommerce_admin/admin/business_user_dashboard_screen.dart';
-import 'package:trading_ecommerce_admin/admin/seller_dashboard_screen.dart';
+import 'package:trading_ecommerce_admin/services/auth_User_and_Business_Session.dart';
 import 'package:trading_ecommerce_admin/common/shell.dart';
-
-import '../admin/candidate_manage_hub.dart';
-import '../admin/job_applications_screen.dart';
-import '../admin/joblisting.dart';
-import '../admin/recruiter_dashboard_screen.dart';
-
-void main() {
-  runApp(const LuxeWelcomeApp());
-}
-
-class LuxeWelcomeApp extends StatelessWidget {
-  const LuxeWelcomeApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'LUXE | Welcome',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        fontFamily: 'Inter',
-      ),
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        FlutterQuillLocalizations.delegate,
-      ],
-      supportedLocales: const [Locale('en', 'US')],
-      home: const WelcomeSplashScreen(),
-    );
-  }
-}
+import '../admin/business_user_dashboard_screen.dart';
+import '../businessDashboard/Seller_dashboard.dart';
 
 class WelcomeSplashScreen extends StatefulWidget {
   const WelcomeSplashScreen({super.key});
@@ -53,10 +18,10 @@ class WelcomeSplashScreen extends StatefulWidget {
 
 class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
     with TickerProviderStateMixin {
-  late AnimationController _fadeSlideController;
-  late AnimationController _floatPulseController;
-  late AnimationController _progressController;
-  late AnimationController _sheenController;
+  late final AnimationController _fadeSlideController;
+  late final AnimationController _floatPulseController;
+  late final AnimationController _progressController;
+  late final AnimationController _sheenController;
 
   @override
   void initState() {
@@ -66,7 +31,7 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
     _fadeSlideController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
-    );
+    )..forward();
 
     // 2. Continuous Floating, Pulsing, and Twinkling Animations
     _floatPulseController = AnimationController(
@@ -86,89 +51,166 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
       duration: const Duration(seconds: 8),
     )..repeat();
 
-    // Fire entry presentation delay
-    _fadeSlideController.forward();
-
-    // FIXED: Added a delay to let the splash play before navigating
+    // Delay to let the splash play before navigating
     _navigateToHome();
   }
 
-  void _navigateToHome() async {
-    // Waits 3 seconds so users can appreciate the entry animations
-    await Future.delayed(const Duration(milliseconds: 3000));
+  Future<void> _navigateToHome() async {
+    // Let splash animation play
+    await Future.delayed(
+      const Duration(milliseconds: 3000),
+    );
+
     if (!mounted) return;
 
     try {
-      // 1. Check if Admin Session is active
-      final isAdmin = await AuthService.isAdminSession();
-      if (isAdmin) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const SuperAdminDashboard()),
-        );
-        return;
-      }
+      // ==========================================================
+      // 1. CHECK ADMIN SESSION
+      // ==========================================================
 
-      // 2. Check if general user/vendor session is valid
-      final isUserValid = await AuthService.isSessionValid();
+      // final bool isLogin =
+      // await UserSessionSet.instance.isLoggedIn;
+      //
+      // final String? adminId =
+      // await UserSessionSet.instance.vendorId;
+      //
+      // final String? sessionId =
+      // await UserSessionSet.instance.sessionId;
+      // final vendortype =
+      // await UserSessionSet.instance.vendorType;
+      // print(isLogin);
+      // print(adminId);
+      // print(vendortype);
+      // print(sessionId);
+      // if (!mounted) return;
+      //
+      // // ==========================================================
+      // // ADMIN LOGIN FOUND
+      // // ==========================================================
+      //
+      // if (isLogin &&
+      //     adminId != null &&
+      //     adminId.isNotEmpty &&
+      //     sessionId != null &&
+      //     sessionId.isNotEmpty) {
+      //
+      //
+      //   Navigator.pushReplacement(
+      //     context,
+      //     MaterialPageRoute(
+      //       builder: (_) => const SuperAdminDashboard(),
+      //     ),
+      //   );
+      //
+      //   // VERY IMPORTANT
+      //   // Stop Splash execution here.
+      //   return;
+      // }
+
+      // ==========================================================
+      // 2. CHECK NORMAL USER / VENDOR SESSION
+      // ==========================================================
+
+      final bool isUserValid = await UserSessionSet.instance.isLoggedIn;
+
+      if (!mounted) return;
+
       if (isUserValid) {
-        final vendorId = await AuthService.getVendorId();
-        if (vendorId != null && vendorId != 0) {
-          final userData = await AuthService.getCachedUserData();
-          final vendorType = userData?['vendor_type']?.toString() ??
-              userData?['data']?['vendor_type']?.toString() ??
-              userData?['full_data']?['vendor_type']?.toString() ??
-              userData?['LOGIN_RESPONSE']?['vendor_type']?.toString() ??
-              userData?['LOGIN_RESPONSE']?['full_data']?['vendor_type']?.toString() ??
-              '500';
+        final vendorId = await UserSessionSet.instance.vendorId;
+        final vendortype = await UserSessionSet.instance.vendorType;
+        final vendorsession = await UserSessionSet.instance.sessionId;
 
-          if (vendorType != '500' && vendorType != '1') {
-            Widget dashboardWidget;
-            if (vendorType == '20') {
-              dashboardWidget = const SellerDashboardScreen();
-            } else {
-              dashboardWidget = const CommunityAdminDashboard();
-            }
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => dashboardWidget),
-            );
-            return;
-          }
+        if (!mounted) return;
 
-          final hasInterests = await AuthService.hasSelectedInterests();
-          if (hasInterests) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const AppShell()),
-            );
-          } else {
+        if (vendortype != null) {
+          if (vendortype == '1') {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (_) => TopicSelectionScreen(
-                  vendorId: vendorId,
-                  isEditing: false,
-                ),
+                builder: (_) => const SuperAdminDashboard(),
               ),
             );
           }
+          // if (vendortype == '5') {
+          //   Navigator.pushReplacement(
+          //     context,
+          //     MaterialPageRoute(
+          //       builder: (_) => const SellerDashboard(),
+          //     ),
+          //   );
+          //
+          //   return;
+          // }
+
+          // Seller
+          print(vendorsession);
+          print(vendortype);
+          print(vendorId);
+          if (vendortype == '5') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const SellerDashboard(),
+              ),
+            );
+
+            return;
+          }
+
+          // Community Admin
+          if (vendortype == '200') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const CommunityDashboardScreen(),
+              ),
+            );
+
+            return;
+          }
+
+          // final bool hasInterests =
+          // await AuthService.hasSelectedInterests();
+
+          if (!mounted) return;
+
+          // if (hasInterests) {
+          //   Navigator.pushReplacement(
+          //     context,
+          //     MaterialPageRoute(
+          //       builder: (_) => const AppShell(),
+          //     ),
+          //   );
+          // } else {
+            Navigator.pushReplacementNamed(
+              context,
+              AppRoutes.login,
+            );
+          // }
+
           return;
         }
       }
-    } catch (e) {
-      debugPrint("Auto-login session check error: $e");
+    } catch (e, stackTrace) {
+      debugPrint(
+        'SPLASH SESSION CHECK ERROR: $e',
+      );
+
+      debugPrint(
+        stackTrace.toString(),
+      );
     }
-    //comment
-    // Default fallback to login screen
+
+    // ==========================================================
+    // NO VALID SESSION
+    // ==========================================================
+
+    if (!mounted) return;
+
     Navigator.pushReplacementNamed(
       context,
-         //  AppRoutes.userDashboard,
-            AppRoutes.login
-
+      AppRoutes.login,
     );
-    //    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => CommunityAdminDashboard(),));
-    //    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => SellerDashboard(),));
   }
 
   @override
@@ -182,6 +224,10 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Read the screen size once per build instead of inside every
+    // animation frame callback below.
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -203,8 +249,8 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
           Positioned(
             top: -100,
             right: -100,
-            width: MediaQuery.of(context).size.width * 0.8,
-            height: MediaQuery.of(context).size.width * 0.8,
+            width: size.width * 0.8,
+            height: size.width * 0.8,
             child: Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
@@ -214,7 +260,7 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
           ),
 
           // Ambient Background Floating E-Commerce Vectors
-          _buildFloatingVectors(),
+          _buildFloatingVectors(size),
 
           // Centered Splash UI Matrix Column
           Center(
@@ -231,7 +277,8 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
                       scale: Tween<double>(begin: 1.0, end: 1.05).animate(
                         CurvedAnimation(
                           parent: _floatPulseController,
-                          curve: const Interval(0.0, 0.5, curve: Curves.easeInOut),
+                          curve:
+                              const Interval(0.0, 0.5, curve: Curves.easeInOut),
                         ),
                       ),
                       child: Container(
@@ -345,7 +392,10 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
             left: 0,
             right: 0,
             child: _buildAnimatedStagger(
-              delayIndex: 3,
+              // FIXED: this used delayIndex 3, same as the progress bar
+              // above, so both faded in at exactly the same time instead
+              // of staggering in sequence.
+              delayIndex: 4,
               child: Opacity(
                 opacity: 0.6,
                 child: Column(
@@ -383,7 +433,7 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
   // Orchestrator supporting custom stagger transitions
   Widget _buildAnimatedStagger(
       {required int delayIndex, required Widget child}) {
-    final startInterval = delayIndex * 0.15;
+    final startInterval = (delayIndex * 0.15).clamp(0.0, 1.0);
     final endInterval = math.min(startInterval + 0.6, 1.0);
 
     final Animation<double> opacity =
@@ -414,7 +464,7 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
   }
 
   // Synthesizes the scattered ecommerce backdrop floats
-  Widget _buildFloatingVectors() {
+  Widget _buildFloatingVectors(Size size) {
     return AnimatedBuilder(
       animation: _floatPulseController,
       builder: (context, child) {
@@ -423,9 +473,8 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
         return Stack(
           children: [
             Positioned(
-              top: MediaQuery.of(context).size.height * 0.15 +
-                  (math.sin(floatVal) * 10),
-              left: MediaQuery.of(context).size.width * 0.10,
+              top: size.height * 0.15 + (math.sin(floatVal) * 10),
+              left: size.width * 0.10,
               child: Transform.rotate(
                 angle: math.sin(floatVal) * 0.05,
                 child: Icon(Icons.shopping_bag_outlined,
@@ -433,9 +482,8 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
               ),
             ),
             Positioned(
-              top: MediaQuery.of(context).size.height * 0.20 +
-                  (math.sin(floatVal + 1.5) * 8),
-              right: MediaQuery.of(context).size.width * 0.15,
+              top: size.height * 0.20 + (math.sin(floatVal + 1.5) * 8),
+              right: size.width * 0.15,
               child: Transform.rotate(
                 angle: math.sin(floatVal + 1.5) * 0.04,
                 child: Icon(Icons.sell_outlined,
@@ -443,9 +491,8 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
               ),
             ),
             Positioned(
-              bottom: MediaQuery.of(context).size.height * 0.25 +
-                  (math.sin(floatVal + 0.8) * 12),
-              left: MediaQuery.of(context).size.width * 0.12,
+              bottom: size.height * 0.25 + (math.sin(floatVal + 0.8) * 12),
+              left: size.width * 0.12,
               child: Transform.rotate(
                 angle: math.sin(floatVal + 0.8) * 0.06,
                 child: Icon(Icons.card_giftcard_outlined,
@@ -453,9 +500,8 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
               ),
             ),
             Positioned(
-              bottom: MediaQuery.of(context).size.height * 0.15 +
-                  (math.sin(floatVal + 2.2) * 14),
-              right: MediaQuery.of(context).size.width * 0.10,
+              bottom: size.height * 0.15 + (math.sin(floatVal + 2.2) * 14),
+              right: size.width * 0.10,
               child: Transform.rotate(
                 angle: math.sin(floatVal + 2.2) * 0.05,
                 child: Icon(Icons.redeem_outlined,
@@ -463,22 +509,24 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
               ),
             ),
             Positioned(
-              top: MediaQuery.of(context).size.height * 0.45 +
-                  (math.sin(floatVal + 3.0) * 6),
-              right: MediaQuery.of(context).size.width * 0.05,
+              top: size.height * 0.45 + (math.sin(floatVal + 3.0) * 6),
+              right: size.width * 0.05,
               child: Icon(Icons.star_outline_rounded,
                   size: 24, color: Colors.white.withOpacity(0.05)),
             ),
-            _buildSparkleParticle(top: 0.30, left: 0.40, delayShift: 0.0),
-            _buildSparkleParticle(top: 0.60, right: 0.30, delayShift: 1.0),
-            _buildSparkleParticle(bottom: 0.40, left: 0.20, delayShift: 2.0),
+            _buildSparkleParticle(size, top: 0.30, left: 0.40, delayShift: 0.0),
+            _buildSparkleParticle(size,
+                top: 0.60, right: 0.30, delayShift: 1.0),
+            _buildSparkleParticle(size,
+                bottom: 0.40, left: 0.20, delayShift: 2.0),
           ],
         );
       },
     );
   }
 
-  Widget _buildSparkleParticle({
+  Widget _buildSparkleParticle(
+    Size size, {
     double? top,
     double? left,
     double? right,
@@ -490,10 +538,10 @@ class _WelcomeSplashScreenState extends State<WelcomeSplashScreen>
     final opacity = (scaleAnimationVal + 1.0) / 2.0 * 0.6;
 
     return Positioned(
-      top: top != null ? MediaQuery.of(context).size.height * top : null,
-      left: left != null ? MediaQuery.of(context).size.width * left : null,
-      right: right != null ? MediaQuery.of(context).size.width * right : null,
-      bottom: bottom != null ? MediaQuery.of(context).size.height * bottom : null,
+      top: top != null ? size.height * top : null,
+      left: left != null ? size.width * left : null,
+      right: right != null ? size.width * right : null,
+      bottom: bottom != null ? size.height * bottom : null,
       child: Opacity(
         opacity: opacity,
         child: Container(

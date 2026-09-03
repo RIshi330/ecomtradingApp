@@ -1,51 +1,6 @@
 import 'package:flutter/material.dart';
 
 
-class CommunityIntelApp extends StatelessWidget {
-  const CommunityIntelApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final customColorScheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF006565),
-      primary: const Color(0xFF006565),
-      onPrimary: Colors.white,
-      primaryContainer: const Color(0xFF008080),
-      onPrimaryContainer: const Color(0xFFE3FFFE),
-      secondary: const Color(0xFF296767),
-      secondaryContainer: const Color(0xFFB0EEED),
-      onSecondaryContainer: const Color(0xFF306E6D),
-      surface: const Color(0xFFF9F9F9),
-      onSurface: const Color(0xFF1A1C1C),
-      surfaceVariant: const Color(0xFFE2E2E2),
-      onSurfaceVariant: const Color(0xFF3E4949),
-      outline: const Color(0xFF6E7979),
-      outlineVariant: const Color(0xFFBDC9C8),
-      error: const Color(0xFFBA1A1A),
-      errorContainer: const Color(0xFFFFDAD6),
-      inverseSurface: const Color(0xFF2F3131),
-    );
-
-    return MaterialApp(
-      title: 'Community Intel',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: customColorScheme,
-        scaffoldBackgroundColor: customColorScheme.surface,
-        fontFamily: 'Inter',
-        textTheme: const TextTheme(
-          displayLarge: TextStyle(fontFamily: 'Manrope', fontWeight: FontWeight.bold),
-          headlineLarge: TextStyle(fontFamily: 'Manrope', fontWeight: FontWeight.w600),
-          titleMedium: TextStyle(fontFamily: 'Manrope', fontWeight: FontWeight.w600, fontSize: 18),
-          bodyLarge: TextStyle(fontFamily: 'Inter', fontSize: 16),
-          bodySmall: TextStyle(fontFamily: 'Inter', fontSize: 14),
-        ),
-      ),
-      home: const AdminDashboardScreen(),
-    );
-  }
-}
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -112,14 +67,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         leadingWidth: 48,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 12.0),
-          child: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-            color: theme.colorScheme.primary,
-            onPressed: () => _showNotification("Back action triggered"),
-          ),
-        ),
+
         title: Row(
           children: [
             Icon(Icons.analytics_outlined, color: theme.colorScheme.primary, size: 26),
@@ -232,7 +180,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           physics: const BouncingScrollPhysics(),
           child: Row(
             children: [
-              _buildMetricCard(theme, 'TOTAL MEMBERS', '12,482', '4.2%', true, const Color(0xFF006565)),
+              _buildMetricCard(theme, 'TOTAL MEMBERS', '12,48', '4.2%', true, const Color(0xFF006565)),
               const SizedBox(width: 14),
               _buildMetricCard(theme, 'ACTIVE CAMPAIGNS', '24', '8 High-Priority', false, const Color(0xFF6750A4)),
               const SizedBox(width: 14),

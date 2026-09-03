@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:trading_ecommerce_admin/admin/digital_product_details_screen.dart';
 
+import '../services/auth_User_and_Business_Session.dart';
+
 class DigitalMarketplaceScreen extends StatefulWidget {
   final bool isEmbedded;
   const DigitalMarketplaceScreen({super.key, this.isEmbedded = false});
@@ -52,7 +54,7 @@ class _DigitalMarketplaceScreenState extends State<DigitalMarketplaceScreen> {
     if (mounted) setState(() => _isLoadingCategories = true);
     try {
       final response = await Database().getData({
-        'action': 'fetch_categories',
+        'action': 'fetch_categories','vendor_id': UserSessionSet.instance.vendorId,
       }, endpoint: 'new_apis/marketplace_digital_products_api.php');
 
       if (response['success'] == true && response['data'] != null) {

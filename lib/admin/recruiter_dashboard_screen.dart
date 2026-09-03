@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../Database/Database.dart';
+import '../services/auth_User_and_Business_Session.dart';
 
 /// ---------------------------------------------------------------------
 /// COLOR TOKENS (unchanged from the original design)
@@ -997,7 +998,8 @@ class DashboardService {
   final Database _db = Database();
 
   Future<DashboardStats> getDashboardStats() async {
-    final res = await _db.getData({'action': 'dashboard_stats'});
+    final res = await _db.getData({'action': 'dashboard_stats'     ,   'vendor_id': UserSessionSet.instance.vendorId,
+        });
     if (res['status'] == 300 || res['success'] == false) {
       throw Exception(res['error'] ?? res['message'] ?? 'Failed to load stats');
     }
@@ -1005,7 +1007,8 @@ class DashboardService {
   }
 
   Future<List<IndustrySlice>> getIndustryPieChart() async {
-    final res = await _db.getData({'action': 'industry_pie_chart'});
+    final res = await _db.getData({'action': 'industry_pie_chart',        'vendor_id': UserSessionSet.instance.vendorId,
+    });
     if (res['status'] == 300) {
       throw Exception(res['error'] ?? 'Failed to load industry data');
     }
@@ -1021,7 +1024,8 @@ class DashboardService {
   }
 
   Future<List<PipelineStage>> getCandidatePipeline() async {
-    final res = await _db.getData({'action': 'candidate_pipeline'});
+    final res = await _db.getData({'action': 'candidate_pipeline',        'vendor_id': UserSessionSet.instance.vendorId,
+    });
     if (res['status'] == 300) {
       throw Exception(res['error'] ?? 'Failed to load pipeline');
     }
@@ -1035,7 +1039,8 @@ class DashboardService {
   }
 
   Future<List<CategoryCount>> getCandidatesByJob() async {
-    final res = await _db.getData({'action': 'candidate_by_job'});
+    final res = await _db.getData({'action': 'candidate_by_job',        'vendor_id': UserSessionSet.instance.vendorId,
+    });
     if (res['status'] == 300) {
       throw Exception(res['error'] ?? 'Failed to load categories');
     }
@@ -1053,7 +1058,8 @@ class DashboardService {
   /// active_posts is returned by PHP as a bare JSON array, so Database
   /// wraps it into {success, data, status} — pull the list back out.
   Future<List<ActivePost>> getActivePosts() async {
-    final res = await _db.getData({'action': 'active_posts'});
+    final res = await _db.getData({'action': 'active_posts',        'vendor_id': UserSessionSet.instance.vendorId,
+    });
     if (res['status'] == 300) {
       throw Exception(res['error'] ?? 'Failed to load active posts');
     }
@@ -1062,7 +1068,8 @@ class DashboardService {
   }
 
   Future<List<Applicant>> getRecentApplicants() async {
-    final res = await _db.getData({'action': 'recent_applicants'});
+    final res = await _db.getData({'action': 'recent_applicants',        'vendor_id': UserSessionSet.instance.vendorId,
+    });
     if (res['status'] == 300) {
       throw Exception(res['error'] ?? 'Failed to load applicants');
     }
@@ -1092,6 +1099,8 @@ class DashboardService {
       'time': time,
       'receiver': receiver,
       'mode': mode,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
     return res['success'] == true;
   }
@@ -1100,12 +1109,15 @@ class DashboardService {
     final res = await _db.getData({
       'action': 'block_candidate',
       'candidate_id': candidateId,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
     return res['success'] == true;
   }
 
   Future<bool> sendEmail() async {
-    final res = await _db.getData({'action': 'emsgsend'});
+    final res = await _db.getData({'action': 'emsgsend',        'vendor_id': UserSessionSet.instance.vendorId,
+    });
     return res['success'] == true;
   }
 }

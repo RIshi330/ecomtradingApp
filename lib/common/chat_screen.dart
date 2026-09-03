@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:trading_ecommerce_admin/services/auth_service.dart';
 
+import '../services/auth_User_and_Business_Session.dart';
+
 // ─── COLORS ───────────────────────────────────────────────────────────────────
 class AppColors {
   static const lavender      = Color(0xFF008080); // Teal Container/Accent
@@ -183,6 +185,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
       final response = await database.getData({
         'action': 'dm_senders_list',
         'search': _searchQuery,
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/chat_manager_api.php');
       
       if (response['success'] == true || response['status'] == 200) {
@@ -510,6 +514,8 @@ class _ChatScreenState extends State<ChatScreen> {
       final response = await database.getData({
         'action': 'dm_chat',
         'sender_id': widget.user.id,
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/chat_manager_api.php');
       
       if (response['success'] == true || response['status'] == 200) {
@@ -641,6 +647,8 @@ class _ChatScreenState extends State<ChatScreen> {
         'action': 'send_dm',
         'receiver_id': widget.user.id,
         'message': text,
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       }, endpoint: 'new_apis/chat_manager_api.php');
       
       if (response['success'] == true || response['status'] == 200) {

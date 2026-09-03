@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:trading_ecommerce_admin/admin/Admin_Dashboard.dart';
-import 'package:trading_ecommerce_admin/admin/test.dart';
-import 'package:trading_ecommerce_admin/businessDashboard/Roleselection_screen.dart';
 import 'package:trading_ecommerce_admin/normaluser/UsermainScreen.dart';
-
-// Import Screens from their new locations
+import 'businessDashboard/Seller_dashboard.dart';
+import 'common/create_community_screen.dart';
+import 'common/opportunity_From2.dart';
 import 'loginscreen.dart';
-import 'normaluser/UsermainScreen.dart';
 import 'signupscreen.dart';
 import 'otp_screen.dart';
 import 'auth_screen_not_use.dart';
-import 'admin/Community_Admin_Dashboard.dart';
 import 'admin/admin_loginscreen.dart';
 import 'admin/business_user_dashboard_screen.dart';
 import 'admin/create_community_screen.dart';
@@ -22,7 +18,6 @@ import 'admin/membership_plans_screen.dart';
 import 'admin/manage_vendors_screen.dart';
 import 'admin/platform_settings_screen.dart';
 import 'admin/commission_settings_screen.dart';
-import 'admin/seller_dashboard_screen.dart';
 import 'admin/seller_management_screen.dart';
 import 'admin/taxonomy_manager_screen.dart';
 import 'admin/seller_orders_screen.dart';
@@ -162,7 +157,7 @@ class AppRoutes {
 
   /// Named routes mapping for MaterialApp
   static Map<String, WidgetBuilder> get routes => {
-        splash: (context) => const WelcomeSplashScreen(),
+         splash: (context) => const WelcomeSplashScreen(),
         login: (context) => const LoginScreen(),
         adminLogin: (context) => const AdminLoginScreen(),
         signup: (context) => const SignupScreen(),
@@ -186,14 +181,14 @@ class AppRoutes {
         notification: (context) => const NotificationsScreen(),
         setting: (context) => const SettingsScreen(),
         shell: (context) => const AppShell(),
-        businessDashboard: (context) => const RoleselectionScreen(),
+        // businessDashboard: (context) => const RoleselectionScreen(),
         // businessDashboard: (context) => const testapp(),
         createCommunity: (context) => const CreateCommunityScreen(),
 
         // New Admin Route Builders
-        walletAdmin: (context) => const WalletAdminScreen(),
-        sellerDashboard: (context) => const SellerDashboardScreen(),
-          communityAdmin: (context) => const CommunityAdminDashboard(),
+        walletAdmin: (context) => const WalletAdminScreen(isEmbedded: false,),
+        sellerDashboard: (context) => const SellerDashboard(),
+        // communityDashbard: (context) => const CommunityAdminDashboard(),
         sellerManagement: (context) => const SellerManagementScreen(),
         taxonomyManager: (context) => const TaxonomyManagerScreen(),
         adminProfileScreen: (context) => const AdminProfileScreen(),
@@ -211,7 +206,7 @@ class AppRoutes {
         opportunityActionHub: (context) => const OpportunityActionHubScreen(),
         manageOpportunities: (context) => const ManageOpportunitiesScreen(),
         createOpportunity: (context) => const OpportunityFormScreen(),
-        productManagement: (context) => const ProductManagementScreen(),
+        productManagement: (context) => const ProductManagementScreen(isEmbedded: false,),
         manageInventory: (context) => const LowStockInventoryScreen(),
         // tradingMarketplace: (context) => const TradingMarketplaceScreen(),
         selectedItems: (context) => const SelectedItemsScreen(),

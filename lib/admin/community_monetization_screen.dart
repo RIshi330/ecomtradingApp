@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 import 'package:trading_ecommerce_admin/core/theme/app_theme.dart';
 
+import '../services/auth_User_and_Business_Session.dart';
+
 class CommunityMonetizationScreen extends StatefulWidget {
   final bool isEmbedded;
   const CommunityMonetizationScreen({super.key, this.isEmbedded = false});
@@ -112,6 +114,7 @@ class _CommunityMonetizationScreenState extends State<CommunityMonetizationScree
     try {
       final response = await Database().getData({
         'action': 'fetch_own_communities',
+        'vendor_id': UserSessionSet.instance.vendorId,
       }, endpoint: 'new_apis/create_community_API.php');
 
       if (response != null && (response['success'] == true || response['status'] == 200) && response['data'] != null) {
@@ -145,8 +148,10 @@ class _CommunityMonetizationScreenState extends State<CommunityMonetizationScree
     setState(() => _isLoading = true);
 
     try {
+      final vendorId = UserSessionSet.instance.vendorId;
       final Map<String, dynamic> body = {
         'action': isDraft ? 'add_package_draft' : 'add_package',
+        'vendor_id': vendorId,
         'name': name,
         'description': _descriptionController.text.trim(),
         'duration_value': int.tryParse(_durationValController.text) ?? 14,
@@ -412,15 +417,15 @@ class _CommunityMonetizationScreenState extends State<CommunityMonetizationScree
                     child: isCompleted
                         ? const Icon(Icons.check, size: 16, color: AppTheme.primary)
                         : Text(
-                            stepNum.toString(),
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: isCurrent
-                                  ? Colors.white
-                                  : (isCompleted ? AppTheme.primary : AppTheme.textSecondary),
-                            ),
-                          ),
+                      stepNum.toString(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: isCurrent
+                            ? Colors.white
+                            : (isCompleted ? AppTheme.primary : AppTheme.textSecondary),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -921,10 +926,10 @@ class _CommunityMonetizationScreenState extends State<CommunityMonetizationScree
             ElevatedButton.icon(
               onPressed: _currentStep > 1
                   ? () {
-                      setState(() {
-                        _currentStep--;
-                      });
-                    }
+                setState(() {
+                  _currentStep--;
+                });
+              }
                   : null,
               icon: const Icon(Icons.arrow_back_rounded),
               label: const Text("Back"),

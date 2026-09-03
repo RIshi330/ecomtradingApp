@@ -183,7 +183,7 @@ class _CommunityIntelligenceAppState extends State<userDashboardscreen> {
         ),
         title: Text(
           'Community Feed',
-          style: TextStyle(color: Colors.white,fontWeight: FontWeight.w400),
+          style: TextStyle(color: Colors.white,fontWeight: FontWeight.w500,fontSize: 20),
         ),
         actions: [
           _AppBarIconButton(

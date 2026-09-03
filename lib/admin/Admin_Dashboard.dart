@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 import '../Database/Database.dart';
+import '../services/auth_User_and_Business_Session.dart';
 
 /// Wraps every `action` handled by the admin-dashboard PHP endpoint.
 ///
@@ -21,7 +22,8 @@ class AdminDashboardService {
   // Membership
   // ------------------------------------------------------------------
   Future<Map?> getCurrentMembership() async {
-    final res = await _call({'action': 'get_current_membership'});
+    final res = await _call({'action': 'get_current_membership','vendor_id': UserSessionSet.instance.vendorId,
+    });
     if (res['success'] != true) return null;
     return res['data'] is Map ? Map.from(res['data']) : null;
   }
@@ -30,7 +32,7 @@ class AdminDashboardService {
   // Space utilization — maps 1:1 onto the "Space Utilization" card
   // ------------------------------------------------------------------
   Future<SpaceUtilization?> getSpaceUtilization() async {
-    final res = await _call({'action': 'get_space_utilization'});
+    final res = await _call({'action': 'get_space_utilization','vendor_id': UserSessionSet.instance.vendorId,});
     if (res['success'] != true || res['data'] is! Map) return null;
     return SpaceUtilization.fromMap(Map.from(res['data']));
   }
@@ -40,7 +42,7 @@ class AdminDashboardService {
   // There is no per-region breakdown in the schema, unlike the mock UI.
   // ------------------------------------------------------------------
   Future<List<VisitDay>> getVisitorTracking({int days = 30, String? vendorId}) async {
-    final body = {'action': 'get_visitor_tracking', 'days': days};
+    final body = {'action': 'get_visitor_tracking', 'days': days,'vendor_id': UserSessionSet.instance.vendorId,};
     if (vendorId != null) body['vendor_id'] = vendorId;
     final res = await _call(body);
     if (res['success'] != true) return [];
@@ -54,7 +56,8 @@ class AdminDashboardService {
   // services" ratio available from this endpoint.
   // ------------------------------------------------------------------
   Future<List<MarketplaceListings>> getListingDistribution() async {
-    final res = await _call({'action': 'get_listing_distribution'});
+    final res = await _call({'action': 'get_listing_distribution','vendor_id': UserSessionSet.instance.vendorId,
+    });
     if (res['success'] != true) return [];
     final list = List.from(res['data'] ?? []);
     return list.map((e) => MarketplaceListings.fromMap(Map.from(e))).toList();
@@ -64,7 +67,7 @@ class AdminDashboardService {
   // Revenue stats — feeds the sparkline directly
   // ------------------------------------------------------------------
   Future<List<RevenuePoint>> getRevenueStats({String range = 'day'}) async {
-    final res = await _call({'action': 'get_revenue_stats', 'range': range});
+    final res = await _call({'action': 'get_revenue_stats', 'range': range,'vendor_id': UserSessionSet.instance.vendorId,});
     if (res['success'] != true) return [];
     final list = List.from(res['data'] ?? []);
     return list.map((e) => RevenuePoint.fromMap(Map.from(e))).toList();
@@ -74,7 +77,7 @@ class AdminDashboardService {
   // Pending withdrawals (payouts)
   // ------------------------------------------------------------------
   Future<List<Withdrawal>> getPendingWithdrawals() async {
-    final res = await _call({'action': 'get_pending_withdrawals'});
+    final res = await _call({'action': 'get_pending_withdrawals','vendor_id': UserSessionSet.instance.vendorId,});
     if (res['success'] != true) return [];
     final list = List.from(res['data'] ?? []);
     return list.map((e) => Withdrawal(Map.from(e))).toList();
@@ -84,7 +87,7 @@ class AdminDashboardService {
   /// Assuming 1 = approved, 2 = disapproved — confirm against your schema.
   Future<bool> updateWithdrawalStatus({required int withdrawId, required int status}) async {
     final res = await _call({
-      'action': 'update_withdrawal_status',
+      'action': 'update_withdrawal_status','vendor_id': UserSessionSet.instance.vendorId,
       'withdraw_id': withdrawId,
       'status': status,
     });
@@ -95,7 +98,7 @@ class AdminDashboardService {
   // Recent orders
   // ------------------------------------------------------------------
   Future<List<OrderRecord>> getRecentOrders({int limit = 10}) async {
-    final res = await _call({'action': 'get_recent_orders', 'limit': limit});
+    final res = await _call({'action': 'get_recent_orders', 'limit': limit,'vendor_id': UserSessionSet.instance.vendorId,});
     if (res['success'] != true) return [];
     final list = List.from(res['data'] ?? []);
     return list.map((e) => OrderRecord(Map.from(e))).toList();
@@ -105,7 +108,7 @@ class AdminDashboardService {
   // Pending listing approvals
   // ------------------------------------------------------------------
   Future<List<MarketplacePendingGroup>> getPendingListings({int status = 0}) async {
-    final res = await _call({'action': 'get_pending_listings', 'status': status});
+    final res = await _call({'action': 'get_pending_listings', 'status': status,'vendor_id': UserSessionSet.instance.vendorId,});
     if (res['success'] != true) return [];
     final list = List.from(res['data'] ?? []);
     return list.map((e) => MarketplacePendingGroup.fromMap(Map.from(e))).toList();
@@ -123,6 +126,7 @@ class AdminDashboardService {
       'table_name': tableName,
       'item_id': itemId,
       'status': status,
+      'vendor_id': UserSessionSet.instance.vendorId,
     });
     return res['success'] == true;
   }
@@ -131,7 +135,7 @@ class AdminDashboardService {
   // News & insights
   // ------------------------------------------------------------------
   Future<List<NewsItem>> getNewsInsights() async {
-    final res = await _call({'action': 'get_news_insights'});
+    final res = await _call({'action': 'get_news_insights','vendor_id': UserSessionSet.instance.vendorId,});
     if (res['success'] != true) return [];
     final list = List.from(res['data'] ?? []);
     return list.map((e) => NewsItem(Map.from(e))).toList();
@@ -142,7 +146,7 @@ class AdminDashboardService {
   // exposed here in case you want to add a section for it later.
   // ------------------------------------------------------------------
   Future<List<Map>> getNewSellerOnboarding() async {
-    final res = await _call({'action': 'get_new_seller_onboarding'});
+    final res = await _call({'action': 'get_new_seller_onboarding','vendor_id': UserSessionSet.instance.vendorId,});
     if (res['success'] != true) return [];
     return List.from(res['data'] ?? []).map((e) => Map.from(e)).toList();
   }
@@ -152,6 +156,7 @@ class AdminDashboardService {
       'action': 'update_seller_status',
       'new_vendor_id': newVendorId,
       'status': status,
+      'vendor_id': UserSessionSet.instance.vendorId,
     });
     return res['success'] == true;
   }

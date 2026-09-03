@@ -2092,6 +2092,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../app_constants.dart';
+import '../services/auth_User_and_Business_Session.dart';
 
 
 // ---------------------------------------------------------------------
@@ -2139,6 +2140,8 @@ class ProductDetailApiService {
       'marketplace_id': marketplaceId,
       'item_id': itemId,
       'var_id': varId,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
   }
 
@@ -2151,6 +2154,8 @@ class ProductDetailApiService {
       'action': 'get_product_images',
       'marketplace_id': marketplaceId,
       'item_id': itemId,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
       if (varId != null) 'var_id': varId,
     });
   }
@@ -2209,6 +2214,8 @@ class ProductDetailApiService {
       'org_site_id': orgSiteId,
       'selected_items_vendor_id': selectedItemsVendorId,
       'item_type': itemType,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
   }
 
@@ -2224,6 +2231,8 @@ class ProductDetailApiService {
       'product_id': productId,
       'variant_id': variantId,
       'product_vendor_id': productVendorId,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
   }
 
@@ -2243,6 +2252,8 @@ class ProductDetailApiService {
       'product_vendor_id': productVendorId,
       'rating': rating,
       'review': review,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
   }
 
@@ -2254,11 +2265,14 @@ class ProductDetailApiService {
       'action': 'is_delivery_services',
       'logistic_id': logisticId,
       'pincode': pincode,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
   }
 
   static Future<Map<String, dynamic>> setPincode(String pincode) {
-    return _post({'action': 'set_pincode', 'pincode': pincode});
+    return _post({'action': 'set_pincode', 'pincode': pincode,        'vendor_id': UserSessionSet.instance.vendorId,
+    });
   }
 }
 //

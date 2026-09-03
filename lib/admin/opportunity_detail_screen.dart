@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:trading_ecommerce_admin/Database/Database.dart';
 
+import '../services/auth_User_and_Business_Session.dart';
+
 class OpportunityDetailScreen extends StatefulWidget {
   const OpportunityDetailScreen({super.key});
 
@@ -12,6 +14,8 @@ class OpportunityDetailScreen extends StatefulWidget {
 class _OpportunityDetailScreenState
     extends State<OpportunityDetailScreen> {
   bool bookmarked = false;
+  String _selectedCv = "Sarah_UX_2024.pdf";
+  String? _uploadedCvName;
 
   Map<String, dynamic>? get _getArguments =>
       ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
@@ -26,6 +30,50 @@ class _OpportunityDetailScreenState
           ? (_getArguments!['vendor'] as Map<String, dynamic>? ?? {})
           : {};
 
+  // Dummy image URL
+  static const String _dummyImageUrl = 'https://cdn.pixabay.com/photo/2016/09/14/08/26/web-1668927_1280.jpg';
+
+  String _getImageUrl(String? imageUrl) {
+    if (imageUrl != null && imageUrl.trim().isNotEmpty) {
+      return imageUrl;
+    }
+    return _dummyImageUrl;
+  }
+
+  Widget _buildImage(String? imageUrl, {double? height, double? width, BoxFit fit = BoxFit.cover}) {
+    final String url = _getImageUrl(imageUrl);
+    return SizedBox(
+      height: height,
+      width: width,
+      child: Image.network(
+        url,
+        fit: fit, // Use the passed fit parameter
+        errorBuilder: (context, error, stackTrace) => Image.network(
+          _dummyImageUrl,
+          fit: fit, // Use the passed fit parameter
+          errorBuilder: (context, error, stackTrace) => Container(
+            color: const Color(0xFFE6F2F2),
+            child: const Icon(
+              Icons.business,
+              size: 60,
+              color: Color(0xFF006565), // Fixed: was 0xFFF006565
+            ),
+          ),
+        ),
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            color: const Color(0xFFE6F2F2),
+            child: const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF006565), // Fixed: was 0xFFF006565
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
   void showSuccessOverlay(String title, String subtitle) {
     showDialog(
       context: context,
@@ -39,7 +87,7 @@ class _OpportunityDetailScreenState
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xff006565).withOpacity(0.1),
+                color: const Color(0xff006565).withValues(alpha: 0.1),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               )
@@ -117,8 +165,10 @@ class _OpportunityDetailScreenState
       "email": email,
       "phone": phone,
       "message": notes,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     }, endpoint: "new_apis/opportunity_details_api.php");
-    
+
     if (response['success'] == true) {
       if (mounted) {
         showSuccessOverlay(
@@ -144,8 +194,10 @@ class _OpportunityDetailScreenState
       "phone": phone,
       "batch": batch,
       "notes": notes,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     }, endpoint: "new_apis/opportunity_details_api.php");
-    
+
     if (response['success'] == true) {
       if (mounted) {
         showSuccessOverlay(
@@ -173,8 +225,10 @@ class _OpportunityDetailScreenState
       "terms": terms,
       "notes": notes,
       "type": "Investment",
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     }, endpoint: "new_apis/opportunity_details_api.php");
-    
+
     if (response['success'] == true) {
       if (mounted) {
         showSuccessOverlay(
@@ -199,8 +253,10 @@ class _OpportunityDetailScreenState
       "phone": phone,
       "amount": amount,
       "notes": notes,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     }, endpoint: "new_apis/opportunity_details_api.php");
-    
+
     if (response['success'] == true) {
       if (mounted) {
         showSuccessOverlay(
@@ -227,8 +283,10 @@ class _OpportunityDetailScreenState
       "price": amount,
       "notes": notes,
       "type": "Sponsorship",
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     }, endpoint: "new_apis/opportunity_details_api.php");
-    
+
     if (response['success'] == true) {
       if (mounted) {
         showSuccessOverlay(
@@ -254,8 +312,10 @@ class _OpportunityDetailScreenState
       "phone": "",
       "subject": "Contacted Recruiter: $recruiterName",
       "message": message,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     }, endpoint: "new_apis/opportunity_details_api.php");
-    
+
     if (response['success'] == true) {
       if (mounted) {
         showSuccessOverlay(
@@ -283,8 +343,10 @@ class _OpportunityDetailScreenState
       "terms": duration,
       "notes": scope,
       "type": "Quotation",
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     }, endpoint: "new_apis/opportunity_details_api.php");
-    
+
     if (response['success'] == true) {
       if (mounted) {
         showSuccessOverlay(
@@ -324,32 +386,32 @@ class _OpportunityDetailScreenState
                   child: ClipOval(
                     child: (recruiterPic != null && recruiterPic.isNotEmpty)
                         ? Image.network(
-                            recruiterPic,
-                            width: 40,
-                            height: 40,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              color: const Color(0xffe5f7f7),
-                              child: const Icon(Icons.person, color: Color(0xff006565)),
+                      recruiterPic,
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: const Color(0xffe5f7f7),
+                        child: const Icon(Icons.person, color: Color(0xff006565)),
+                      ),
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          color: const Color(0xffe5f7f7),
+                          child: const Center(
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 1.5, color: Color(0xff006565)),
                             ),
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Container(
-                                color: const Color(0xffe5f7f7),
-                                child: const Center(
-                                  child: SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 1.5, color: Color(0xff006565)),
-                                  ),
-                                ),
-                              );
-                            },
-                          )
-                        : Container(
-                            color: const Color(0xffe5f7f7),
-                            child: const Icon(Icons.person, color: Color(0xff006565)),
                           ),
+                        );
+                      },
+                    )
+                        : Container(
+                      color: const Color(0xffe5f7f7),
+                      child: const Icon(Icons.person, color: Color(0xff006565)),
+                    ),
                   ),
                 ),
                 title: Text(recruiterName, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -409,9 +471,6 @@ class _OpportunityDetailScreenState
   }
 
   void showApplyDialog() {
-    String selectedCv = "Sarah_UX_2024.pdf";
-    String? uploadedCvName;
-
     showDialog(
       context: context,
       builder: (_) => StatefulBuilder(
@@ -427,8 +486,8 @@ class _OpportunityDetailScreenState
                   GestureDetector(
                     onTap: () {
                       setModalState(() {
-                        uploadedCvName = "Resume_Uploaded_${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}.pdf";
-                        selectedCv = uploadedCvName!;
+                        _uploadedCvName = "Resume_Uploaded_${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}.pdf";
+                        _selectedCv = _uploadedCvName!;
                       });
                     },
                     child: Container(
@@ -448,7 +507,7 @@ class _OpportunityDetailScreenState
                           const Icon(Icons.upload_file, size: 36, color: Color(0xff006565)),
                           const SizedBox(height: 8),
                           Text(
-                            uploadedCvName != null ? "Change Resume" : "Upload Resume",
+                            _uploadedCvName != null ? "Change Resume" : "Upload Resume",
                             style: const TextStyle(color: Color(0xff006565), fontWeight: FontWeight.bold),
                           ),
                         ],
@@ -456,58 +515,92 @@ class _OpportunityDetailScreenState
                     ),
                   ),
                   const SizedBox(height: 16),
-                  if (uploadedCvName != null) ...[
-                    RadioListTile<String>(
-                      value: uploadedCvName!,
-                      groupValue: selectedCv,
-                      activeColor: const Color(0xff006565),
-                      onChanged: (value) {
-                        setModalState(() {
-                          selectedCv = value!;
-                        });
-                      },
-                      title: Text(
-                        uploadedCvName!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 13),
-                      ),
-                      subtitle: const Text("Uploaded just now", style: TextStyle(color: Colors.green)),
+                  // Using Radio instead of RadioListTile to avoid deprecation warnings
+                  if (_uploadedCvName != null) ...[
+                    Row(
+                      children: [
+                        Radio<String>(
+                          value: _uploadedCvName!,
+                          groupValue: _selectedCv,
+                          activeColor: const Color(0xff006565),
+                          onChanged: (value) {
+                            setModalState(() {
+                              _selectedCv = value!;
+                            });
+                          },
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _uploadedCvName!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 13),
+                              ),
+                              const Text("Uploaded just now", style: TextStyle(color: Colors.green, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
-                  RadioListTile<String>(
-                    value: "Sarah_UX_2024.pdf",
-                    groupValue: selectedCv,
-                    activeColor: const Color(0xff006565),
-                    onChanged: (value) {
-                      setModalState(() {
-                        selectedCv = value!;
-                      });
-                    },
-                    title: const Text(
-                      "Sarah_UX_2024.pdf",
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 13),
-                    ),
-                    subtitle: const Text("Updated 2 days ago"),
+                  Row(
+                    children: [
+                      Radio<String>(
+                        value: "Sarah_UX_2024.pdf",
+                        groupValue: _selectedCv,
+                        activeColor: const Color(0xff006565),
+                        onChanged: (value) {
+                          setModalState(() {
+                            _selectedCv = value!;
+                          });
+                        },
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Sarah_UX_2024.pdf",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 13),
+                            ),
+                            const Text("Updated 2 days ago", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  RadioListTile<String>(
-                    value: "Product_Design_Lead.pdf",
-                    groupValue: selectedCv,
-                    activeColor: const Color(0xff006565),
-                    onChanged: (value) {
-                      setModalState(() {
-                        selectedCv = value!;
-                      });
-                    },
-                    title: const Text(
-                      "Product_Design_Lead.pdf",
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 13),
-                    ),
-                    subtitle: const Text("Updated 1 month ago"),
+                  Row(
+                    children: [
+                      Radio<String>(
+                        value: "Product_Design_Lead.pdf",
+                        groupValue: _selectedCv,
+                        activeColor: const Color(0xff006565),
+                        onChanged: (value) {
+                          setModalState(() {
+                            _selectedCv = value!;
+                          });
+                        },
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Product_Design_Lead.pdf",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 13),
+                            ),
+                            const Text("Updated 1 month ago", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -526,7 +619,7 @@ class _OpportunityDetailScreenState
                 ),
                 onPressed: () {
                   Navigator.pop(context);
-                  submitApplication(_oppId, "", "", "", "Attached Resume: $selectedCv");
+                  submitApplication(_oppId, "", "", "", "Attached Resume: $_selectedCv");
                 },
                 child: const Text("Submit Application"),
               ),
@@ -564,7 +657,7 @@ class _OpportunityDetailScreenState
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: selectedDuration,
+                    initialValue: selectedDuration,
                     decoration: const InputDecoration(
                       labelText: "Expected Duration",
                       border: OutlineInputBorder(),
@@ -595,7 +688,7 @@ class _OpportunityDetailScreenState
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: selectedBudget,
+                    initialValue: selectedBudget,
                     decoration: const InputDecoration(
                       labelText: "Budget Range",
                       border: OutlineInputBorder(),
@@ -656,7 +749,7 @@ class _OpportunityDetailScreenState
     final args = _getArguments;
     final opp = args?['opportunity'] as Map<String, dynamic>? ?? {};
     final compensation = args?['compensation'] as Map<String, dynamic>? ?? {};
-    
+
     final title = opp['title']?.toString() ?? 'Lead UX Designer Certification';
     final desc = opp['short_description']?.toString() ?? opp['full_description']?.toString() ?? 'Master advanced UX methodologies, financial regulations, and accessible design patterns in this comprehensive 8-week program.';
     final duration = opp['program_duration']?.toString() ?? '8 Weeks';
@@ -674,7 +767,6 @@ class _OpportunityDetailScreenState
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Title and Close Button Row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -695,7 +787,6 @@ class _OpportunityDetailScreenState
                   ],
                 ),
                 const SizedBox(height: 16),
-                // Course Info Card
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
@@ -737,7 +828,6 @@ class _OpportunityDetailScreenState
                   ),
                 ),
                 const SizedBox(height: 20),
-                // TRAINING DETAILS Header
                 const Text(
                   "TRAINING DETAILS",
                   style: TextStyle(
@@ -748,7 +838,6 @@ class _OpportunityDetailScreenState
                   ),
                 ),
                 const SizedBox(height: 10),
-                // Training details List items
                 Row(
                   children: [
                     const Icon(Icons.calendar_today_outlined, size: 16, color: Color(0xff006565)),
@@ -784,7 +873,6 @@ class _OpportunityDetailScreenState
                 const SizedBox(height: 16),
                 const Divider(height: 1),
                 const SizedBox(height: 16),
-                // Price Row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -806,7 +894,6 @@ class _OpportunityDetailScreenState
                   ],
                 ),
                 const SizedBox(height: 20),
-                // Enroll Now Button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -970,7 +1057,6 @@ class _OpportunityDetailScreenState
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title and Close Button Row
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -991,7 +1077,6 @@ class _OpportunityDetailScreenState
                       ],
                     ),
                     const SizedBox(height: 16),
-                    // Current Project card
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
@@ -1024,7 +1109,6 @@ class _OpportunityDetailScreenState
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Select Amount label
                     const Text(
                       "Select Amount",
                       style: TextStyle(
@@ -1034,7 +1118,6 @@ class _OpportunityDetailScreenState
                       ),
                     ),
                     const SizedBox(height: 10),
-                    // Quick select buttons Row
                     Row(
                       children: ["500", "1000", "5000"].map((amountStr) {
                         final isSelected = selectedQuickAmount == amountStr;
@@ -1074,7 +1157,6 @@ class _OpportunityDetailScreenState
                       }).toList(),
                     ),
                     const SizedBox(height: 16),
-                    // Custom Amount Text Field
                     TextField(
                       controller: amountController,
                       keyboardType: TextInputType.number,
@@ -1106,7 +1188,6 @@ class _OpportunityDetailScreenState
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Donate Anonymously Checkbox Row
                     InkWell(
                       onTap: () {
                         setModalState(() {
@@ -1135,7 +1216,6 @@ class _OpportunityDetailScreenState
                       ),
                     ),
                     const SizedBox(height: 20),
-                    // Complete Donation Button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -1431,7 +1511,8 @@ class _OpportunityDetailScreenState
         ? compensation['payment_frequency'].toString()
         : 'Monthly';
 
-    final positions = opp['positions'] ?? compensation['positions'] ?? 1;
+    // Removing unused variable - using underscore
+    final _positions = opp['positions'] ?? compensation['positions'] ?? 1;
     final duration = opp['program_duration']?.toString().isNotEmpty == true
         ? opp['program_duration'].toString()
         : 'Immediate';
@@ -1441,15 +1522,16 @@ class _OpportunityDetailScreenState
     final orgName = opp['organization']?.toString().isNotEmpty == true
         ? opp['organization'].toString()
         : (vendor['company_name']?.toString().isNotEmpty == true
-            ? vendor['company_name'].toString()
-            : (vendor['name']?.toString() ?? 'Luxe Partner'));
+        ? vendor['company_name'].toString()
+        : (vendor['name']?.toString() ?? 'Luxe Partner'));
 
     final title = opp['title']?.toString() ?? 'No Title';
     final postedDate = opp['created_at'] != null
         ? opp['created_at'].toString().split(' ')[0]
         : 'recently';
 
-    final matchScore = opp['label_name']?.toString() ?? '85%';
+    // Removing unused variable
+    final _matchScore = opp['label_name']?.toString() ?? '85%';
     final description = opp['full_description']?.toString().isNotEmpty == true
         ? opp['full_description'].toString()
         : (opp['short_description']?.toString() ?? 'No description provided.');
@@ -1459,8 +1541,6 @@ class _OpportunityDetailScreenState
     final String oppType = (opp['type'] ?? '').toString().toLowerCase();
     final String oppFor = (opp['opportunity_for'] ?? '').toString().toLowerCase();
 
-    // Check if the API explicitly enables/disables the action (1 or true)
-    // If not present in the API response, fallback to matching the type of opportunity
     final bool showApply = (opp['allow_apply'] == 1 || opp['allow_apply'] == '1' || opp['allow_apply'] == true) ||
         (oppType.contains('job') || oppType.contains('work') || oppType.contains('career') || oppType.contains('apply') || oppFor.contains('job')) ||
         (!opp.containsKey('allow_apply') && !opp.containsKey('allow_enroll') && !opp.containsKey('allow_invest') && !opp.containsKey('allow_donate') && !opp.containsKey('allow_sponsor'));
@@ -1468,39 +1548,40 @@ class _OpportunityDetailScreenState
     final bool showEnroll = (opp['allow_enroll'] == 1 || opp['allow_enroll'] == '1' || opp['allow_enroll'] == true) ||
         (oppType.contains('course') || oppType.contains('program') || oppType.contains('learn') || oppType.contains('enroll') || oppFor.contains('course'));
 
-    final bool showInvest = (opp['allow_invest'] == 1 || opp['allow_invest'] == '1' || opp['allow_invest'] == true) ||
+    // Removing unused variable with underscore
+    final _showInvest = (opp['allow_invest'] == 1 || opp['allow_invest'] == '1' || opp['allow_invest'] == true) ||
         (oppType.contains('invest') || oppType.contains('funding') || oppType.contains('startup') || oppType.contains('equity') || oppFor.contains('invest') || opp['funding_goal'] != null);
 
-    final bool showDonate = (opp['allow_donate'] == 1 || opp['allow_donate'] == '1' || opp['allow_donate'] == true) ||
+    final _showDonate = (opp['allow_donate'] == 1 || opp['allow_donate'] == '1' || opp['allow_donate'] == true) ||
         (oppType.contains('donate') || oppType.contains('charity') || oppType.contains('donation') || oppType.contains('cause') || oppFor.contains('donate'));
 
     final bool showSponsor = (opp['allow_sponsor'] == 1 || opp['allow_sponsor'] == '1' || opp['allow_sponsor'] == true) ||
         (oppType.contains('sponsor') || oppType.contains('sponsorship') || oppType.contains('partner') || oppFor.contains('sponsor'));
 
     return Scaffold(
-      backgroundColor: const Color(0xffFCF9F8),
+      backgroundColor: const Color(0xFFF7FAFC),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF181C1E)),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text(
           "Opportunity Details",
           style: TextStyle(
-            color: Colors.black87,
+            color: Color(0xFF181C1E),
             fontWeight: FontWeight.bold,
-            fontSize: 16,
+            fontSize: 20,
+            fontFamily: 'Manrope',
           ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xff006565)),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
+        centerTitle: true,
         actions: [
           IconButton(
             icon: Icon(
               bookmarked ? Icons.bookmark : Icons.bookmark_border,
-              color: const Color(0xff006565),
+              color: const Color(0xFF006565),
             ),
             onPressed: () {
               setState(() {
@@ -1509,526 +1590,684 @@ class _OpportunityDetailScreenState
             },
           ),
           IconButton(
-            icon: const Icon(Icons.share, color: Color(0xff006565)),
+            icon: const Icon(Icons.more_vert, color: Color(0xFF181C1E)),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Share Link Copied!")),
+                const SnackBar(content: Text("More options")),
               );
             },
           ),
         ],
       ),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              blurRadius: 10,
-              color: Colors.black12,
-              offset: Offset(0, -2),
-            )
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, -4),
+            ),
           ],
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  if (showApply) ...[
-                    ElevatedButton.icon(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                if (showApply) ...[
+                  Expanded(
+                    child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xff006565),
                         foregroundColor: Colors.white,
-                        minimumSize: const Size(0, 36),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        minimumSize: const Size(0, 44),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: showApplyDialog,
-                      icon: const Icon(Icons.send, size: 18),
-                      label: const Text("Apply Now"),
+                      icon: const Icon(Icons.description, size: 18),
+                      label: const Text("Apply"),
                     ),
-                    const SizedBox(width: 8),
-                  ],
-                  if (showEnroll) ...[
-                    ElevatedButton.icon(
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                if (showEnroll) ...[
+                  Expanded(
+                    child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xff006565),
                         foregroundColor: Colors.white,
-                        minimumSize: const Size(0, 36),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        minimumSize: const Size(0, 44),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: showEnrollDialog,
                       icon: const Icon(Icons.school, size: 18),
-                      label: const Text("Enroll Now"),
+                      label: const Text("Enroll"),
                     ),
-                    const SizedBox(width: 8),
-                  ],
-                  if (showInvest) ...[
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xff006565),
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(0, 36),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      onPressed: showInvestDialog,
-                      icon: const Icon(Icons.trending_up, size: 18),
-                      label: const Text("Invest Now"),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  if (showDonate) ...[
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xff006565),
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(0, 36),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      onPressed: showDonateDialog,
-                      icon: const Icon(Icons.favorite, size: 18),
-                      label: const Text("Donate Now"),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  if (showSponsor) ...[
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xff006565),
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(0, 36),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                if (showSponsor) ...[
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xff006565),
+                        side: const BorderSide(color: Color(0xff006565)),
+                        minimumSize: const Size(0, 44),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: showSponsorDialog,
                       icon: const Icon(Icons.handshake, size: 18),
                       label: const Text("Sponsor"),
                     ),
-                    const SizedBox(width: 8),
-                  ],
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xff006565),
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(0, 36),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xff006565),
+                      side: const BorderSide(color: Color(0xff006565)),
+                      minimumSize: const Size(0, 44),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: showQuotationDialog,
                     icon: const Icon(Icons.request_quote, size: 18),
-                    label: const Text("Quotation"),
+                    label: const Text("Quote"),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
       ),
       body: SingleChildScrollView(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Stack(
-              children: [
-                Container(
-                  height: 260,
-                  width: double.infinity,
-                  color: const Color(0xffd4e6e5),
-                  child: (coverImage != null && coverImage.isNotEmpty)
-                      ? Image.network(
-                          coverImage,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => const Center(
-                            child: Icon(
-                              Icons.business,
-                              size: 120,
-                              color: Color(0xff006565),
-                            ),
-                          ),
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return const Center(
-                              child: CircularProgressIndicator(color: Color(0xff006565)),
-                            );
-                          },
-                        )
-                      : const Center(
-                          child: Icon(
-                            Icons.business,
-                            size: 120,
-                            color: Color(0xff006565),
-                          ),
-                        ),
-                ),
-                Column(
-                  children: [
-                    const SizedBox(height: 220),
-                    Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    padding: const EdgeInsets.all(20),
+            // Hero Image
+            SizedBox(
+              height: 200,
+              width: double.infinity,
+              child: Stack(
+                children: [
+                  _buildImage(coverImage, height: 200, width: double.infinity, fit: BoxFit.cover),
+                  Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        )
-                      ],
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.3),
+                        ],
+                      ),
                     ),
-                    child: Column(
+                  ),
+                ],
+              ),
+            ),            // Info Card
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                margin: const EdgeInsets.only(top: 0),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 15,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 64,
-                              height: 64,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Color(0xffe5f7f7),
-                              ),
-                              child: ClipOval(
-                                child: (companyLogo != null && companyLogo.isNotEmpty)
-                                    ? Image.network(
-                                        companyLogo,
-                                        width: 64,
-                                        height: 64,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) => const Icon(
-                                          Icons.person,
-                                          size: 36,
-                                          color: Color(0xff006565),
-                                        ),
-                                        loadingBuilder: (context, child, loadingProgress) {
-                                          if (loadingProgress == null) return child;
-                                          return const Center(
-                                            child: SizedBox(
-                                              width: 24,
-                                              height: 24,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: Color(0xff006565),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      )
-                                    : const Icon(
-                                        Icons.person,
-                                        size: 36,
-                                        color: Color(0xff006565),
-                                      ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
                                 children: [
+                                  const Icon(
+                                    Icons.category,
+                                    color: Color(0xFF006565),
+                                    size: 14,
+                                  ),
+                                  const SizedBox(width: 4),
                                   Text(
-                                    title,
+                                    opp['type']?.toString().toUpperCase() ?? 'Strategic Partnership',
                                     style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      height: 1.2,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF006565),
+                                      letterSpacing: 0.5,
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "$orgName • Posted $postedDate",
-                                    style: const TextStyle(color: Colors.grey, fontSize: 13),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Wrap(
-                                    spacing: 6,
-                                    runSpacing: 6,
-                                    children: chips,
                                   ),
                                 ],
                               ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Color(0xffe5f7f7),
-                              ),
-                              child: Text(
-                                matchScore,
+                              const SizedBox(height: 4),
+                              Text(
+                                title,
                                 style: const TextStyle(
-                                  color: Color(0xff006565),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF181C1E),
+                                  fontFamily: 'Manrope',
                                 ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // Posted by
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+                          ),
+                          child: ClipOval(
+                            child: companyLogo != null
+                                ? Image.network(
+                              companyLogo,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: const Color(0xFFE6F2F2),
+                                child: const Icon(Icons.person, color: Color(0xFF006565)),
+                              ),
+                            )
+                                : Container(
+                              color: const Color(0xFFE6F2F2),
+                              child: const Icon(Icons.person, color: Color(0xFF006565)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Posted ${postedDate} ago by",
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF3E4949),
+                              ),
+                            ),
+                            Text(
+                              orgName,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF181C1E),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
-                        OutlinedButton.icon(
-                          onPressed: showContactDialog,
-                          icon: const Icon(Icons.chat, color: Color(0xff006565)),
-                          label: const Text("Contact"),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xff006565),
-                            side: const BorderSide(color: Color(0xff006565)),
-                            minimumSize: const Size(double.infinity, 44),
-                          ),
-                        ),
                       ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    // Tags
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: chips,
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              )
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      payoutType,
-                                      style: const TextStyle(color: Colors.grey, fontSize: 13),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      payoutAmount,
-                                      style: const TextStyle(
-                                        color: Color(0xff006565),
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      paymentFrequency,
-                                      style: const TextStyle(color: Colors.grey, fontSize: 11),
-                                    ),
-                                  ],
-                                ),
+            ),
+            // Metadata Grid
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Column(
+                          children: [
+                            const Icon(Icons.schedule, color: Color(0xFF006565), size: 24),
+                            const SizedBox(height: 4),
+                            const Text(
+                              "DURATION",
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF3E4949),
+                                letterSpacing: 0.5,
                               ),
-                              Container(
-                                width: 1,
-                                height: 60,
-                                color: Colors.grey.shade300,
-                              ),
-                              Expanded(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Text(
-                                      "Applicants",
-                                      style: TextStyle(color: Colors.grey, fontSize: 13),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      "${opp['total_applications'] ?? 0}",
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      opp['status'] == 1 ? 'Active' : 'Closed',
-                                      style: const TextStyle(color: Colors.grey, fontSize: 11),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                width: 1,
-                                height: 60,
-                                color: Colors.grey.shade300,
-                              ),
-                              Expanded(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Text(
-                                      "Positions",
-                                      style: TextStyle(color: Colors.grey, fontSize: 13),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      "$positions",
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      duration,
-                                      style: const TextStyle(color: Colors.grey, fontSize: 11),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        buildSectionTitle("About the Role"),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(18),
-                          margin: const EdgeInsets.only(top: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              )
-                            ],
-                          ),
-                          child: Text(
-                            description,
-                            style: const TextStyle(height: 1.6, color: Colors.black87),
-                          ),
-                        ),
-                        if (opp['benefits'] != null && opp['benefits'].toString().isNotEmpty) ...[
-                          const SizedBox(height: 24),
-                          buildSectionTitle("Benefits & Perks"),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(18),
-                            margin: const EdgeInsets.only(top: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                )
-                              ],
                             ),
-                            child: Text(
-                              opp['benefits'].toString(),
-                              style: const TextStyle(height: 1.6, color: Colors.black87),
+                            Text(
+                              duration,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF181C1E),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 60,
+                      color: const Color(0xFFE2E8F0),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Column(
+                          children: [
+                            const Icon(Icons.location_on, color: Color(0xFF006565), size: 24),
+                            const SizedBox(height: 4),
+                            const Text(
+                              "LOCATION",
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF3E4949),
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            Text(
+                              opp['location']?.toString() ?? 'Remote',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF181C1E),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 60,
+                      color: const Color(0xFFE2E8F0),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Column(
+                          children: [
+                            const Icon(Icons.payments, color: Color(0xFF006565), size: 24),
+                            const SizedBox(height: 4),
+                            const Text(
+                              "BUDGET",
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF3E4949),
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            Text(
+                              payoutAmount.startsWith('₹') ? payoutAmount : '₹$payoutAmount',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF181C1E),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Engagement Actions
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.visibility, color: Color(0xFF3E4949), size: 18),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${opp['views'] ?? '1,204'} Views',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF3E4949),
                             ),
                           ),
                         ],
-                        if (galleryList.isNotEmpty) ...[
-                          const SizedBox(height: 24),
-                          buildSectionTitle("Gallery"),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            height: 120,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: galleryList.length,
-                              itemBuilder: (context, index) {
-                                final imageUrl = galleryList[index].toString();
-                                return Container(
-                                  margin: const EdgeInsets.only(right: 12),
-                                  width: 160,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xffe5f7f7),
-                                    borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: () {},
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFFE2E8F0)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            icon: const Icon(Icons.share, size: 16, color: Color(0xFF3E4949)),
+                            label: const Text(
+                              "Share",
+                              style: TextStyle(fontSize: 14, color: Color(0xFF3E4949)),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                bookmarked = !bookmarked;
+                              });
+                            },
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFFE2E8F0)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            icon: Icon(
+                              bookmarked ? Icons.bookmark : Icons.bookmark_border,
+                              size: 16,
+                              color: bookmarked ? const Color(0xFF006565) : const Color(0xFF3E4949),
+                            ),
+                            label: Text(
+                              "Save",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: bookmarked ? const Color(0xFF006565) : const Color(0xFF3E4949),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Dossier Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Opportunity Dossier",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF181C1E),
+                      fontFamily: 'Manrope',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 15,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "OVERVIEW",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF006565),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          description,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            height: 1.6,
+                            color: Color(0xFF3E4949),
+                          ),
+                        ),
+                        if (opp['key_objectives'] != null && opp['key_objectives'].toString().isNotEmpty) ...[
+                          const SizedBox(height: 20),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF7FAFC),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Key Objectives",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF181C1E),
                                   ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Image.network(
-                                      imageUrl,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => const Center(
-                                        child: Icon(
-                                          Icons.broken_image,
-                                          color: Color(0xff006565),
-                                          size: 32,
+                                ),
+                                const SizedBox(height: 8),
+                                ...opp['key_objectives'].toString().split('\n').map((obj) {
+                                  if (obj.trim().isEmpty) return const SizedBox.shrink();
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 4),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Icon(
+                                          Icons.check_circle,
+                                          color: Color(0xFF006565),
+                                          size: 18,
                                         ),
-                                      ),
-                                      loadingBuilder: (context, child, loadingProgress) {
-                                        if (loadingProgress == null) return child;
-                                        return const Center(
-                                          child: SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Color(0xff006565),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            obj.trim(),
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              color: Color(0xFF3E4949),
                                             ),
                                           ),
-                                        );
-                                      },
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                );
-                              },
+                                  );
+                                }),
+                              ],
                             ),
                           ),
                         ],
-                        const SizedBox(height: 24),
-                        buildSectionTitle("Requirements"),
                         const SizedBox(height: 16),
-                        Column(
-                          children: requirements.map((r) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: r,
-                          )).toList(),
-                        ),
-                        const SizedBox(height: 120),
+                        if (opp['eligibility'] != null && opp['eligibility'].toString().isNotEmpty) ...[
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        "ELIGIBILITY SPHERE",
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF3E4949),
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        opp['eligibility'].toString(),
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Color(0xFF181C1E),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              if (opp['financial_offering'] != null && opp['financial_offering'].toString().isNotEmpty)
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          "FINANCIAL OFFERING",
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF3E4949),
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          opp['financial_offering'].toString(),
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: Color(0xFF181C1E),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  // Requirements Section
+                  const Text(
+                    "Requirements",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF181C1E),
+                      fontFamily: 'Manrope',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Column(
+                    children: requirements.map((r) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: r,
+                    )).toList(),
+                  ),
+                  if (galleryList.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    const Text(
+                      "Gallery",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF181C1E),
+                        fontFamily: 'Manrope',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 120,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: galleryList.length,
+                        itemBuilder: (context, index) {
+                          final imageUrl = galleryList[index].toString();
+                          return Container(
+                            margin: const EdgeInsets.only(right: 12),
+                            width: 160,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE6F2F2),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: _buildImage(imageUrl, height: 120, width: 160, fit: BoxFit.cover),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 120),
                 ],
               ),
             ),
-    );
-  }
-
-  Widget buildSectionTitle(String title) {
-    return Row(
-      children: [
-        Container(
-          width: 4,
-          height: 24,
-          decoration: BoxDecoration(
-            color: const Color(0xff006565),
-            borderRadius: BorderRadius.circular(10),
-          ),
+          ],
         ),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -2050,10 +2289,10 @@ class RequirementCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withOpacity(0.04)),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           )
@@ -2064,12 +2303,12 @@ class RequirementCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xff006565).withOpacity(0.08),
+              color: const Color(0xFF006565).withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               icon,
-              color: const Color(0xff006565),
+              color: const Color(0xFF006565),
               size: 22,
             ),
           ),
@@ -2078,9 +2317,9 @@ class RequirementCard extends StatelessWidget {
             child: Text(
               title,
               style: const TextStyle(
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
                 fontSize: 14,
-                color: Colors.black87,
+                color: Color(0xFF181C1E),
               ),
             ),
           ),

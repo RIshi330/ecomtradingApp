@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../app_constants.dart';
+import '../services/auth_User_and_Business_Session.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIG — points at the PHP endpoint file
@@ -42,6 +43,8 @@ class BrandingApiService {
     return _post({
       'action': 'get_branding_details',
       'branding_id': brandingId,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
   }
 
@@ -52,6 +55,8 @@ class BrandingApiService {
     return _post({
       'action': 'get_same_vendor_brands',
       'branding_id': brandingId,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
   }
 
@@ -62,6 +67,8 @@ class BrandingApiService {
     return _post({
       'action': 'get_similar_brands',
       'branding_id': brandingId,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
   }
 
@@ -74,6 +81,8 @@ class BrandingApiService {
       'action': 'add_brand_to_cart',
       'brand_id': brandId,
       'qty': qty,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
   }
 
@@ -84,6 +93,8 @@ class BrandingApiService {
     return _post({
       'action': 'add_brand_to_wishlist',
       'brand_id': brandId,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
   }
 
@@ -98,6 +109,8 @@ class BrandingApiService {
       'brand_id': brandId,
       'package_id': packageId,
       'qty': qty,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
   }
 
@@ -110,12 +123,15 @@ class BrandingApiService {
       'action': 'is_delivery_services',
       'logistic_id': logisticId,
       'pincode': pincode,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
   }
 
   /// action = set_pincode
   static Future<Map<String, dynamic>> setPincode(String pincode) {
-    return _post({'action': 'set_pincode', 'pincode': pincode});
+    return _post({'action': 'set_pincode', 'pincode': pincode,        'vendor_id': UserSessionSet.instance.vendorId,
+    });
   }
 
   /// action = ask_branding_quotation
@@ -141,19 +157,23 @@ class BrandingApiService {
       'preferred_colors': preferredColors,
       'brand_label_type': brandLabelType,
       'additional_requirements': additionalRequirements,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
   }
 
   /// action = get_branding_cart
   static Future<Map<String, dynamic>> getBrandingCart() {
-    return _post({'action': 'get_branding_cart'});
+    return _post({'action': 'get_branding_cart',        'vendor_id': UserSessionSet.instance.vendorId,
+    });
   }
 
   /// action = chat_with_brand_seller
   static Future<Map<String, dynamic>> chatWithBrandSeller({
     required int brandId,
   }) {
-    return _post({'action': 'chat_with_brand_seller', 'brand_id': brandId});
+    return _post({'action': 'chat_with_brand_seller', 'brand_id': brandId,        'vendor_id': UserSessionSet.instance.vendorId,
+    });
   }
 
   /// action = send_brand_message
@@ -165,22 +185,27 @@ class BrandingApiService {
       'action': 'send_brand_message',
       'brand_id': brandId,
       'message': message,
+      'vendor_id': UserSessionSet.instance.vendorId,
+
     });
   }
 
   /// action = get_brand_chat
   static Future<Map<String, dynamic>> getBrandChat({required int brandId}) {
-    return _post({'action': 'get_brand_chat', 'brand_id': brandId});
+    return _post({'action': 'get_brand_chat', 'brand_id': brandId,        'vendor_id': UserSessionSet.instance.vendorId,
+    });
   }
 
   /// action = brand_chat_list
   static Future<Map<String, dynamic>> brandChatList() {
-    return _post({'action': 'brand_chat_list'});
+    return _post({'action': 'brand_chat_list',        'vendor_id': UserSessionSet.instance.vendorId,
+    });
   }
 
   /// action = delete_brand_chat
   static Future<Map<String, dynamic>> deleteBrandChat({required int brandId}) {
-    return _post({'action': 'delete_brand_chat', 'brand_id': brandId});
+    return _post({'action': 'delete_brand_chat', 'brand_id': brandId,        'vendor_id': UserSessionSet.instance.vendorId,
+    });
   }
 }
 

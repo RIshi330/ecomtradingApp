@@ -4,6 +4,7 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../Database/Database.dart';
 import '../model/module_model.dart';
 import '../core/theme/app_theme.dart';
+import '../services/auth_User_and_Business_Session.dart';
 
 class PaymentScreen extends StatefulWidget {
   final ModuleModel module;
@@ -90,7 +91,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
     try {
       final db = Database();
       final res = await db.getJsonData(
-        {"action": "get_balances"},
+        {"action": "get_balances"   ,     'vendor_id': UserSessionSet.instance.vendorId,
+        },
+
         endpoint: "new_apis/payment_modal_API.php",
       );
 
@@ -145,7 +148,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
         "ecash_used": ecashUsed,
         "ewallet_used": ewalletUsed,
         "coupon_code": couponController.text.trim(),
-        "marketplace": "MODULE"
+        "marketplace": "MODULE",        'vendor_id': UserSessionSet.instance.vendorId,
+
       };
 
       final res = await db.getJsonData(
@@ -277,6 +281,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
           "razorpay_order_id": response.orderId ?? '',
           "razorpay_signature": response.signature ?? '',
           "amount_paid": remainingAmount,
+          'vendor_id': UserSessionSet.instance.vendorId,
+
           "module_id": module.id, // Ensure your ModuleModel has an ID if needed
         },
         endpoint: "new_apis/payment_modal_API.php",

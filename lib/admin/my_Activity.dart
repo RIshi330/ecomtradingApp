@@ -4,13 +4,15 @@ import 'package:trading_ecommerce_admin/admin/support_donets.dart';
 import 'package:trading_ecommerce_admin/admin/track_order.dart';
 import 'package:trading_ecommerce_admin/admin/upcoming_event.dart';
 
+import '../common/chat_screen.dart';
+import '../common/notification_screen.dart';
 import 'job_application.dart';
 import 'my_opportunity_activity.dart';
 
 class MyActivity extends StatefulWidget {
   final bool isEmbedded;
 
-  const MyActivity({super.key, this.isEmbedded = false});
+  const MyActivity({super.key,required this.isEmbedded});
 
   @override
   State<MyActivity> createState() => _MyActivityState();
@@ -83,19 +85,13 @@ class _MyActivityState extends State<MyActivity> {
 
   @override
   Widget build(BuildContext context) {
+    print(widget.isEmbedded);
     return Scaffold(
       appBar: widget.isEmbedded
-          ? null
-          : AppBar(
-        title: const Text(
-          'My Activity',
+          ? null : AppBar(title: const Text(
+          'My Activit',
           style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        centerTitle: false,
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        bottom: PreferredSize(
+        ), centerTitle: false, elevation: 0,backgroundColor: Colors.white, foregroundColor: Colors.black87, bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

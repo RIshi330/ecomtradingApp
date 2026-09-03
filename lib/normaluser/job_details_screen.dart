@@ -1,5 +1,7 @@
+import 'dart:convert'; // Required for base64 encoding
 import 'package:flutter/material.dart';
 import '../Database/Database.dart';
+import '../services/auth_User_and_Business_Session.dart';
 
 /// ============================================================
 /// API ENDPOINT
@@ -147,10 +149,12 @@ class RelatedJob {
 /// ------------------------------------------------------------
 class JobDetailScreen extends StatefulWidget {
   final String jobId;
+  final String currentUserId; // Pass the active user ID from session/auth
 
   const JobDetailScreen({
     super.key,
     required this.jobId,
+    required this.currentUserId,
   });
 
   @override
@@ -179,10 +183,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     });
 
     try {
-      // Passes ?id={jobId} to backend GET handler
+      // Encode jobId to base64 to match PHP backend decoding logic
+      final encodedJobId = base64Encode(utf8.encode(widget.jobId));
+
       final result = await _db.getJsonData(
         {},
-        endpoint: '$jobDetailEndpoint?id=${Uri.encodeComponent(widget.jobId)}',
+        endpoint: '$jobDetailEndpoint?id=${Uri.encodeComponent(encodedJobId)}',
       );
 
       if (result['success'] == true && result['data'] != null) {
@@ -205,13 +211,15 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   /// Submit Job Application via POST request
-  Future<bool> _submitApplication(int resumeId) async {
+  Future<bool> _submitApplication(String resumeId) async {
     try {
       final body = {
         'action': 'apply',
         'job_id': widget.jobId,
-        'resume_id': resumeId.toString(),
-        'user_id': '3', // Replace with active user / vendor ID
+        'resume_id': resumeId,
+        'user_id': widget.currentUserId,
+        'vendor_id': UserSessionSet.instance.vendorId,
+
       };
 
       final result = await _db.getJsonData(body, endpoint: jobDetailEndpoint);
@@ -314,22 +322,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Hero Header Section
                       _buildHeroSection(isDesktop),
                       const SizedBox(height: 24),
-
-                      // Job Overview Grid Cards
                       _buildOverviewGrid(isDesktop),
                       const SizedBox(height: 32),
-
                       const Divider(color: Color(0xFFBDC9C8)),
                       const SizedBox(height: 24),
-
-                      // Job Details & Description Section
                       _buildJobDescriptionSection(),
                       const SizedBox(height: 32),
-
-                      // Related Opportunities Section
                       if (_jobDetail!.relatedJobs.isNotEmpty) ...[
                         const Divider(color: Color(0xFFBDC9C8)),
                         const SizedBox(height: 24),
@@ -340,8 +340,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 ),
               ),
             ),
-
-            // Sticky Bottom Action Bar
             Positioned(
               bottom: 0,
               left: 0,
@@ -439,7 +437,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                '${detail.companyName}${detail.workPlace.isNotEmpty ? " • " + detail.workPlace : ""}',
+                '${detail.companyName}${detail.workPlace.isNotEmpty ? " • ${detail.workPlace}" : ""}',
                 style: const TextStyle(
                   fontSize: 15,
                   color: Color(0xFF3E4949),
@@ -623,11 +621,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               final item = list[index];
               return InkWell(
                 onTap: () {
-                  // Navigate to another job detail instance
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => JobDetailScreen(jobId: item.id),
+                      builder: (context) => JobDetailScreen(
+                        jobId: item.id,
+                        currentUserId: widget.currentUserId,
+                      ),
                     ),
                   );
                 },
@@ -738,7 +738,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
   // --- Application Bottom Sheet ---
   void _openApplyBottomSheet(BuildContext context) {
-    int selectedResumeIndex = 0;
+    String selectedResumeId = "1"; // Default resume ID value
     bool isSubmitting = false;
 
     showModalBottomSheet(
@@ -774,24 +774,20 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   ),
                   const Divider(),
                   const SizedBox(height: 12),
-
                   const Text('SELECT RESUME FROM PROFILE',
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
                   const SizedBox(height: 8),
-
-                  RadioListTile<int>(
-                    value: 0,
-                    groupValue: selectedResumeIndex,
+                  RadioListTile<String>(
+                    value: "1",
+                    groupValue: selectedResumeId,
                     title: const Text('Main_Resume.pdf', style: TextStyle(fontWeight: FontWeight.w600)),
                     subtitle: const Text('Primary Active Resume', style: TextStyle(fontSize: 12)),
                     activeColor: const Color(0xFF006565),
                     onChanged: (val) {
-                      if (val != null) setModalState(() => selectedResumeIndex = val);
+                      if (val != null) setModalState(() => selectedResumeId = val);
                     },
                   ),
                   const SizedBox(height: 20),
-
-                  // Actions
                   Row(
                     children: [
                       Expanded(
@@ -817,7 +813,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                               ? null
                               : () async {
                             setModalState(() => isSubmitting = true);
-                            final success = await _submitApplication(selectedResumeIndex);
+                            final success = await _submitApplication(selectedResumeId);
                             setModalState(() => isSubmitting = false);
                             if (success && mounted) {
                               Navigator.pop(context);
